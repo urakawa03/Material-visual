@@ -112,7 +112,7 @@ export const TOPICS: readonly Topic[] = [
     summary: "大きい粒子が小さい粒子を「食べて」育つ、熟成のしくみ。",
     render: "2d",
     prerequisites: [{ slug: "gp-zones", recommended: true }],
-    published: false,
+    published: true,
   },
 ] as const;
 

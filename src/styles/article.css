@@ -58,6 +58,35 @@ a.prereq-badge:hover {
   margin-top: 2.2rem;
 }
 
+/* ---- 脚注(本文中の補足。仕様書 03 などの「脚注」に対応) ---- */
+.article-body .footnote {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-2);
+  line-height: 1.8;
+  border-left: 2px solid var(--color-hairline);
+  padding-left: 12px;
+  margin: 1.2em 0 1.5em;
+}
+
+/* ---- 静的図(SVG。意味パレット準拠) ---- */
+.static-fig {
+  margin: var(--space-figure) auto;
+  max-width: var(--width-column);
+}
+
+.static-fig svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.static-fig figcaption {
+  margin-top: 10px;
+  font-size: var(--font-size-caption);
+  color: var(--color-text-2);
+  line-height: 1.7;
+}
+
 /* ---- 前後の記事ナビ(§3.2) ---- */
 .article-nav {
   display: flex;

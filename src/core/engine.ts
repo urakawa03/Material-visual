@@ -235,6 +235,7 @@ async function loadFigure(fig: FigureRuntime): Promise<void> {
         fig.renderCb = cb;
       },
       requestRender: () => requestRenderFor(fig),
+      setPlaying: (playing) => setUserPlaying(fig, playing),
     };
 
     fig.handle = await mod.default(host);

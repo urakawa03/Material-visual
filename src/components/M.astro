@@ -8,7 +8,7 @@
  * 数式中の変数を意味パレット(§6.2)の色で塗るマクロ(1 引数):
  *   \mmat{a}   母相     \msol{C}  溶質     \msec{B}   第二元素
  *   \mdef{U}   欠陥     \mppt{r}  析出物   \mbeam{k}  ビーム
- *   \mrecip{g} 逆格子点
+ *   \mrecip{g} 逆格子点 \macc{r^*} アクセント色(参照量・臨界値など)
  * (対応する CSS クラス .mx-* は base.css に定義)
  *
  * 使い方: インライン <M tex="…" />、別行立て <M block tex="…" />
@@ -34,6 +34,7 @@ const COLOR_MACROS: Record<string, string> = {
   "\\mppt": "\\htmlClass{mx-ppt}{#1}",
   "\\mbeam": "\\htmlClass{mx-beam}{#1}",
   "\\mrecip": "\\htmlClass{mx-recip}{#1}",
+  "\\macc": "\\htmlClass{mx-acc}{#1}",
 };
 
 const html = katex.renderToString(tex, {

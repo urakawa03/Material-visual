@@ -1,0 +1,191 @@
+---
+/**
+ * OstwaldS1.astro — 静的図 S-1(記事仕様書 03 §6)
+ *
+ * 粒子内部・母相内部・界面の原子それぞれの「同種のお隣の数」を比べる
+ * 3 コマ。界面原子は結合の相手が足りず、エネルギー的に損をしていることを
+ * 示す模式図。色は意味パレット(CSS 変数)経由。
+ */
+
+interface Props {
+  caption: string;
+  alt: string;
+}
+
+const { caption, alt } = Astro.props;
+
+/** 原子の半径と六方格子の間隔(viewBox 座標) */
+const ATOM_R = 8.5;
+const SPACING = 23;
+const SQ3_2 = Math.sqrt(3) / 2;
+
+interface Atom {
+  x: number;
+  y: number;
+  q: number;
+  r: number;
+}
+
+/** 中心 (cx, cy)・半径 2 の六方格子(19 原子) */
+function hexLattice(cx: number, cy: number): Atom[] {
+  const atoms: Atom[] = [];
+  for (let q = -2; q <= 2; q++) {
+    for (let r = -2; r <= 2; r++) {
+      if (Math.abs(q + r) > 2) continue;
+      atoms.push({
+        x: cx + SPACING * (q + r / 2),
+        y: cy + SPACING * r * SQ3_2,
+        q,
+        r,
+      });
+    }
+  }
+  return atoms;
+}
+
+/** 六方格子の最近接(距離がほぼ SPACING)か */
+function isNeighbor(a: Atom, b: Atom): boolean {
+  const d = Math.hypot(a.x - b.x, a.y - b.y);
+  return Math.abs(d - SPACING) < 1;
+}
+
+const PANEL_W = 212;
+const PANEL_CY = 88;
+const panels = [
+  { cx: 106, title: "析出粒子の内部", kind: "solute" as const },
+  { cx: 106 + PANEL_W, title: "母相の内部", kind: "matrix" as const },
+  { cx: 106 + PANEL_W * 2, title: "界面", kind: "interface" as const },
+];
+
+interface RenderedAtom {
+  x: number;
+  y: number;
+  solute: boolean;
+  highlight: boolean;
+}
+
+interface Bond {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  like: boolean;
+}
+
+function buildPanel(
+  cx: number,
+  kind: "solute" | "matrix" | "interface",
+): {
+  atoms: RenderedAtom[];
+  bonds: Bond[];
+  likeCount: number;
+} {
+  const lattice = hexLattice(cx, PANEL_CY);
+  const isSolute = (a: Atom): boolean =>
+    kind === "solute" || (kind === "interface" && a.x < cx + 1);
+  const center = lattice.find((a) => a.q === 0 && a.r === 0);
+  if (!center) throw new Error("中心原子が見つかりません");
+  const atoms: RenderedAtom[] = lattice.map((a) => ({
+    x: a.x,
+    y: a.y,
+    solute: isSolute(a),
+    highlight: a === center,
+  }));
+  const bonds: Bond[] = [];
+  let likeCount = 0;
+  for (const a of lattice) {
+    if (a === center || !isNeighbor(a, center)) continue;
+    const like = isSolute(a) === isSolute(center);
+    if (like) likeCount++;
+    bonds.push({ x1: center.x, y1: center.y, x2: a.x, y2: a.y, like });
+  }
+  return { atoms, bonds, likeCount };
+}
+
+const rendered = panels.map((p) => ({ ...p, ...buildPanel(p.cx, p.kind) }));
+---
+
+<figure class="static-fig">
+  <svg
+    viewBox="0 0 636 208"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    {
+      rendered.map((p) => (
+        <g>
+          {p.kind === "interface" && (
+            <line
+              x1={p.cx + SPACING / 4}
+              y1={PANEL_CY - 62}
+              x2={p.cx + SPACING / 4}
+              y2={PANEL_CY + 62}
+              stroke="var(--color-text-2)"
+              stroke-width="1"
+              stroke-dasharray="5 4"
+            />
+          )}
+          {p.bonds.map((b) => (
+            <line
+              x1={b.x1}
+              y1={b.y1}
+              x2={b.x2}
+              y2={b.y2}
+              stroke={b.like ? "var(--color-accent)" : "var(--color-hairline)"}
+              stroke-width={b.like ? 2.5 : 1.5}
+              stroke-dasharray={b.like ? undefined : "3 3"}
+            />
+          ))}
+          {p.atoms.map((a) => (
+            <circle
+              cx={a.x}
+              cy={a.y}
+              r={ATOM_R}
+              fill={a.solute ? "var(--mat-solute)" : "var(--mat-matrix)"}
+              stroke={
+                a.solute
+                  ? "color-mix(in srgb, var(--mat-solute) 80%, black)"
+                  : "color-mix(in srgb, var(--mat-matrix) 80%, black)"
+              }
+              stroke-width="1.5"
+              opacity={a.highlight ? 1 : 0.85}
+            />
+          ))}
+          {p.atoms
+            .filter((a) => a.highlight)
+            .map((a) => (
+              <circle
+                cx={a.x}
+                cy={a.y}
+                r={ATOM_R + 3.5}
+                fill="none"
+                stroke="var(--color-accent)"
+                stroke-width="2"
+              />
+            ))}
+          <text
+            x={p.cx}
+            y="182"
+            text-anchor="middle"
+            font-size="13"
+            fill="var(--color-text-2)"
+          >
+            {p.title}
+          </text>
+          <text
+            x={p.cx}
+            y="201"
+            text-anchor="middle"
+            font-size="13.5"
+            font-weight="600"
+            fill="var(--color-text)"
+          >
+            同種のお隣: {p.likeCount} 本
+          </text>
+        </g>
+      ))
+    }
+  </svg>
+  <figcaption>{caption}</figcaption>
+  <p class="sr-only">{alt}</p>
+</figure>

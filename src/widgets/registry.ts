@@ -13,4 +13,20 @@ export const registry: Record<
   () => Promise<{ default: WidgetFactory }>
 > = {
   "_sample/brownian": () => import("./_sample/brownian"),
+  "ostwald-ripening/coarsening-timelapse": () =>
+    import("./ostwald-ripening/coarsening-timelapse"),
+  "ostwald-ripening/interface-budget": () =>
+    import("./ostwald-ripening/interface-budget"),
+  "ostwald-ripening/gibbs-thomson-probe": () =>
+    import("./ostwald-ripening/gibbs-thomson-probe"),
+  "ostwald-ripening/two-particle-tug": () =>
+    import("./ostwald-ripening/two-particle-tug"),
+  "ostwald-ripening/ripening-arena": () =>
+    import("./ostwald-ripening/ripening-arena"),
+  "ostwald-ripening/one-third-law": () =>
+    import("./ostwald-ripening/one-third-law"),
+  "ostwald-ripening/overaging-strength": () =>
+    import("./ostwald-ripening/overaging-strength"),
+  "ostwald-ripening/coarsening-design": () =>
+    import("./ostwald-ripening/coarsening-design"),
 };

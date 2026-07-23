@@ -1,0 +1,157 @@
+---
+/**
+ * OstwaldS3.astro — 静的図 S-3(記事仕様書 03 §6・発展節用)
+ *
+ * タービンブレードの模式と γ′ 立方体組織の拡大、ODS 鋼の酸化物分散の
+ * 模式。数値・形状はモデル的な模式であり実測ではない。
+ */
+
+interface Props {
+  caption: string;
+  alt: string;
+}
+
+const { caption, alt } = Astro.props;
+
+const EDGE_SOL = "color-mix(in srgb, var(--mat-solute) 80%, black)";
+
+/* γ′ 立方体組織(中パネル): 4×4 の丸角正方形 + 細い母相チャネル */
+const CUBES: Array<[number, number]> = [];
+for (let i = 0; i < 4; i++) {
+  for (let j = 0; j < 4; j++) {
+    CUBES.push([258 + i * 34, 46 + j * 34]);
+  }
+}
+
+/* ODS 分散粒子(右パネル): シードなしの決定的な擬似配置 */
+const DOTS: Array<[number, number]> = [];
+for (let k = 0; k < 42; k++) {
+  const gx = k % 7;
+  const gy = Math.floor(k / 7);
+  // 決定的なジッター(ビルド時に固定)
+  const jx = ((k * 37) % 17) - 8;
+  const jy = ((k * 53) % 15) - 7;
+  DOTS.push([470 + gx * 22 + jx * 0.8, 52 + gy * 22 + jy * 0.8]);
+}
+---
+
+<figure class="static-fig">
+  <svg
+    viewBox="0 0 636 230"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    <!-- 左: タービンブレードの模式 -->
+    <g>
+      <path
+        d="M 96 22 C 118 42, 128 78, 122 112 C 118 136, 106 152, 88 162
+           L 72 162 C 84 140, 92 116, 92 88 C 92 62, 88 42, 78 26 Z"
+        fill="none"
+        stroke="var(--mat-matrix)"
+        stroke-width="2.5"></path>
+      <rect
+        x="62"
+        y="162"
+        width="42"
+        height="18"
+        rx="3"
+        fill="none"
+        stroke="var(--mat-matrix)"
+        stroke-width="2.5"></rect>
+      <!-- 拡大を示す円と引き出し線 -->
+      <circle
+        cx="104"
+        cy="92"
+        r="14"
+        fill="none"
+        stroke="var(--color-accent)"
+        stroke-width="1.5"></circle>
+      <line
+        x1="118"
+        y1="92"
+        x2="246"
+        y2="92"
+        stroke="var(--color-accent)"
+        stroke-width="1.5"
+        stroke-dasharray="4 4"></line>
+      <text
+        x="92"
+        y="206"
+        text-anchor="middle"
+        font-size="13"
+        fill="var(--color-text-2)"
+        >タービンブレード<tspan x="92" dy="16">900 °C 超で 1 万時間</tspan
+        ></text
+      >
+    </g>
+
+    <!-- 中: Ni 基超合金の γ′ 立方体組織 -->
+    <g>
+      <rect
+        x="246"
+        y="34"
+        width="160"
+        height="160"
+        fill="var(--mat-matrix)"
+        opacity="0.18"></rect>
+      {
+        CUBES.map(([x, y]) => (
+          <rect
+            x={x}
+            y={y}
+            width="26"
+            height="26"
+            rx="4"
+            fill="var(--mat-solute)"
+            stroke={EDGE_SOL}
+            stroke-width="1.5"
+            opacity="0.9"
+          />
+        ))
+      }
+      <text
+        x="326"
+        y="206"
+        text-anchor="middle"
+        font-size="13"
+        fill="var(--color-text-2)"
+        >γ′ の立方体組織<tspan x="326" dy="16">整合界面 → γ が小さい</tspan
+        ></text
+      >
+    </g>
+
+    <!-- 右: ODS 鋼の酸化物分散 -->
+    <g>
+      <rect
+        x="454"
+        y="34"
+        width="160"
+        height="160"
+        fill="var(--mat-matrix)"
+        opacity="0.18"></rect>
+      {
+        DOTS.map(([x, y]) => (
+          <circle
+            cx={x}
+            cy={y}
+            r="3.2"
+            fill="var(--mat-solute)"
+            stroke={EDGE_SOL}
+            stroke-width="1"
+          />
+        ))
+      }
+      <text
+        x="534"
+        y="206"
+        text-anchor="middle"
+        font-size="13"
+        fill="var(--color-text-2)"
+        >ODS 鋼の酸化物分散<tspan x="534" dy="16">溶けない粒子は太れない</tspan
+        ></text
+      >
+    </g>
+  </svg>
+  <figcaption>{caption}</figcaption>
+  <p class="sr-only">{alt}</p>
+</figure>
