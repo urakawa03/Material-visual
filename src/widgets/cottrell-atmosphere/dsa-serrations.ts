@@ -29,9 +29,10 @@ import {
   plotY,
   STEEL_E_MPA,
   type PlotFrameColors,
+  type PlotLayout,
   type Rect,
 } from "./lib/tensile";
-import { makeStackableStage, splitPanels } from "./lib/layout";
+import { makeStackableStage, splitPanels, type Panels } from "./lib/layout";
 
 /* ------------------------------------------------------ マップ(§5.9) */
 
@@ -303,6 +304,12 @@ export default function dsaSerrations(host: FigureHost): WidgetHandle {
   // 毎フレームの新規割当てを避けるため矩形は再利用(§8.3)
   const offPlot: Rect = { x: 0, y: 0, w: 0, h: 0 };
   const mapPlot: Rect = { x: 0, y: 0, w: 0, h: 0 };
+  // パネル分割と曲線レイアウトは寸法/積み方が変わったときだけ作り直す(§8.3)
+  let panels: Panels | null = null;
+  let curveLayout: PlotLayout | null = null;
+  let layoutW = -1;
+  let layoutH = -1;
+  let layoutStacked = false;
 
   function computeMapPlot(rect: Rect, out: Rect): void {
     out.x = rect.x + MAP_ML;
@@ -434,7 +441,20 @@ export default function dsaSerrations(host: FigureHost): WidgetHandle {
     ctx.clearRect(0, 0, w, h);
 
     const stacked = stage.isStacked();
-    const { a, b } = splitPanels(w, h, stacked, PANEL_RATIO);
+    if (
+      panels === null ||
+      curveLayout === null ||
+      w !== layoutW ||
+      h !== layoutH ||
+      stacked !== layoutStacked
+    ) {
+      panels = splitPanels(w, h, stacked, PANEL_RATIO);
+      curveLayout = computePlotLayout(panels.b, CURVE_EPS_MAX, SIGMA_AXIS_MAX);
+      layoutW = w;
+      layoutH = h;
+      layoutStacked = stacked;
+    }
+    const a = panels.a;
 
     // 左(縦積み時は上): レジームマップ。静的内容はオフスクリーンを転送し、
     // マーカーと t_w/τ の読み出しだけを上描きする
@@ -453,7 +473,7 @@ export default function dsaSerrations(host: FigureHost): WidgetHandle {
     );
 
     // 右(縦積み時は下): σ–ε 曲線(ε 0〜10%、σ 0〜400 MPa — §5.9)
-    const layout = computePlotLayout(b, CURVE_EPS_MAX, SIGMA_AXIS_MAX);
+    const layout = curveLayout;
     drawPlotFrame(ctx, layout, plotColors);
     if (curveN > 0) {
       // 歯の頂点が軸上限を僅かに超え得るので、枠の上辺でクリップする

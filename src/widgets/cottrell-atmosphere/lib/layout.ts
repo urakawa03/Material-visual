@@ -40,6 +40,12 @@ export function makeStackableStage(
   return { isStacked: () => stacked === true, update };
 }
 
+/** splitPanels の返り値(第 1・第 2 パネルの矩形) */
+export interface Panels {
+  a: Rect;
+  b: Rect;
+}
+
 /**
  * キャンバスを左右(縦積み時は上下)2 パネルに分割する。
  * ratio は第 1 パネルの割合。gap は境界の余白(px)。
@@ -50,7 +56,7 @@ export function splitPanels(
   stacked: boolean,
   ratio = 0.42,
   gap = 12,
-): { a: Rect; b: Rect } {
+): Panels {
   if (stacked) {
     const ah = Math.round(h * ratio) - gap / 2;
     return {

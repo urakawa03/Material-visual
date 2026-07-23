@@ -30,6 +30,8 @@ import {
   plotY,
   STEEL_E_MPA,
   STEEL_LUDERS_STRAIN,
+  STEEL_SIGMA_LOWER,
+  STEEL_SIGMA_UPPER,
   type Curve,
   type PlotFrameColors,
   type PlotLayout,
@@ -46,8 +48,22 @@ const PULL_EPS_LIMIT = 0.08;
 const PLOT_EPS_MAX = 0.1;
 /** プロットの σ 軸上限 [MPa](図1 と同スタイル) */
 const SIGMA_AXIS_MAX = 450;
-/** 上降伏点の増分の最大値 Δσ_max [MPa](§5.8: Δσ = Δσ_max·W) */
+/**
+ * 焼付硬化(BH)の上乗せの最大値 Δσ_max [MPa](§5.8: 上乗せ = Δσ_max·W)。
+ * 時効した再引張の上降伏点は「流動応力 + 復活したリューダース段差 +
+ * 焼付硬化の上乗せ Δσ_max·W」とする。こうすると再引張の歯は初回の上降伏点
+ * より明確に高くなる(§5.8 受け入れ基準「初回より高い」)。
+ *
+ * 注: §5.8 の受け入れ基準は「初回より約 +35〜40 MPa 高い」と「BH 量の相場
+ * 30〜60 MPa」の 2 つを併記するが、この 2 つは同時には満たせない(前者は
+ * 再引張ピーク ≈ 305〜310 を要求し、そのとき BH 量 = ピーク − 流動応力 ≈
+ * 65〜70 で後者の上限を超える)。本実装は「復活した歯が初回より明確に高い」
+ * という教育的意図を優先し、既定条件(170 °C・20 分, W≈0.79)で初回比 +31 MPa・
+ * BH 量 ≈ 61 MPa となる値に校正した(母体仕様 §2-5 の誠実な簡略化)。
+ */
 const DSIGMA_MAX_MPA = 40;
+/** 復活したリューダース段差 [MPa](= 初回の歯の高さ σ_u − σ_l。§5.8) */
+const REVIVED_LUDERS_MPA = STEEL_SIGMA_UPPER - STEEL_SIGMA_LOWER;
 /** 歯が出る回復率のしきい値(W ≤ 0.02 なら歯なしで滑らかに接続) */
 const TOOTH_W_MIN = 0.02;
 /** 再引張の上→下降伏の遷移幅(ひずみ 0.08% — §5.8) */
@@ -130,6 +146,12 @@ export default function strainAgingCycle(host: FigureHost): WidgetHandle {
   let animating = false;
   let animT = 0;
   let needsRedraw = true;
+  /**
+   * engine がこの図版のフレームを回しているか(setPlaying で受け取る)。
+   * 省モーション時や画面外では false になり、onFrame が呼ばれない。
+   * このとき進行アニメを回しても animT が進まないので、即時に完了させる。
+   */
+  let framesFlowing = false;
 
   // 軌跡(全サイクルの折れ線)は TypedArray に事前確保して蓄積(§8.3)
   const ptEps = new Float64Array(PT_CAP);
@@ -143,6 +165,10 @@ export default function strainAgingCycle(host: FigureHost): WidgetHandle {
   // 毎フレームの新規割当てを避けるための再利用オブジェクト(§8.3)
   const plotRect: Rect = { x: 0, y: 0, w: 0, h: 0 };
   const stepWidths = new Float64Array(STEP_LABELS.length);
+  // プロットレイアウトは寸法が変わったときだけ作り直す(§8.3)
+  let layout: PlotLayout | null = null;
+  let layoutW = -1;
+  let layoutH = -1;
 
   /* ---- 区間(折れ線)の生成 ---- */
 
@@ -205,7 +231,10 @@ export default function strainAgingCycle(host: FigureHost): WidgetHandle {
     const start = beginSegment();
     const sigF = curveStressAt(master, epsMaster); // 再引張の流動応力
     const hasTooth = w > TOOTH_W_MIN;
-    const sigPeak = hasTooth ? sigF + DSIGMA_MAX_MPA * w : sigF;
+    // 復活した上降伏点 = 流動応力 + リューダース段差 + 焼付硬化の上乗せ
+    const sigPeak = hasTooth
+      ? sigF + REVIVED_LUDERS_MPA + DSIGMA_MAX_MPA * w
+      : sigF;
     const e1 = epsP + sigPeak / STEEL_E_MPA; // 弾性線の終点
     const e2 = hasTooth ? e1 + RETOOTH_WIDTH : e1; // 上→下降伏の降下の終点
     const e3 = hasTooth ? e2 + STEEL_LUDERS_STRAIN * w : e2; // プラトー終点
@@ -355,12 +384,16 @@ export default function strainAgingCycle(host: FigureHost): WidgetHandle {
 
     drawStepper(w);
 
-    // ステッパーの下は全面 σ–ε プロット(§5.8)
-    plotRect.x = 0;
-    plotRect.y = STEPPER_H;
-    plotRect.w = w;
-    plotRect.h = h - STEPPER_H;
-    const layout = computePlotLayout(plotRect, PLOT_EPS_MAX, SIGMA_AXIS_MAX);
+    // ステッパーの下は全面 σ–ε プロット(§5.8)。レイアウトは寸法変化時のみ再計算
+    if (layout === null || w !== layoutW || h !== layoutH) {
+      plotRect.x = 0;
+      plotRect.y = STEPPER_H;
+      plotRect.w = w;
+      plotRect.h = h - STEPPER_H;
+      layout = computePlotLayout(plotRect, PLOT_EPS_MAX, SIGMA_AXIS_MAX);
+      layoutW = w;
+      layoutH = h;
+    }
     drawPlotFrame(ctx, layout, plotColors);
     drawSegments(layout);
     drawReadout(layout);
@@ -411,8 +444,27 @@ export default function strainAgingCycle(host: FigureHost): WidgetHandle {
       animating || phase !== "unloaded" || epsNow > PULL_EPS_LIMIT;
   }
 
-  /** 進行アニメを開始する(押下直後に 1 フレーム目を即時反映) */
+  /** 進行アニメを完了状態にする(次に促す操作を強調しボタンを開放) */
+  function finishAnim(): void {
+    animT = ANIM_DURATION_S;
+    animating = false;
+    activeStep = phase === "pulled" ? 2 : 3;
+    syncButtons();
+  }
+
+  /**
+   * 進行アニメを開始する(押下直後に 1 フレーム目を即時反映)。
+   * フレームが回っていない(省モーション・画面外)ときは animT が進まず
+   * 曲線が描かれないまま固着するため、アニメを省いて最終曲線を即時表示する
+   * (母体仕様 §7.1: 省モーション時は意味のある静止フレームを出す)。
+   */
   function startAnim(): void {
+    if (!framesFlowing) {
+      finishAnim();
+      needsRedraw = true;
+      host.requestRender();
+      return;
+    }
     animating = true;
     animT = 0;
     syncButtons();
@@ -477,13 +529,7 @@ export default function strainAgingCycle(host: FigureHost): WidgetHandle {
   host.onFrame((dt) => {
     if (animating) {
       animT += dt;
-      if (animT >= ANIM_DURATION_S) {
-        // アニメ完了: 次に促す操作をステッパーで強調し、ボタンを開放する
-        animT = ANIM_DURATION_S;
-        animating = false;
-        activeStep = phase === "pulled" ? 2 : 3;
-        syncButtons();
-      }
+      if (animT >= ANIM_DURATION_S) finishAnim(); // 完了処理
       draw();
       needsRedraw = false;
     } else if (needsRedraw) {
@@ -498,6 +544,12 @@ export default function strainAgingCycle(host: FigureHost): WidgetHandle {
   return {
     resize(): void {
       needsRedraw = true; // engine が直後に 1 フレーム描画する
+    },
+    setPlaying(p: boolean): void {
+      framesFlowing = p;
+      // 省モーション中に開始したアニメが宙づりのままなら、再生開始時に
+      // 残りを進める(次フレーム以降 onFrame が消化する)
+      if (p) needsRedraw = true;
     },
     destroy(): void {
       /* キャンバスへのイベントリスナーなし */

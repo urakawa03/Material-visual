@@ -203,7 +203,13 @@ export default function atmosphereKinetics(host: FigureHost): WidgetHandle {
         fromY[i] = dispY[i];
         hopT[i] = 0;
       } else {
-        hopT[i] = HOP_ANIM_S; // ×100 時・折返し時は即時表示
+        // ×100 時・折返し時は即時表示。表示位置も即座に新サイトへ
+        // 更新しておく(そうしないと同じ tick 内の次のホップが古い
+        // 反対端の dispX を始点に採り、画面全幅を横断する補間が生じる —
+        // 折返し原子が端の列に張り付いて見える不具合の原因になる)。
+        dispX[i] = sitePosX[nSite];
+        dispY[i] = sitePosY[nSite];
+        hopT[i] = HOP_ANIM_S;
       }
     }
   }

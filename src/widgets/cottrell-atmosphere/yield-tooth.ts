@@ -29,11 +29,12 @@ import {
   STEEL_TOOTH_WIDTH,
   type Curve,
   type PlotFrameColors,
+  type PlotLayout,
   type Rect,
   type SpecimenColors,
   type SpecimenState,
 } from "./lib/tensile";
-import { makeStackableStage, splitPanels } from "./lib/layout";
+import { makeStackableStage, splitPanels, type Panels } from "./lib/layout";
 
 /** 材料の選択肢(§5.1: 切替時は自動 reset) */
 type Material = "steel" | "aluminum";
@@ -103,6 +104,12 @@ export default function yieldTooth(host: FigureHost): WidgetHandle {
     yieldedFrom: 0,
     yieldedTo: 0,
   };
+  // パネル分割とプロットレイアウトは寸法/積み方が変わったときだけ作り直す(§8.3)
+  let panels: Panels | null = null;
+  let layout: PlotLayout | null = null;
+  let layoutW = -1;
+  let layoutH = -1;
+  let layoutStacked = false;
 
   function currentCurve(): Curve {
     return material === "steel" ? steelCurve : aluminumCurve;
@@ -124,12 +131,25 @@ export default function yieldTooth(host: FigureHost): WidgetHandle {
     ctx.clearRect(0, 0, w, h);
 
     const stacked = stage.isStacked();
-    const { a, b } = splitPanels(
-      w,
-      h,
-      stacked,
-      stacked ? SPECIMEN_RATIO_STACKED : SPECIMEN_RATIO_WIDE,
-    );
+    if (
+      panels === null ||
+      w !== layoutW ||
+      h !== layoutH ||
+      stacked !== layoutStacked
+    ) {
+      panels = splitPanels(
+        w,
+        h,
+        stacked,
+        stacked ? SPECIMEN_RATIO_STACKED : SPECIMEN_RATIO_WIDE,
+      );
+      layout = computePlotLayout(panels.b, EPS_MAX, SIGMA_AXIS_MAX);
+      layoutW = w;
+      layoutH = h;
+      layoutStacked = stacked;
+    }
+    const a = panels.a;
+    const l = layout as PlotLayout; // ガードで panels と同時に必ず設定済み
 
     // 左(縦積み時は上): ダンベル形試験片。伸びと降伏領域を反映
     specimenRect.x = a.x + PANEL_PAD;
@@ -141,11 +161,10 @@ export default function yieldTooth(host: FigureHost): WidgetHandle {
     drawSpecimen(ctx, specimenRect, specimenState, specimenColors);
 
     // 右(縦積み時は下): σ–ε 曲線を進行度 ε までクリップ描画 + 現在点
-    const layout = computePlotLayout(b, EPS_MAX, SIGMA_AXIS_MAX);
-    drawPlotFrame(ctx, layout, plotColors);
+    drawPlotFrame(ctx, l, plotColors);
     const curve = currentCurve();
-    drawCurve(ctx, layout, curve, curveColor, CURVE_WIDTH, eps);
-    drawPlotMarker(ctx, layout, eps, curveStressAt(curve, eps), markerColor);
+    drawCurve(ctx, l, curve, curveColor, CURVE_WIDTH, eps);
+    drawPlotMarker(ctx, l, eps, curveStressAt(curve, eps), markerColor);
   }
 
   /** 引張をはじめからやり直す(材料切替と reset で共用) */
