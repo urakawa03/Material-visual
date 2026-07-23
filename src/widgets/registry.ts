@@ -13,4 +13,22 @@ export const registry: Record<
   () => Promise<{ default: WidgetFactory }>
 > = {
   "_sample/brownian": () => import("./_sample/brownian"),
+  "cottrell-atmosphere/yield-tooth": () =>
+    import("./cottrell-atmosphere/yield-tooth"),
+  "cottrell-atmosphere/edge-dislocation-field": () =>
+    import("./cottrell-atmosphere/edge-dislocation-field"),
+  "cottrell-atmosphere/solute-energy-probe": () =>
+    import("./cottrell-atmosphere/solute-energy-probe"),
+  "cottrell-atmosphere/atmosphere-equilibrium": () =>
+    import("./cottrell-atmosphere/atmosphere-equilibrium"),
+  "cottrell-atmosphere/atmosphere-kinetics": () =>
+    import("./cottrell-atmosphere/atmosphere-kinetics"),
+  "cottrell-atmosphere/pinning-breakaway": () =>
+    import("./cottrell-atmosphere/pinning-breakaway"),
+  "cottrell-atmosphere/luders-band": () =>
+    import("./cottrell-atmosphere/luders-band"),
+  "cottrell-atmosphere/strain-aging-cycle": () =>
+    import("./cottrell-atmosphere/strain-aging-cycle"),
+  "cottrell-atmosphere/dsa-serrations": () =>
+    import("./cottrell-atmosphere/dsa-serrations"),
 };

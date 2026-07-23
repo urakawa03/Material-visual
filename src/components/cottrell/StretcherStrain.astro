@@ -1,0 +1,205 @@
+---
+/**
+ * StretcherStrain.astro — 静的図 S-2(記事仕様 01 §6)
+ *
+ * 左は板材表面に残るストレッチャーストレイン(約 50° に傾いた縞帯)の模式。
+ * 右は対策のスキンパス圧延(上下ロールに挟まれた板が右へ通過し、わずかに
+ * 薄くなる)の 1 コマ絵。矢印は §6.5 に従い線 2px + 塗り三角の先端。
+ * 色は CSS 変数参照(§6.2)。原子の縁取りのみ darken() でビルド時に確定する。
+ */
+import { darken, matColor } from "../../core/colors";
+
+/** 小数 1 桁に丸める(SVG 属性の桁あふれ防止) */
+const r1 = (v: number): number => Math.round(v * 10) / 10;
+
+// ---- 左パネル: ストレッチャーストレインの縞 ----
+const SHEET_X = 40;
+const SHEET_Y = 96;
+const SHEET_W = 288;
+const SHEET_H = 208;
+/** 縞の傾き(約 50°)。x 方向に 1 進むと y 方向へ tan(50°) 下がる */
+const BAND_ANGLE_DEG = 50;
+const BAND_SLOPE = Math.tan((BAND_ANGLE_DEG * Math.PI) / 180);
+/** 縞の帯幅(px)と間隔(px) */
+const BAND_WIDTH = 20;
+const BAND_GAP = 46;
+
+/**
+ * 傾き 50° の帯を矩形クリップ内に敷く。各帯は「上辺の中心 x = cx」を通る
+ * 平行四辺形として、上下辺(y = SHEET_Y と y = SHEET_Y + SHEET_H)での
+ * x 座標を傾きから求める。cx を GAP 刻みで振って複数本を並べる。
+ */
+interface Band {
+  points: string;
+}
+const bands: Band[] = [];
+// dx = 帯 1 本ぶんの水平ずれ(上辺→下辺で slope により左へずれる)
+const dxFull = SHEET_H / BAND_SLOPE;
+for (
+  let cx = SHEET_X - dxFull;
+  cx < SHEET_X + SHEET_W + dxFull;
+  cx += BAND_WIDTH + BAND_GAP
+) {
+  const topL = cx;
+  const topR = cx + BAND_WIDTH;
+  const botL = cx - dxFull;
+  const botR = cx + BAND_WIDTH - dxFull;
+  bands.push({
+    points: `${r1(topL)},${SHEET_Y} ${r1(topR)},${SHEET_Y} ${r1(botR)},${SHEET_Y + SHEET_H} ${r1(botL)},${SHEET_Y + SHEET_H}`,
+  });
+}
+
+// ---- 右パネル: スキンパス圧延の 1 コマ ----
+const ROLL_CX = 536; // ロール対の中心 x
+const ROLL_R = 52; // ロール半径
+const GAP_HALF = 15; // ロール間隙(板の入口側の半厚)
+const GAP_HALF_OUT = 12; // 出口側の半厚(わずかに薄く)
+const STRIP_Y = 232; // 板の中心線 y
+const STRIP_X0 = 372; // 板の左端
+const STRIP_X1 = 700; // 板の右端
+const rollTopCy = STRIP_Y - GAP_HALF - ROLL_R;
+const rollBotCy = STRIP_Y + GAP_HALF + ROLL_R;
+
+const FE_EDGE = darken(matColor("matrix"));
+
+/** 通板方向の矢印(線 2px + 塗り三角) */
+const ARROW_X0 = STRIP_X0 + 26;
+const ARROW_X1 = STRIP_X0 + 82;
+const ARROW_Y = STRIP_Y;
+const HEAD = 7;
+const arrowTip = `${r1(ARROW_X1 - HEAD)},${ARROW_Y - HEAD} ${r1(ARROW_X1 - HEAD)},${ARROW_Y + HEAD} ${ARROW_X1},${ARROW_Y}`;
+
+/** 入口→出口で薄くなる板の輪郭(左は厚い、ロール間で絞られ、右は薄い) */
+const stripPath = [
+  `M ${STRIP_X0} ${STRIP_Y - GAP_HALF}`,
+  `L ${ROLL_CX - 4} ${STRIP_Y - GAP_HALF}`,
+  `Q ${ROLL_CX} ${STRIP_Y - GAP_HALF} ${ROLL_CX + 8} ${STRIP_Y - GAP_HALF_OUT}`,
+  `L ${STRIP_X1} ${STRIP_Y - GAP_HALF_OUT}`,
+  `L ${STRIP_X1} ${STRIP_Y + GAP_HALF_OUT}`,
+  `L ${ROLL_CX + 8} ${STRIP_Y + GAP_HALF_OUT}`,
+  `Q ${ROLL_CX} ${STRIP_Y + GAP_HALF} ${ROLL_CX - 4} ${STRIP_Y + GAP_HALF}`,
+  `L ${STRIP_X0} ${STRIP_Y + GAP_HALF}`,
+  "Z",
+].join(" ");
+
+const DIV_X = 356; // 左右パネルの区切り線 x
+---
+
+<svg
+  viewBox="0 0 720 400"
+  role="img"
+  aria-labelledby="s2-stretcher-title"
+  xmlns="http://www.w3.org/2000/svg"
+  font-family="inherit"
+  style="max-width: 100%; height: auto; display: block; margin-inline: auto"
+>
+  <title id="s2-stretcher-title">
+    板材表面のストレッチャーストレインの模式と、対策のスキンパス圧延
+  </title>
+
+  <!-- パネル区切り -->
+  <line
+    x1={DIV_X}
+    y1={24}
+    x2={DIV_X}
+    y2={376}
+    stroke="var(--color-hairline)"
+    stroke-width="1"></line>
+
+  <!-- ==== 左: ストレッチャーストレインの縞 ==== -->
+  <text
+    x="184"
+    y="34"
+    text-anchor="middle"
+    font-size="14"
+    fill="var(--color-text-2)">プレス成形品に残る縞(不良)</text
+  >
+
+  <!-- 板材(角丸長方形)-->
+  <rect
+    x={SHEET_X}
+    y={SHEET_Y}
+    width={SHEET_W}
+    height={SHEET_H}
+    rx="10"
+    fill="var(--color-bg)"
+    stroke="var(--color-text-2)"
+    stroke-width="1.5"
+    opacity="0.85"></rect>
+
+  <!-- 約 50° に傾いた縞帯(引張場の薄塗り + 細い斜線)。板の矩形でクリップ -->
+  <clipPath id="s2-sheet-clip">
+    <rect x={SHEET_X} y={SHEET_Y} width={SHEET_W} height={SHEET_H} rx="10"
+    ></rect>
+  </clipPath>
+  <g clip-path="url(#s2-sheet-clip)">
+    {
+      bands.map((b) => (
+        <polygon
+          points={b.points}
+          fill="var(--mat-tension)"
+          stroke="var(--mat-defect)"
+          stroke-width="0.75"
+          opacity="0.9"
+        />
+      ))
+    }
+  </g>
+
+  <!-- 傾き角の注記 -->
+  <text
+    x={SHEET_X + SHEET_W - 8}
+    y={SHEET_Y + SHEET_H - 12}
+    text-anchor="end"
+    font-size="13"
+    fill="var(--color-text-2)">約 50°</text
+  >
+  <text
+    x="184"
+    y="340"
+    text-anchor="middle"
+    font-size="13"
+    fill="var(--color-text-2)">ストレッチャーストレイン(表面の縞)</text
+  >
+
+  <!-- ==== 右: スキンパス圧延の 1 コマ ==== -->
+  <text
+    x="536"
+    y="34"
+    text-anchor="middle"
+    font-size="14"
+    fill="var(--color-text-2)">対策: スキンパス圧延</text
+  >
+
+  <!-- 板(左が厚く、ロールで絞られ右が薄い)-->
+  <path
+    d={stripPath}
+    fill="var(--mat-tension)"
+    stroke="var(--color-text-2)"
+    stroke-width="1.5"></path>
+
+  <!-- 通板方向の矢印 -->
+  <line
+    x1={ARROW_X0}
+    y1={ARROW_Y}
+    x2={r1(ARROW_X1 - HEAD)}
+    y2={ARROW_Y}
+    stroke="var(--color-text-2)"
+    stroke-width="2"></line>
+  <polygon points={arrowTip} fill="var(--color-text-2)"></polygon>
+
+  <!-- 上下のロール -->
+  <g fill="var(--mat-matrix)" stroke={FE_EDGE} stroke-width="1.5">
+    <circle cx={ROLL_CX} cy={rollTopCy} r={ROLL_R}></circle>
+    <circle cx={ROLL_CX} cy={rollBotCy} r={ROLL_R}></circle>
+  </g>
+  <!-- ロールの軸(回転の示唆)-->
+  <g fill="none" stroke={FE_EDGE} stroke-width="1.5" opacity="0.5">
+    <circle cx={ROLL_CX} cy={rollTopCy} r="7"></circle>
+    <circle cx={ROLL_CX} cy={rollBotCy} r="7"></circle>
+  </g>
+
+  <g fill="var(--color-text-2)" font-size="13" text-anchor="middle">
+    <text x="536" y="352">あらかじめ約 1% 圧下し、可動転位を仕込む</text>
+  </g>
+</svg>

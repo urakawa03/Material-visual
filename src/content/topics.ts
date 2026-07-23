@@ -82,7 +82,7 @@ export const TOPICS: readonly Topic[] = [
     summary: "溶質原子が転位を捕まえて、鋼が硬くなる理由を探る。",
     render: "2d",
     prerequisites: [{ slug: "frank-read-source", recommended: true }],
-    published: false,
+    published: true,
   },
   {
     order: 5,
