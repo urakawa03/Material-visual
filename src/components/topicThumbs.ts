@@ -42,12 +42,19 @@ function grid(
   return pts;
 }
 
-/** 1. 逆格子空間: 規則正しい逆格子点の格子 */
+/** 1. 逆格子空間: 実格子(密)⇄ 逆格子(疎)の対(仕様書 05 §6.1 S1) */
 function reciprocalLattice(): string {
-  const pts = grid(32, 25, 172, 105, 28, 26.5);
+  const real = grid(24, 42, 68, 86, 22, 22);
+  const recip = grid(124, 30, 188, 94, 32, 32);
   return svg(
-    dots(pts, 3.2, "var(--mat-recip)") +
-      `<circle cx="102" cy="65" r="5" fill="var(--mat-recip)"/>`,
+    dots(real, 3.4, "var(--mat-matrix)") +
+      dots(recip, 3.2, "var(--mat-recip)") +
+      // 中央の双方向矢印
+      `<g stroke="var(--mat-recip)" stroke-width="2" fill="var(--mat-recip)">` +
+      `<line x1="86" y1="64" x2="106" y2="64"/>` +
+      `<path d="M 86 64 l 7 -4 v 8 Z"/>` +
+      `<path d="M 106 64 l -7 -4 v 8 Z"/>` +
+      `</g>`,
   );
 }
 

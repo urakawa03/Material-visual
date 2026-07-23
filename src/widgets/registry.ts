@@ -13,4 +13,16 @@ export const registry: Record<
   () => Promise<{ default: WidgetFactory }>
 > = {
   "_sample/brownian": () => import("./_sample/brownian"),
+  // 記事「逆格子空間」(仕様書 05 §4)。図6・図7 のみ three.js を含む
+  "reciprocal-lattice/intro-duality": () =>
+    import("./reciprocal-lattice/intro-duality"),
+  "reciprocal-lattice/wave-1d": () => import("./reciprocal-lattice/wave-1d"),
+  "reciprocal-lattice/stripes-2d": () =>
+    import("./reciprocal-lattice/stripes-2d"),
+  "reciprocal-lattice/planes-2d": () =>
+    import("./reciprocal-lattice/planes-2d"),
+  "reciprocal-lattice/basis-2d": () => import("./reciprocal-lattice/basis-2d"),
+  "reciprocal-lattice/hkl-3d": () => import("./reciprocal-lattice/hkl-3d"),
+  "reciprocal-lattice/bravais-3d": () =>
+    import("./reciprocal-lattice/bravais-3d"),
 };
