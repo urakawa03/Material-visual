@@ -148,11 +148,7 @@ export function primitiveVectors(lattice: CubicLattice): [Vec3, Vec3, Vec3] {
     case "sc":
       return [vec3(1, 0, 0), vec3(0, 1, 0), vec3(0, 0, 1)];
     case "bcc":
-      return [
-        vec3(-0.5, 0.5, 0.5),
-        vec3(0.5, -0.5, 0.5),
-        vec3(0.5, 0.5, -0.5),
-      ];
+      return [vec3(-0.5, 0.5, 0.5), vec3(0.5, -0.5, 0.5), vec3(0.5, 0.5, -0.5)];
     case "fcc":
       return [vec3(0, 0.5, 0.5), vec3(0.5, 0, 0.5), vec3(0.5, 0.5, 0)];
   }
@@ -281,8 +277,7 @@ export function planeBoxPolygon(n: Vec3, d: number, half: number): Vec3[] {
   if (nLen === 0) return [];
   const eps = 1e-9 * Math.max(1, Math.abs(d));
   const signed: number[] = CUBE_CORNERS.map(
-    ([cx, cy, cz]) =>
-      n.x * cx * half + n.y * cy * half + n.z * cz * half - d,
+    ([cx, cy, cz]) => n.x * cx * half + n.y * cy * half + n.z * cz * half - d,
   );
   const pts: Vec3[] = [];
   const push = (x: number, y: number, z: number): void => {

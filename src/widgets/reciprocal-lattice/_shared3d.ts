@@ -128,9 +128,7 @@ export function createDualView(
   const makeScene = (): THREE.Scene => {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0xffffff);
-    scene.add(
-      new THREE.HemisphereLight(HEMI_SKY, HEMI_GROUND, HEMI_INTENSITY),
-    );
+    scene.add(new THREE.HemisphereLight(HEMI_SKY, HEMI_GROUND, HEMI_INTENSITY));
     const dir = new THREE.DirectionalLight(0xffffff, DIR_INTENSITY);
     dir.position.set(3, 6, 4);
     scene.add(dir);
@@ -544,12 +542,7 @@ export function createArrow3D(colorCss: string, shaftRadius: number): Arrow3D {
   const material = new THREE.MeshLambertMaterial({
     color: new THREE.Color(colorCss),
   });
-  const shaftGeom = new THREE.CylinderGeometry(
-    shaftRadius,
-    shaftRadius,
-    1,
-    12,
-  );
+  const shaftGeom = new THREE.CylinderGeometry(shaftRadius, shaftRadius, 1, 12);
   shaftGeom.translate(0, 0.5, 0); // 根元を原点に
   const headGeom = new THREE.ConeGeometry(shaftRadius * 2.6, 1, 16);
   headGeom.translate(0, 0.5, 0);

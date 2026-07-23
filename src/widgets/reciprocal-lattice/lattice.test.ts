@@ -112,7 +112,11 @@ describe("存在則と式 E9 由来の逆格子点の一致(§5.7 受け入れ�
   const key = (x: number, y: number, z: number): string =>
     `${Math.round(x)},${Math.round(y)},${Math.round(z)}`;
 
-  for (const lattice of ["sc", "bcc", "fcc"] as const satisfies readonly CubicLattice[]) {
+  for (const lattice of [
+    "sc",
+    "bcc",
+    "fcc",
+  ] as const satisfies readonly CubicLattice[]) {
     it(`${lattice.toUpperCase()}: |h|,|k|,|l| ≤ ${MAX} で完全一致`, () => {
       // 式 E9 由来: 基本並進ベクトルの双対基底の整数結合
       const fromPrimitive = new Set<string>();
