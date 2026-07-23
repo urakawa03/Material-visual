@@ -58,6 +58,40 @@ a.prereq-badge:hover {
   margin-top: 2.2rem;
 }
 
+/* ---- 静的図(SVG・意味パレット準拠) ---- */
+.static-fig {
+  margin: var(--space-figure) auto;
+  width: 100%;
+}
+
+.column .static-fig {
+  width: min(var(--width-figure), calc(100vw - var(--pad-edge) * 2));
+  margin-left: 50%;
+  transform: translateX(-50%);
+}
+
+.static-fig-frame {
+  border: 1px solid var(--color-hairline);
+  border-radius: 8px;
+  background: var(--color-bg);
+  padding: 8px;
+}
+
+.static-fig svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.static-fig figcaption {
+  margin-top: 10px;
+  font-size: var(--font-size-caption);
+  color: var(--color-text-2);
+  line-height: 1.7;
+  max-width: var(--width-column);
+  margin-inline: auto;
+}
+
 /* ---- 前後の記事ナビ(§3.2) ---- */
 .article-nav {
   display: flex;

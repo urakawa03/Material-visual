@@ -1,0 +1,182 @@
+---
+/**
+ * StaticLoopAnatomy.astro — 静的図 S-2(記事仕様書 02 §6)
+ * 拡大する転位ループの模式: 線の向き ξ の矢羽根、先端/後端 = 刃状・
+ * 側面 = らせんのラベル、「同じ b・逆の ξ → 相殺」の注記。
+ */
+interface Props {
+  caption: string;
+}
+const { caption } = Astro.props;
+---
+
+<figure class="static-fig">
+  <div class="static-fig-frame">
+    <svg
+      viewBox="0 0 720 330"
+      xmlns="http://www.w3.org/2000/svg"
+      role="img"
+      aria-label="拡大する転位ループの模式図。円形のループ上に線の向き ξ を示す矢印があり、進行方向の先端と後端は刃状、左右の側面はらせんと記されている。右側には、逆向きの線どうしが出会うと相殺されることを示す注記がある。"
+    >
+      {/* ループ本体(時計回りの ξ) */}
+      <g transform="translate(230 165)">
+        <circle
+          cx="0"
+          cy="0"
+          r="118"
+          fill="none"
+          stroke="var(--mat-defect)"
+          stroke-width="3"></circle>
+        {/* ξ の矢羽根(時計回り) */}
+        <g
+          stroke="var(--mat-defect)"
+          stroke-width="2.5"
+          fill="none"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path
+            d="M -8 -122 l 10 4 l -10 4"
+            transform="translate(8 4) rotate(0)"></path>
+          <path d="M 114 -8 l 4 10 l -8 2" transform="rotate(0)"></path>
+          <path d="M 8 122 l -10 -4 l 10 -4" transform="translate(-8 -4)"
+          ></path>
+          <path d="M -114 8 l -4 -10 l 8 -2"></path>
+        </g>
+        {/* 元の源の線分と固定点 */}
+        <line
+          x1="-52"
+          y1="0"
+          x2="52"
+          y2="0"
+          stroke="var(--mat-defect)"
+          stroke-width="2"
+          stroke-dasharray="4 4"
+          opacity="0.6"></line>
+        <circle cx="-52" cy="0" r="5" fill="var(--mat-precip)"></circle>
+        <circle cx="52" cy="0" r="5" fill="var(--mat-precip)"></circle>
+        {/* b の矢印(上向き = すべりの向き) */}
+        <path
+          d="M 0 26 V -30 m -8 12 l 8 -12 l 8 12"
+          stroke="var(--mat-defect)"
+          stroke-width="2.5"
+          fill="none"
+          stroke-linecap="round"
+          stroke-linejoin="round"></path>
+        <text
+          x="12"
+          y="-14"
+          font-size="15"
+          font-style="italic"
+          fill="var(--mat-defect)">b</text
+        >
+        {/* 部位ラベル */}
+        <text
+          x="0"
+          y="-138"
+          text-anchor="middle"
+          font-size="13"
+          fill="var(--color-text-2)">先端: 刃状(ξ ⊥ b)</text
+        >
+        <text
+          x="0"
+          y="152"
+          text-anchor="middle"
+          font-size="13"
+          fill="var(--color-text-2)">後端: 刃状(ξ ⊥ b)</text
+        >
+        <text
+          x="-132"
+          y="-16"
+          text-anchor="end"
+          font-size="13"
+          fill="var(--color-text-2)">側面:</text
+        >
+        <text
+          x="-132"
+          y="2"
+          text-anchor="end"
+          font-size="13"
+          fill="var(--color-text-2)">らせん(ξ ∥ b)</text
+        >
+        <text x="132" y="-16" font-size="13" fill="var(--color-text-2)"
+          >側面:</text
+        >
+        <text x="132" y="2" font-size="13" fill="var(--color-text-2)"
+          >らせん(ξ ∥ b)</text
+        >
+        <text
+          x="0"
+          y="52"
+          text-anchor="middle"
+          font-size="12"
+          fill="var(--color-text-2)">ξ はループを一周する向き</text
+        >
+      </g>
+      {/* 相殺の注記 */}
+      <g transform="translate(540 120)">
+        <text
+          x="0"
+          y="0"
+          text-anchor="middle"
+          font-size="13.5"
+          fill="var(--color-text)">出会う 2 本の線分</text
+        >
+        <g
+          stroke="var(--mat-defect)"
+          stroke-width="3"
+          fill="none"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M -55 30 h 110 m -12 -7 l 12 7 l -12 7"></path>
+          <path d="M 55 62 h -110 m 12 -7 l -12 7 l 12 7"></path>
+        </g>
+        <text
+          x="70"
+          y="35"
+          font-size="13"
+          font-style="italic"
+          fill="var(--mat-defect)">ξ</text
+        >
+        <text
+          x="-78"
+          y="67"
+          font-size="13"
+          font-style="italic"
+          fill="var(--mat-defect)">ξ</text
+        >
+        <text
+          x="0"
+          y="100"
+          text-anchor="middle"
+          font-size="13.5"
+          fill="var(--color-text)">同じ b・逆の ξ</text
+        >
+        <path
+          d="M 0 112 v 18 m -7 -8 l 7 8 l 7 -8"
+          stroke="var(--color-text-2)"
+          stroke-width="2"
+          fill="none"
+          stroke-linecap="round"
+          stroke-linejoin="round"></path>
+        <text
+          x="0"
+          y="152"
+          text-anchor="middle"
+          font-size="14"
+          font-weight="600"
+          fill="var(--mat-defect)">相殺(対消滅)</text
+        >
+        <text
+          x="0"
+          y="176"
+          text-anchor="middle"
+          font-size="12.5"
+          fill="var(--color-text-2)">ずれが打ち消し合い、格子が元に戻る</text
+        >
+      </g>
+    </svg>
+  </div>
+  <figcaption>{caption}</figcaption>
+</figure>

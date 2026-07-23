@@ -1,0 +1,129 @@
+---
+/**
+ * StaticCarpet.astro — 静的図 S-1(記事仕様書 02 §6)
+ * じゅうたんのしわの比喩: 全体を引きずる vs しわを送る、の 3 コマ。
+ * 意味パレット準拠(じゅうたん = --mat-matrix、しわ = --mat-defect)。
+ */
+interface Props {
+  caption: string;
+}
+const { caption } = Astro.props;
+---
+
+<figure class="static-fig">
+  <div class="static-fig-frame">
+    <svg
+      viewBox="0 0 720 190"
+      xmlns="http://www.w3.org/2000/svg"
+      role="img"
+      aria-label="じゅうたんのしわの比喩の 3 コマ。1 コマ目は重いじゅうたん全体を一度に引きずる様子、2〜3 コマ目は小さなしわを作って端まで送ると全体が少しずつ動く様子。"
+    >
+      {/* --- コマ 1: 全体を引きずる --- */}
+      <g>
+        <line
+          x1="20"
+          y1="150"
+          x2="220"
+          y2="150"
+          stroke="var(--color-hairline)"
+          stroke-width="2"></line>
+        <rect
+          x="40"
+          y="132"
+          width="150"
+          height="14"
+          rx="7"
+          fill="var(--mat-matrix)"></rect>
+        <path
+          d="M 196 139 h 34 m -10 -7 l 10 7 l -10 7"
+          stroke="var(--mat-solute)"
+          stroke-width="3"
+          fill="none"
+          stroke-linecap="round"
+          stroke-linejoin="round"></path>
+        <text
+          x="120"
+          y="176"
+          text-anchor="middle"
+          font-size="13"
+          fill="var(--color-text-2)">全体を一度に引きずる(重い)</text
+        >
+        <text
+          x="120"
+          y="30"
+          text-anchor="middle"
+          font-size="14"
+          fill="var(--color-text-2)">×</text
+        >
+      </g>
+      {/* --- コマ 2: しわを作る --- */}
+      <g transform="translate(245 0)">
+        <line
+          x1="20"
+          y1="150"
+          x2="220"
+          y2="150"
+          stroke="var(--color-hairline)"
+          stroke-width="2"></line>
+        <path
+          d="M 40 146 L 88 146 Q 104 146 110 132 Q 116 118 122 132 Q 128 146 144 146 L 190 146"
+          fill="none"
+          stroke="var(--mat-matrix)"
+          stroke-width="14"
+          stroke-linecap="round"></path>
+        <path
+          d="M 116 108 m -8 14 q 8 -14 16 0"
+          stroke="var(--mat-defect)"
+          stroke-width="0"
+          fill="none"></path>
+        <circle cx="116" cy="125" r="5" fill="var(--mat-defect)"></circle>
+        <text
+          x="116"
+          y="100"
+          text-anchor="middle"
+          font-size="13"
+          fill="var(--mat-defect)">しわ</text
+        >
+        <text
+          x="120"
+          y="176"
+          text-anchor="middle"
+          font-size="13"
+          fill="var(--color-text-2)">小さなしわを 1 つ作る</text
+        >
+      </g>
+      {/* --- コマ 3: しわを送る --- */}
+      <g transform="translate(490 0)">
+        <line
+          x1="20"
+          y1="150"
+          x2="220"
+          y2="150"
+          stroke="var(--color-hairline)"
+          stroke-width="2"></line>
+        <path
+          d="M 48 146 L 128 146 Q 144 146 150 132 Q 156 118 162 132 Q 168 146 184 146 L 198 146"
+          fill="none"
+          stroke="var(--mat-matrix)"
+          stroke-width="14"
+          stroke-linecap="round"></path>
+        <circle cx="156" cy="125" r="5" fill="var(--mat-defect)"></circle>
+        <path
+          d="M 140 104 h 32 m -10 -7 l 10 7 l -10 7"
+          stroke="var(--mat-defect)"
+          stroke-width="2.5"
+          fill="none"
+          stroke-linecap="round"
+          stroke-linejoin="round"></path>
+        <text
+          x="120"
+          y="176"
+          text-anchor="middle"
+          font-size="13"
+          fill="var(--color-text-2)">しわを端まで送る(軽い)</text
+        >
+      </g>
+    </svg>
+  </div>
+  <figcaption>{caption}</figcaption>
+</figure>

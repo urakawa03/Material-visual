@@ -13,4 +13,18 @@ export const registry: Record<
   () => Promise<{ default: WidgetFactory }>
 > = {
   "_sample/brownian": () => import("./_sample/brownian"),
+  "frank-read-source/theoretical-strength": () =>
+    import("./frank-read-source/theoretical-strength"),
+  "frank-read-source/glide-step": () =>
+    import("./frank-read-source/glide-step"),
+  "frank-read-source/line-tension-bow": () =>
+    import("./frank-read-source/line-tension-bow"),
+  "frank-read-source/critical-semicircle": () =>
+    import("./frank-read-source/critical-semicircle"),
+  "frank-read-source/source-operation": () =>
+    import("./frank-read-source/source-operation"),
+  "frank-read-source/critical-stress-explorer": () =>
+    import("./frank-read-source/critical-stress-explorer"),
+  "frank-read-source/pileup-backstress": () =>
+    import("./frank-read-source/pileup-backstress"),
 };

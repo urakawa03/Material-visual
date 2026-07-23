@@ -72,7 +72,7 @@ export const TOPICS: readonly Topic[] = [
     summary: "1 本の転位が増殖する仕組みを、線の張り出しから追いかける。",
     render: "2d",
     prerequisites: [],
-    published: false,
+    published: true,
   },
   {
     order: 4,
