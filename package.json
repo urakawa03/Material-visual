@@ -1,0 +1,38 @@
+{
+  "name": "material-visual",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "うごく材料科学(仮称)— インタラクティブ材料科学教材サイトの母体",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp"
+    ]
+  },
+  "dependencies": {
+    "astro": "^5.18.2",
+    "katex": "^0.18.1",
+    "three": "0.185.1"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.9",
+    "@types/katex": "^0.16.8",
+    "@types/three": "^0.185.1",
+    "eslint": "^9.39.5",
+    "eslint-plugin-astro": "^1.7.0",
+    "prettier": "^3.9.6",
+    "prettier-plugin-astro": "^0.14.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.65.0"
+  }
+}

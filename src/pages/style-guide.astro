@@ -1,0 +1,218 @@
+---
+/**
+ * style-guide.astro — デザインシステムと共通部品の確認ページ(仕様書 §9.3)
+ *
+ * デザイントークン一覧・タイポグラフィ見本・全コントロール部品・
+ * 数式サンプル・参照ウィジェット(ブラウン運動デモ)を掲載する。
+ * 開発用だが公開してよい。
+ */
+import Base from "../layouts/Base.astro";
+import Figure from "../components/Figure.astro";
+import M from "../components/M.astro";
+import { MAT_COLORS, UI_COLORS } from "../core/colors";
+import "../styles/controls.css";
+
+const uiSwatches = [
+  { name: "--color-bg", value: UI_COLORS.bg, note: "ページ背景" },
+  { name: "--color-text", value: UI_COLORS.text, note: "本文" },
+  { name: "--color-text-2", value: UI_COLORS.text2, note: "図注・補足" },
+  { name: "--color-hairline", value: UI_COLORS.hairline, note: "罫線・補助線" },
+  { name: "--color-accent", value: UI_COLORS.accent, note: "リンク・操作部品" },
+  {
+    name: "--color-accent-strong",
+    value: UI_COLORS.accentStrong,
+    note: "hover",
+  },
+];
+
+const matSwatches = [
+  { name: "--mat-matrix", value: MAT_COLORS.matrix, note: "母相の原子・格子" },
+  { name: "--mat-solute", value: MAT_COLORS.solute, note: "溶質・不純物原子" },
+  { name: "--mat-second", value: MAT_COLORS.second, note: "拡散対のもう一方" },
+  { name: "--mat-defect", value: MAT_COLORS.defect, note: "転位線・欠陥" },
+  { name: "--mat-precip", value: MAT_COLORS.precip, note: "析出物・GP ゾーン" },
+  { name: "--mat-beam", value: MAT_COLORS.beam, note: "入射・回折ビーム" },
+  { name: "--mat-recip", value: MAT_COLORS.recip, note: "逆格子点" },
+  {
+    name: "--mat-sphere-fill",
+    value: MAT_COLORS.sphereFill,
+    note: "エヴァルト球(塗り)",
+  },
+  {
+    name: "--mat-sphere-line",
+    value: MAT_COLORS.sphereLine,
+    note: "エヴァルト球(線)",
+  },
+  { name: "--mat-tension", value: MAT_COLORS.tension, note: "引張応力場" },
+  {
+    name: "--mat-compression",
+    value: MAT_COLORS.compression,
+    note: "圧縮応力場",
+  },
+];
+---
+
+<Base
+  title="スタイルガイド"
+  description="デザイントークン・操作部品・数式・参照ウィジェットの確認ページ(開発用)。"
+>
+  <div class="column">
+    <article>
+      <header class="article-header">
+        <p class="category-label">開発用リファレンス</p>
+        <h1>スタイルガイド</h1>
+        <p class="lead">
+          このサイトの視覚言語をひとまとめにした確認ページです。全記事はここにある
+          トークン・部品だけで組み立てます。新しい色や部品が必要になったら、
+          まず仕様書(§6.2)への追加を提案してください。
+        </p>
+      </header>
+
+      <h2>UI カラートークン</h2>
+      <ul class="swatch-grid">
+        {
+          uiSwatches.map((s) => (
+            <li class="swatch">
+              <div class="swatch-chip" style={`background: var(${s.name});`} />
+              <strong>{s.note}</strong>
+              <br />
+              <code>
+                {s.name} = {s.value}
+              </code>
+            </li>
+          ))
+        }
+      </ul>
+
+      <h2>意味パレット(全記事共通)</h2>
+      <p>
+        科学的対象の色は全記事で固定し、記事をまたいだ一貫性を作ります。
+        同じ対象は、どの記事でも必ず同じ色で描かれます。
+      </p>
+      <ul class="swatch-grid">
+        {
+          matSwatches.map((s) => (
+            <li class="swatch">
+              <div class="swatch-chip" style={`background: var(${s.name});`} />
+              <strong>{s.note}</strong>
+              <br />
+              <code>
+                {s.name} = {s.value}
+              </code>
+            </li>
+          ))
+        }
+        <li class="swatch">
+          <div class="swatch-chip is-vacancy"></div>
+          <strong>空孔</strong>
+          <br />
+          <code>塗りなし + --mat-matrix の破線縁</code>
+        </li>
+      </ul>
+
+      <h2>タイポグラフィ</h2>
+      <p>
+        本文は 17px / 行送り 1.95。システムフォントのみで組みます(Web
+        フォント不使用)。専門用語は初出で英語を併記します——例: 逆格子(reciprocal
+        lattice)。
+      </p>
+      <h3>見出しレベル 3(18px)の見本</h3>
+      <p>
+        数値の読み出しには等幅数字を使います:
+        <span class="num">300 K / 600 K / 1200 K</span>。 図注は 14px
+        で補足色になります。
+      </p>
+
+      <h2>操作部品</h2>
+      <p>
+        すべてネイティブ要素ベースで、キーボードだけで操作できます。
+        値の変更は即時反映が原則です(Apply ボタン方式は使いません)。
+      </p>
+      <div class="ix-controls" id="controls-demo"></div>
+
+      <h2>数式</h2>
+      <p>
+        数式はビルド時に KaTeX で HTML 化されます(クライアント JS ゼロ)。
+        数式中の変数は、図中の対応する要素と同じ色で示せます——たとえば 溶質濃度 <M
+          tex={String.raw`\msol{C}`}
+        /> と欠陥のエネルギー
+        <M tex={String.raw`\mdef{U}`} />:
+      </p>
+      <M
+        block
+        tex={String.raw`\msol{C}(r) = \msol{C_0}\,\exp\!\left(-\,\frac{\mdef{U}(r)}{k_{\mathrm{B}}\,T}\right)`}
+      />
+      <p>
+        逆格子ベクトル <M tex={String.raw`\mrecip{\vec{g}_{hkl}}`} /> や入射波数ベクトル
+        <M tex={String.raw`\mbeam{\vec{k}_0}`} /> も同様です:
+      </p>
+      <M
+        block
+        tex={String.raw`\mrecip{\vec{g}_{hkl}} = h\,\vec{a}^{*} + k\,\vec{b}^{*} + l\,\vec{c}^{*}`}
+      />
+
+      <h2>参照ウィジェット: ブラウン運動デモ</h2>
+      <p>
+        engine / controls / DPR / タッチ / 省モーション / 画面外停止の全機構を
+        確認するためのデモです。下の図で、オレンジ色の溶質原子をドラッグして
+        放り投げてみてください。スライダーで温度を上げると、運動が激しくなります。
+      </p>
+      <Figure
+        widget="_sample/brownian"
+        id="fig-sample-brownian"
+        caption="図1. ブラウン運動デモ。温度スライダーで熱運動の激しさが変わる。簡略化: 運動は 2 次元で、原子数は 60 個に減らしてある。時間・距離のスケールは実在材料とは対応しない。"
+        alt="白い箱の中で灰青色の原子 60 個が細かく揺れ動く。オレンジ色の溶質原子が 1 個だけあり、ドラッグで動かせる。温度スライダーを上げると全体の運動が激しくなる。"
+      />
+    </article>
+  </div>
+</Base>
+
+<script>
+  // 操作部品の単体デモ(図版に紐付かないため demoAdapter を使う)
+  import { Controls } from "../core/controls";
+
+  const host = document.getElementById("controls-demo");
+  if (host instanceof HTMLElement) {
+    const c = new Controls(host, Controls.demoAdapter());
+    const temp = c.slider({
+      id: "demo-temp",
+      label: "温度",
+      min: 300,
+      max: 900,
+      step: 5,
+      value: 600,
+      unit: "K",
+    });
+    c.slider({
+      id: "demo-conc",
+      label: "溶質濃度(対数)",
+      min: 0.0001,
+      max: 0.1,
+      value: 0.001,
+      scale: "log",
+      unit: "at.%",
+    });
+    const field = c.toggle({
+      id: "demo-field",
+      label: "応力場を表示",
+      value: true,
+    });
+    const mode = c.segmented({
+      id: "demo-mode",
+      label: "表示モード",
+      value: "atoms",
+      options: [
+        { value: "atoms", label: "原子" },
+        { value: "field", label: "応力場" },
+        { value: "both", label: "両方" },
+      ],
+    });
+    c.playPause();
+    c.reset(() => {
+      temp.set(600);
+      field.set(true);
+      mode.set("atoms");
+    });
+    c.button({ label: "汎用ボタン" });
+  }
+</script>

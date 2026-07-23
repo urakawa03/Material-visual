@@ -1,0 +1,47 @@
+/*
+ * tokens.css — デザイントークン(仕様書 §6)
+ * 色は必ずこの CSS 変数経由で参照する(値の直書き禁止 — §13 ダークモード対応の布石)。
+ * 意味パレット(--mat-*)は src/core/colors.ts と同値で二重定義している。
+ * 片方を変えるときは必ずもう片方も変えること。
+ */
+:root {
+  /* ---- UI カラートークン(§6.1) ---- */
+  --color-bg: #ffffff; /* ページ背景。図版の背景も白で統一 */
+  --color-text: #1c1e21; /* 本文 */
+  --color-text-2: #55606e; /* 図注・補足・メタ情報 */
+  --color-hairline: #e6e8eb; /* 罫線・図版内の補助線 */
+  --color-accent: #2e6f95; /* リンク・スライダー・フォーカスリング */
+  --color-accent-strong: #1f5573; /* リンク hover 等 */
+
+  /* ---- 意味パレット(§6.2・全記事共通・図版用) ---- */
+  --mat-matrix: #9aa7b8; /* 母相の原子・格子 */
+  --mat-solute: #e07a2f; /* 溶質・不純物原子(Fe 中の C、Al 中の Cu など) */
+  --mat-second: #4f83cc; /* 拡散対のもう一方の元素 */
+  --mat-defect: #d1483f; /* 転位線・欠陥 */
+  --mat-precip: #7d5bc7; /* 析出物・クラスター・GP ゾーン */
+  /* 空孔は「塗りなし + --mat-matrix の破線縁」で表現する(専用の塗り色は持たない) */
+  --mat-beam: #d99000; /* 入射・回折ビーム(X 線・電子線) */
+  --mat-recip: #2f3a4a; /* 逆格子点 */
+  --mat-sphere-fill: rgba(15, 138, 138, 0.14); /* エヴァルト球面(塗り) */
+  --mat-sphere-line: #0f8a8a; /* エヴァルト球面(線) */
+  --mat-tension: rgba(209, 72, 63, 0.12); /* 引張応力場の塗り */
+  --mat-compression: rgba(79, 131, 204, 0.12); /* 圧縮応力場の塗り */
+
+  /* ---- タイポグラフィ(§6.3) ---- */
+  --font-sans:
+    "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans",
+    "Noto Sans JP", "Yu Gothic Medium", Meiryo, sans-serif;
+  --font-size-body: 17px;
+  --line-height-body: 1.95;
+  --font-size-h1: 30px;
+  --font-size-h2: 23px;
+  --font-size-h3: 18px;
+  --font-size-caption: 14px;
+
+  /* ---- レイアウト(§6.4) ---- */
+  --width-column: 42rem; /* 本文カラム */
+  --width-figure: 54rem; /* 図版ブレイクアウト */
+  --space-section: 4rem; /* h2 セクション間 */
+  --space-figure: 2.5rem; /* 図版の上下 */
+  --pad-edge: 12px; /* 600px 以下での図版左右パディング */
+}

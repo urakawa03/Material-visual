@@ -1,0 +1,51 @@
+---
+/**
+ * Figure.astro — インタラクティブ図版コンテナ(仕様書 §8.1)
+ *
+ * - widget: "<slug>/<name>" 形式の図版 ID(registry.ts に登録済みであること)
+ * - alt: スクリーンリーダー向けの内容説明(必須 — §10.2)
+ * - 図番号は自動採番しない。caption に「図3. …」のように手書きする(§8.1)
+ */
+import "../styles/controls.css";
+
+interface Props {
+  /** 図版 ID("<slug>/<name>" 形式・必須) */
+  widget: string;
+  /** アスペクト比(既定 "16/10") */
+  aspect?: string;
+  /** 図注(図番号込みで手書き) */
+  caption?: string;
+  /** スクリーンリーダー向けの内容説明(必須) */
+  alt: string;
+  /** 図版の最大幅(例 "40rem"。既定はブレイクアウト幅) */
+  maxWidth?: string;
+  /** 要素 id。省略時は widget から生成 */
+  id?: string;
+}
+
+const { widget, aspect = "16/10", caption, alt, maxWidth, id } = Astro.props;
+const figId =
+  id ?? `fig-${widget.replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
+---
+
+<figure
+  class="ix"
+  id={figId}
+  data-widget={widget}
+  data-aspect={aspect}
+  style={maxWidth ? `max-width: ${maxWidth};` : undefined}
+>
+  <div class="ix-stage" style={`aspect-ratio: ${aspect};`}>
+    <canvas aria-hidden="true"></canvas>
+  </div>
+  <div class="ix-controls"></div>
+  {caption && <figcaption>{caption}</figcaption>}
+  <p class="sr-only">{alt}</p>
+</figure>
+
+<script>
+  // ページ内の全図版を engine に登録する(スクリプトは Astro が重複排除
+  // するため、Figure が何個あっても 1 回だけ実行される)
+  import { initFigures } from "../core/engine";
+  initFigures();
+</script>

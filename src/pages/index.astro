@@ -1,0 +1,41 @@
+---
+/**
+ * index.astro — トップページ(仕様書 §9.1)
+ * 3 カテゴリごとにテーマカードを並べる。準備中の記事も 7 枚すべて表示。
+ */
+import Base from "../layouts/Base.astro";
+import TopicCard from "../components/TopicCard.astro";
+import { CATEGORIES, TOPICS } from "../content/topics";
+import { SITE } from "../content/site";
+---
+
+<Base showHeader={false}>
+  <div class="column">
+    <section class="hero">
+      <h1>
+        {SITE.name}
+        <span class="site-title-en">{SITE.nameEn}</span>
+      </h1>
+      <p class="hero-tagline">
+        {
+          SITE.tagline
+        }ための教材サイトです。すべての図版はスライダーやドラッグで操作でき、あなたの手に応えて物理が動きます。
+      </p>
+    </section>
+
+    {
+      CATEGORIES.map((cat) => (
+        <section class="topic-section">
+          <h2>{cat.name}</h2>
+          <div class="topic-grid">
+            {TOPICS.filter((t) => t.category === cat.id)
+              .sort((a, b) => a.order - b.order)
+              .map((t) => (
+                <TopicCard topic={t} />
+              ))}
+          </div>
+        </section>
+      ))
+    }
+  </div>
+</Base>

@@ -1,0 +1,111 @@
+---
+/**
+ * Article.astro — 記事レイアウト(仕様書 §9.2)
+ *
+ * 上から: カテゴリラベル / h1 / リード文 / 前提バッジ / 本文(slot)/
+ * 前後の記事ナビ / フッター(Base 側)。
+ *
+ * 7 テーマの記事は slug を渡せば topics.ts からメタ情報を解決する。
+ * ダミー記事などは title / lead / categoryLabel を直接指定する。
+ */
+import Base from "./Base.astro";
+import { getAdjacent, getCategory, getTopic } from "../content/topics";
+import { withBase } from "../lib/paths";
+import "../styles/article.css";
+
+interface Props {
+  /** topics.ts に登録済みの記事はこれだけ渡せばよい */
+  slug?: string;
+  /** slug 未登録ページ(ダミー記事など)用の直接指定 */
+  title?: string;
+  lead?: string;
+  categoryLabel?: string;
+  description?: string;
+}
+
+const {
+  slug,
+  title: titleProp,
+  lead: leadProp,
+  categoryLabel: catProp,
+  description,
+} = Astro.props;
+
+const topic = slug ? getTopic(slug) : undefined;
+const title = titleProp ?? topic?.title ?? "無題";
+const lead = leadProp ?? topic?.summary;
+const categoryLabel =
+  catProp ?? (topic ? getCategory(topic.category).name : undefined);
+
+const prereqs = (topic?.prerequisites ?? [])
+  .map((p) => {
+    const t = getTopic(p.slug);
+    return t ? { topic: t, recommended: p.recommended } : undefined;
+  })
+  .filter((v): v is NonNullable<typeof v> => v !== undefined);
+
+const { prev, next } = topic
+  ? getAdjacent(topic.slug)
+  : { prev: undefined, next: undefined };
+---
+
+<Base title={title} description={description ?? lead}>
+  <article class="column">
+    <header class="article-header">
+      {categoryLabel && <p class="category-label">{categoryLabel}</p>}
+      <h1 class="article-title">{title}</h1>
+      {lead && <p class="lead">{lead}</p>}
+      {
+        prereqs.length > 0 && (
+          <p class="prereq-row">
+            <span>前提:</span>
+            {prereqs.map(({ topic: t, recommended }) =>
+              t.published ? (
+                <a class="prereq-badge" href={withBase(`/articles/${t.slug}/`)}>
+                  {t.title}
+                  {recommended && "(推奨)"}
+                </a>
+              ) : (
+                <span class="prereq-badge">
+                  {t.title}
+                  {recommended && "(推奨)"}(準備中)
+                </span>
+              ),
+            )}
+          </p>
+        )
+      }
+    </header>
+
+    <div class="article-body">
+      <slot />
+    </div>
+
+    {
+      (prev || next) && (
+        <nav class="article-nav" aria-label="前後の記事">
+          {prev && (
+            <p class="nav-prev">
+              <span class="nav-label">前の記事</span>
+              {prev.published ? (
+                <a href={withBase(`/articles/${prev.slug}/`)}>← {prev.title}</a>
+              ) : (
+                <span class="nav-planned">← {prev.title}(準備中)</span>
+              )}
+            </p>
+          )}
+          {next && (
+            <p class="nav-next">
+              <span class="nav-label">次の記事</span>
+              {next.published ? (
+                <a href={withBase(`/articles/${next.slug}/`)}>{next.title} →</a>
+              ) : (
+                <span class="nav-planned">{next.title}(準備中)→</span>
+              )}
+            </p>
+          )}
+        </nav>
+      )
+    }
+  </article>
+</Base>

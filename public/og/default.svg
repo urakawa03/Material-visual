@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <!-- OGP プレースホルダ画像(単色 + サイト名 — §14)。後から差し替え可能 -->
+  <rect width="1200" height="630" fill="#2e6f95"/>
+  <text x="600" y="300" text-anchor="middle" font-family="'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif" font-size="72" font-weight="600" fill="#ffffff">うごく材料科学</text>
+  <text x="600" y="380" text-anchor="middle" font-family="'Helvetica Neue', Arial, sans-serif" font-size="34" fill="#cfe0ea">Materials in Motion</text>
+</svg>

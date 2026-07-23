@@ -1,0 +1,54 @@
+---
+/**
+ * TopicCard.astro — トップページのテーマカード(仕様書 §9.1)
+ *
+ * 静的 SVG サムネイル + タイトル + 一行説明 + 前提バッジ + 公開状態。
+ * 準備中の記事はリンク無効のカードとして表示する。
+ */
+import type { Topic } from "../content/topics";
+import { getTopic } from "../content/topics";
+import { withBase } from "../lib/paths";
+import { thumbSvg } from "./topicThumbs";
+
+interface Props {
+  topic: Topic;
+}
+
+const { topic } = Astro.props;
+const href = withBase(`/articles/${topic.slug}/`);
+const thumb = thumbSvg(topic.slug);
+const prereqTitles = topic.prerequisites
+  .map((p) => {
+    const t = getTopic(p.slug);
+    return t ? `${t.title}${p.recommended ? "(推奨)" : ""}` : undefined;
+  })
+  .filter((v): v is string => v !== undefined);
+---
+
+{
+  topic.published ? (
+    <a class="topic-card" href={href}>
+      <Fragment set:html={thumb} />
+      <h3 class="topic-card-title">{topic.title}</h3>
+      <p class="topic-card-summary">{topic.summary}</p>
+      <p class="topic-card-meta">
+        <span class="badge badge-published">公開</span>
+        {prereqTitles.map((t) => (
+          <span class="badge">前提: {t}</span>
+        ))}
+      </p>
+    </a>
+  ) : (
+    <div class="topic-card is-planned" aria-disabled="true">
+      <Fragment set:html={thumb} />
+      <h3 class="topic-card-title">{topic.title}</h3>
+      <p class="topic-card-summary">{topic.summary}</p>
+      <p class="topic-card-meta">
+        <span class="badge">準備中</span>
+        {prereqTitles.map((t) => (
+          <span class="badge">前提: {t}</span>
+        ))}
+      </p>
+    </div>
+  )
+}

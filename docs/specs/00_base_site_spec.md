@@ -10,19 +10,19 @@
 - **想定読者**: 材料系の学部生・高専生・大学院初年度、および社会人の独学者。高校物理と初歩の結晶学の知識を仮定し、不足分は記事内で補う。
 - **形態**: 完全な静的サイト。サーバ・DB・ログイン・アナリティクスは持たない。
 - **言語**: 日本語のみ(`lang="ja"`)。コードの識別子は英語、コメントは日本語可。
-- **サイト名**: 仮称「**うごく材料科学**」(英題仮: *Materials in Motion*)。プレースホルダとして実装し、後から一箇所の定数で差し替えられるようにする。
+- **サイト名**: 仮称「**うごく材料科学**」(英題仮: _Materials in Motion_)。プレースホルダとして実装し、後から一箇所の定数で差し替えられるようにする。
 
 ### 収録予定テーマ(全7本)
 
-| # | カテゴリ | 記事(仮題) | slug | 主な描画 | 前提記事 |
-|---|---|---|---|---|---|
-| 1 | A. 回折と結晶の幾何 | 逆格子空間 | `reciprocal-lattice` | 3D (WebGL) | なし |
-| 2 | A. 回折と結晶の幾何 | エヴァルト球 | `ewald-sphere` | 3D (WebGL) | 逆格子空間 |
-| 3 | B. 転位と材料の強さ | フランク・リード源 | `frank-read-source` | 2D Canvas | なし |
-| 4 | B. 転位と材料の強さ | コットレル雰囲気 | `cottrell-atmosphere` | 2D Canvas | フランク・リード源(推奨) |
-| 5 | C. 拡散と組織の変化 | カーケンドール効果 | `kirkendall-effect` | 2D Canvas | なし |
-| 6 | C. 拡散と組織の変化 | GPゾーン(ジュラルミンの時効) | `gp-zones` | 2D Canvas(3D補助は任意) | カーケンドール効果(推奨) |
-| 7 | C. 拡散と組織の変化 | オストワルド成長 | `ostwald-ripening` | 2D Canvas | GPゾーン(推奨) |
+| #   | カテゴリ            | 記事(仮題)                   | slug                  | 主な描画                | 前提記事                 |
+| --- | ------------------- | ---------------------------- | --------------------- | ----------------------- | ------------------------ |
+| 1   | A. 回折と結晶の幾何 | 逆格子空間                   | `reciprocal-lattice`  | 3D (WebGL)              | なし                     |
+| 2   | A. 回折と結晶の幾何 | エヴァルト球                 | `ewald-sphere`        | 3D (WebGL)              | 逆格子空間               |
+| 3   | B. 転位と材料の強さ | フランク・リード源           | `frank-read-source`   | 2D Canvas               | なし                     |
+| 4   | B. 転位と材料の強さ | コットレル雰囲気             | `cottrell-atmosphere` | 2D Canvas               | フランク・リード源(推奨) |
+| 5   | C. 拡散と組織の変化 | カーケンドール効果           | `kirkendall-effect`   | 2D Canvas               | なし                     |
+| 6   | C. 拡散と組織の変化 | GPゾーン(ジュラルミンの時効) | `gp-zones`            | 2D Canvas(3D補助は任意) | カーケンドール効果(推奨) |
+| 7   | C. 拡散と組織の変化 | オストワルド成長             | `ostwald-ripening`    | 2D Canvas               | GPゾーン(推奨)           |
 
 各記事は自己完結とし、前提記事はページ冒頭に「前提: ◯◯」としてリンクを置くにとどめる(読了必須にはしない)。
 
@@ -49,12 +49,12 @@
 
 ### 3.1 ページ構成と URL
 
-| URL | 内容 |
-|---|---|
-| `/` | トップページ(テーマ一覧) |
-| `/articles/<slug>/` | 各記事(7本) |
-| `/style-guide/` | デザインシステムと共通部品の確認ページ(開発用だが公開してよい) |
-| `/about/` | サイトについて |
+| URL                 | 内容                                                           |
+| ------------------- | -------------------------------------------------------------- |
+| `/`                 | トップページ(テーマ一覧)                                       |
+| `/articles/<slug>/` | 各記事(7本)                                                    |
+| `/style-guide/`     | デザインシステムと共通部品の確認ページ(開発用だが公開してよい) |
+| `/about/`           | サイトについて                                                 |
 
 - URL は trailing slash で統一。
 - 各ページに `title` / `meta description` を設定。OGP 画像はプレースホルダ(単色 + サイト名テキスト)を用意し、後から差し替え可能にする。
@@ -69,15 +69,15 @@
 
 ## 4. 技術スタック
 
-| 採用技術 | 用途 | 採用理由 |
-|---|---|---|
-| **Astro(v5 系・最新安定版, static output)** | サイト骨格・ビルド | 複数記事でレイアウト/部品を共有しつつ、出力はほぼ素の HTML。クライアント JS は自前ウィジェットのみになる |
-| **TypeScript(strict)** | 全コード | 型安全。`any` 禁止 |
-| **Canvas 2D API(素)** | 2D 図版 | 描画ライブラリ不使用。完全な制御と軽さを優先 |
-| **Three.js(バージョン完全固定, 動的 import)** | 3D 図版(逆格子・エヴァルト球のみ) | 3D の車輪の再発明を避ける。該当ページ以外では 1 バイトも読み込まない |
-| **KaTeX** | 数式 | ビルド時に HTML 化し、クライアント JS ゼロで数式表示 |
-| **素の CSS(カスタムプロパティ)** | スタイル | デザイントークンを CSS 変数で一元管理 |
-| **pnpm / ESLint / Prettier** | 開発環境 | 標準構成 |
+| 採用技術                                      | 用途                              | 採用理由                                                                                                 |
+| --------------------------------------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| **Astro(v5 系・最新安定版, static output)**   | サイト骨格・ビルド                | 複数記事でレイアウト/部品を共有しつつ、出力はほぼ素の HTML。クライアント JS は自前ウィジェットのみになる |
+| **TypeScript(strict)**                        | 全コード                          | 型安全。`any` 禁止                                                                                       |
+| **Canvas 2D API(素)**                         | 2D 図版                           | 描画ライブラリ不使用。完全な制御と軽さを優先                                                             |
+| **Three.js(バージョン完全固定, 動的 import)** | 3D 図版(逆格子・エヴァルト球のみ) | 3D の車輪の再発明を避ける。該当ページ以外では 1 バイトも読み込まない                                     |
+| **KaTeX**                                     | 数式                              | ビルド時に HTML 化し、クライアント JS ゼロで数式表示                                                     |
+| **素の CSS(カスタムプロパティ)**              | スタイル                          | デザイントークンを CSS 変数で一元管理                                                                    |
+| **pnpm / ESLint / Prettier**                  | 開発環境                          | 標準構成                                                                                                 |
 
 **禁止事項**: React / Vue / Svelte 等のクライアントフレームワーク、Tailwind 等の CSS フレームワーク、Web フォント(v1 では不使用)、アナリティクス、jQuery、CDN からの実行時読み込み(依存はすべて npm 経由でバンドル)。
 
@@ -137,31 +137,31 @@
 
 ### 6.1 UI カラートークン
 
-| CSS 変数 | 値 | 用途 |
-|---|---|---|
-| `--color-bg` | `#ffffff` | ページ背景。図版の背景も白で統一 |
-| `--color-text` | `#1c1e21` | 本文 |
-| `--color-text-2` | `#55606e` | 図注・補足・メタ情報 |
-| `--color-hairline` | `#e6e8eb` | 罫線・図版内の補助線 |
-| `--color-accent` | `#2e6f95` | リンク・スライダー・フォーカスリング(鋼の焼戻し色を想起させる青) |
-| `--color-accent-strong` | `#1f5573` | リンク hover 等 |
+| CSS 変数                | 値        | 用途                                                             |
+| ----------------------- | --------- | ---------------------------------------------------------------- |
+| `--color-bg`            | `#ffffff` | ページ背景。図版の背景も白で統一                                 |
+| `--color-text`          | `#1c1e21` | 本文                                                             |
+| `--color-text-2`        | `#55606e` | 図注・補足・メタ情報                                             |
+| `--color-hairline`      | `#e6e8eb` | 罫線・図版内の補助線                                             |
+| `--color-accent`        | `#2e6f95` | リンク・スライダー・フォーカスリング(鋼の焼戻し色を想起させる青) |
+| `--color-accent-strong` | `#1f5573` | リンク hover 等                                                  |
 
 ### 6.2 意味パレット(図版用・全記事共通)
 
 科学的対象の色は**全記事で固定**し、記事をまたいだ一貫性(= このサイトの視覚言語)を作る。CSS 変数と `src/core/colors.ts` の両方に同値で定義する。
 
-| 変数 | 値 | 対象 |
-|---|---|---|
-| `--mat-matrix` | `#9aa7b8` | 母相の原子・格子 |
-| `--mat-solute` | `#e07a2f` | 溶質・不純物原子(Fe 中の C、Al 中の Cu など) |
-| `--mat-second` | `#4f83cc` | 拡散対のもう一方の元素(カーケンドールの B 原子など) |
-| `--mat-defect` | `#d1483f` | 転位線・欠陥 |
-| `--mat-precip` | `#7d5bc7` | 析出物・クラスター・GP ゾーン |
-| `--mat-vacancy` | 塗りなし + `#9aa7b8` の破線縁 | 空孔 |
-| `--mat-beam` | `#d99000` | 入射・回折ビーム(X 線・電子線) |
-| `--mat-recip` | `#2f3a4a` | 逆格子点 |
-| `--mat-sphere-fill` / `--mat-sphere-line` | `rgba(15,138,138,0.14)` / `#0f8a8a` | エヴァルト球面 |
-| `--mat-tension` / `--mat-compression` | `rgba(209,72,63,0.12)` / `rgba(79,131,204,0.12)` | 引張応力場 / 圧縮応力場の塗り |
+| 変数                                      | 値                                               | 対象                                                |
+| ----------------------------------------- | ------------------------------------------------ | --------------------------------------------------- |
+| `--mat-matrix`                            | `#9aa7b8`                                        | 母相の原子・格子                                    |
+| `--mat-solute`                            | `#e07a2f`                                        | 溶質・不純物原子(Fe 中の C、Al 中の Cu など)        |
+| `--mat-second`                            | `#4f83cc`                                        | 拡散対のもう一方の元素(カーケンドールの B 原子など) |
+| `--mat-defect`                            | `#d1483f`                                        | 転位線・欠陥                                        |
+| `--mat-precip`                            | `#7d5bc7`                                        | 析出物・クラスター・GP ゾーン                       |
+| `--mat-vacancy`                           | 塗りなし + `#9aa7b8` の破線縁                    | 空孔                                                |
+| `--mat-beam`                              | `#d99000`                                        | 入射・回折ビーム(X 線・電子線)                      |
+| `--mat-recip`                             | `#2f3a4a`                                        | 逆格子点                                            |
+| `--mat-sphere-fill` / `--mat-sphere-line` | `rgba(15,138,138,0.14)` / `#0f8a8a`              | エヴァルト球面                                      |
+| `--mat-tension` / `--mat-compression`     | `rgba(209,72,63,0.12)` / `rgba(79,131,204,0.12)` | 引張応力場 / 圧縮応力場の塗り                       |
 
 新しい種類の対象が出てきた場合は、勝手に色を増やさず、この表への追加を提案すること。
 
@@ -250,11 +250,17 @@ host.controls.reset(() => { ... }); // 初期状態へ(乱数はシード固定�
 ### 8.1 DOM 構造(`Figure.astro` が出力)
 
 ```html
-<figure class="ix" id="fig-frank-read-loop"
-        data-widget="frank-read/loop" data-aspect="16/10">
+<figure
+  class="ix"
+  id="fig-frank-read-loop"
+  data-widget="frank-read/loop"
+  data-aspect="16/10"
+>
   <div class="ix-stage"><canvas aria-hidden="true"></canvas></div>
   <div class="ix-controls"><!-- controls.ts が生成 --></div>
-  <figcaption>図3. 両端を固定された転位が張り出し、ループを放出するまで。</figcaption>
+  <figcaption>
+    図3. 両端を固定された転位が張り出し、ループを放出するまで。
+  </figcaption>
   <p class="sr-only"><!-- alt: スクリーンリーダー向けの内容説明 --></p>
 </figure>
 ```
@@ -267,10 +273,10 @@ host.controls.reset(() => { ... }); // 初期状態へ(乱数はシード固定�
 export interface FigureHost {
   stage: HTMLElement;
   canvas: HTMLCanvasElement;
-  controls: Controls;                       // §7.2
+  controls: Controls; // §7.2
   size: { w: number; h: number; dpr: number };
   onFrame(cb: (dt: number, t: number) => void): void; // 連続アニメ用
-  requestRender(): void;                    // 操作時のみ再描画する図版用
+  requestRender(): void; // 操作時のみ再描画する図版用
 }
 
 export interface WidgetHandle {
@@ -279,7 +285,9 @@ export interface WidgetHandle {
   destroy(): void;
 }
 
-export type WidgetFactory = (host: FigureHost) => WidgetHandle | Promise<WidgetHandle>;
+export type WidgetFactory = (
+  host: FigureHost,
+) => WidgetHandle | Promise<WidgetHandle>;
 ```
 
 - **1 図版 = 1 モジュール**。`src/widgets/<slug>/<name>.ts` が `WidgetFactory` を default export する。
@@ -420,9 +428,9 @@ export type WidgetFactory = (host: FigureHost) => WidgetHandle | Promise<WidgetH
 
 ## 14. 未確定事項(発注者確認が必要)
 
-| 項目 | 現状の仮置き |
-|---|---|
-| サイト名 | 「うごく材料科学」(仮)。定数 1 箇所で差し替え可能に |
-| ホスティング | GitHub Pages または Cloudflare Pages を想定。`base` path を環境変数で切替可能にしておく |
-| OGP 画像・favicon | プレースホルダで実装 |
-| ライセンス表記 | フッターにプレースホルダ |
+| 項目              | 現状の仮置き                                                                            |
+| ----------------- | --------------------------------------------------------------------------------------- |
+| サイト名          | 「うごく材料科学」(仮)。定数 1 箇所で差し替え可能に                                     |
+| ホスティング      | GitHub Pages または Cloudflare Pages を想定。`base` path を環境変数で切替可能にしておく |
+| OGP 画像・favicon | プレースホルダで実装                                                                    |
+| ライセンス表記    | フッターにプレースホルダ                                                                |

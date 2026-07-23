@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- 母相原子 3 個 + 溶質原子 1 個(意味パレット §6.2) -->
+  <rect width="32" height="32" rx="7" fill="#ffffff"/>
+  <circle cx="10.5" cy="10.5" r="4.4" fill="#9aa7b8"/>
+  <circle cx="21.5" cy="10.5" r="4.4" fill="#9aa7b8"/>
+  <circle cx="10.5" cy="21.5" r="4.4" fill="#9aa7b8"/>
+  <circle cx="21.5" cy="21.5" r="4.4" fill="#e07a2f"/>
+</svg>

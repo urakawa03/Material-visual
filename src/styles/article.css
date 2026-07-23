@@ -1,0 +1,86 @@
+/*
+ * article.css — 記事レイアウト(仕様書 §9.2)
+ */
+
+.article-header {
+  margin-top: 3.5rem;
+}
+
+.category-label {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-2);
+  letter-spacing: 0.05em;
+  margin-bottom: 0.6em;
+}
+
+.article-title {
+  margin-bottom: 0.6em;
+}
+
+.lead {
+  color: var(--color-text);
+}
+
+.prereq-row {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 0;
+}
+
+.prereq-badge {
+  display: inline-block;
+  border: 1px solid var(--color-hairline);
+  border-radius: 999px;
+  padding: 2px 12px;
+  text-decoration: none;
+}
+
+a.prereq-badge {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+a.prereq-badge:hover {
+  color: var(--color-accent-strong);
+  border-color: var(--color-accent-strong);
+}
+
+/* 縦リズム(§6.4): h2 セクション間 4rem */
+.article-body h2 {
+  margin-top: var(--space-section);
+}
+
+.article-body h3 {
+  margin-top: 2.2rem;
+}
+
+/* ---- 前後の記事ナビ(§3.2) ---- */
+.article-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: var(--space-section);
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--color-hairline);
+  font-size: 15px;
+}
+
+.article-nav .nav-label {
+  display: block;
+  font-size: 12px;
+  color: var(--color-text-2);
+  margin-bottom: 0.2em;
+}
+
+.article-nav .nav-next {
+  text-align: right;
+  margin-left: auto;
+}
+
+.article-nav .nav-planned {
+  color: var(--color-text-2);
+}

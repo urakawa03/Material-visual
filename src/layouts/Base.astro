@@ -1,0 +1,74 @@
+---
+/**
+ * Base.astro — 全ページ共通の枠(head / header / footer)
+ */
+import "../styles/tokens.css";
+import "../styles/base.css";
+import { SITE } from "../content/site";
+import { withBase } from "../lib/paths";
+
+interface Props {
+  /** ページタイトル(サイト名は自動付与) */
+  title?: string;
+  /** meta description(省略時はサイト既定) */
+  description?: string;
+  /** トップページなどでヘッダーのサイト名を消す */
+  showHeader?: boolean;
+}
+
+const {
+  title,
+  description = SITE.description,
+  showHeader = true,
+} = Astro.props;
+const pageTitle = title
+  ? `${title} — ${SITE.name}`
+  : `${SITE.name} — ${SITE.tagline}`;
+// OGP 画像はプレースホルダ(単色 + サイト名)。後から public/og/ を差し替える(§14)
+const ogImage = new URL(
+  withBase("/og/default.svg"),
+  Astro.site ?? "https://example.com",
+).href;
+const year = new Date().getFullYear();
+---
+
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="icon" type="image/svg+xml" href={withBase("/favicon.svg")} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:site_name" content={SITE.name} />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">本文へ移動</a>
+    {
+      showHeader && (
+        <header class="site-header">
+          <a href={withBase("/")}>{SITE.name}</a>
+        </header>
+      )
+    }
+    <main id="main">
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <nav aria-label="サイト情報">
+        <a href={withBase("/about/")}>このサイトについて</a>
+        <a href={withBase("/style-guide/")}>スタイルガイド</a>
+      </nav>
+      <p>
+        © {year}
+        {SITE.name}(仮称) / ライセンス表記: プレースホルダ(未確定 — §14)
+      </p>
+    </footer>
+  </body>
+</html>

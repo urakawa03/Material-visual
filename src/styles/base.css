@@ -1,0 +1,428 @@
+/*
+ * base.css — 全ページ共通の土台スタイル
+ * 静かな美学(§2-7): 白背景・限定パレット・装飾なし。
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+}
+
+/* ---- 見出し(§6.3) ---- */
+h1,
+h2,
+h3 {
+  font-weight: 600;
+  line-height: 1.45;
+  font-feature-settings: "palt";
+  margin: 0 0 0.8em;
+}
+
+h1 {
+  font-size: var(--font-size-h1);
+}
+
+h2 {
+  font-size: var(--font-size-h2);
+}
+
+h3 {
+  font-size: var(--font-size-h3);
+}
+
+p {
+  margin: 0 0 1.5em;
+  text-wrap: pretty;
+}
+
+ul,
+ol {
+  margin: 0 0 1.5em;
+  padding-left: 1.6em;
+}
+
+li {
+  margin-bottom: 0.4em;
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+a:hover {
+  color: var(--color-accent-strong);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid var(--color-hairline);
+  margin: var(--space-section) 0;
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.88em;
+  background: #f5f6f8;
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+}
+
+/* 数値の読み出しは桁が揃うように(§6.3) */
+.num,
+output {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- 本文カラム(§6.4) ---- */
+.column {
+  max-width: var(--width-column);
+  margin-inline: auto;
+  padding-inline: 16px;
+}
+
+/* ---- スクリーンリーダー専用テキスト ---- */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  left: 12px;
+  top: -48px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-hairline);
+  border-radius: 6px;
+  padding: 8px 14px;
+  z-index: 10;
+}
+
+.skip-link:focus-visible {
+  top: 12px;
+}
+
+/* ---- ヘッダー / フッター(固定ヘッダーは置かない §6.4) ---- */
+.site-header {
+  max-width: var(--width-column);
+  margin-inline: auto;
+  padding: 20px 16px 0;
+}
+
+.site-header a {
+  color: var(--color-text-2);
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.site-header a:hover {
+  color: var(--color-accent-strong);
+  text-decoration: underline;
+}
+
+.site-footer {
+  max-width: var(--width-column);
+  margin: var(--space-section) auto 0;
+  padding: 1.5rem 16px 2.5rem;
+  border-top: 1px solid var(--color-hairline);
+  font-size: var(--font-size-caption);
+  color: var(--color-text-2);
+}
+
+.site-footer nav {
+  display: flex;
+  gap: 1.2em;
+  margin-bottom: 0.6em;
+}
+
+.site-footer p {
+  margin: 0;
+}
+
+/* ---- インタラクティブ図版コンテナ(§8.1) ---- */
+.ix {
+  margin: var(--space-figure) auto;
+  width: 100%;
+}
+
+/* 本文カラム(42rem)から 54rem へブレイクアウト(§6.4)。
+   600px 以下では左右 12px の全幅になる。 */
+.column .ix {
+  width: min(var(--width-figure), calc(100vw - var(--pad-edge) * 2));
+  margin-left: 50%;
+  transform: translateX(-50%);
+}
+
+.ix-stage {
+  position: relative;
+  background: var(--color-bg);
+  border: 1px solid var(--color-hairline);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.ix-stage canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* ドラッグ操作をブラウザのスクロールに奪われないようにする */
+  touch-action: none;
+}
+
+.ix figcaption {
+  margin-top: 10px;
+  font-size: var(--font-size-caption);
+  color: var(--color-text-2);
+  line-height: 1.7;
+  max-width: var(--width-column);
+  margin-inline: auto;
+}
+
+/* 省モーション時などに表示する再生ボタン(§7.1) */
+.ix-play-overlay {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 1px solid var(--color-hairline);
+  background: var(--color-bg);
+  color: var(--color-accent);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  z-index: 2;
+}
+
+.ix-play-overlay:hover {
+  border-color: var(--color-accent);
+}
+
+.ix-play-overlay[hidden] {
+  display: none;
+}
+
+/* ---- 数式(§7.5)---- */
+/* KaTeX 数式中の変数を意味パレットで塗るためのクラス(M.astro のマクロと対応) */
+.mx-mat {
+  color: var(--mat-matrix);
+}
+
+.mx-sol {
+  color: var(--mat-solute);
+}
+
+.mx-sec {
+  color: var(--mat-second);
+}
+
+.mx-def {
+  color: var(--mat-defect);
+}
+
+.mx-ppt {
+  color: var(--mat-precip);
+}
+
+.mx-beam {
+  color: var(--mat-beam);
+}
+
+.mx-recip {
+  color: var(--mat-recip);
+}
+
+/* 別行立て数式のはみ出しはスクロールで逃がす */
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-block: 0.2em;
+}
+
+/* ---- トップページ ---- */
+.hero {
+  margin: 4.5rem 0 1rem;
+}
+
+.hero .site-title-en {
+  display: block;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--color-text-2);
+  letter-spacing: 0.08em;
+  margin-top: 0.5em;
+}
+
+.hero-tagline {
+  color: var(--color-text);
+  max-width: 36rem;
+}
+
+.topic-section {
+  margin-top: var(--space-section);
+}
+
+.topic-section > h2 {
+  font-size: 18px;
+  color: var(--color-text-2);
+  font-weight: 600;
+  border-bottom: 1px solid var(--color-hairline);
+  padding-bottom: 0.5em;
+}
+
+.topic-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-top: 1.2rem;
+}
+
+@media (min-width: 600px) {
+  .topic-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ---- テーマカード ---- */
+.topic-card {
+  display: block;
+  border: 1px solid var(--color-hairline);
+  border-radius: 10px;
+  padding: 16px;
+  text-decoration: none;
+  color: var(--color-text);
+}
+
+a.topic-card:hover {
+  border-color: var(--color-accent);
+  color: var(--color-text);
+}
+
+a.topic-card:hover .topic-card-title {
+  color: var(--color-accent-strong);
+}
+
+.topic-card.is-planned {
+  color: var(--color-text-2);
+}
+
+.topic-card-thumb {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border: 1px solid var(--color-hairline);
+  border-radius: 6px;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.topic-card.is-planned .topic-card-thumb {
+  opacity: 0.55;
+}
+
+.topic-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 0.3em;
+  color: var(--color-accent);
+}
+
+.topic-card.is-planned .topic-card-title {
+  color: var(--color-text-2);
+}
+
+.topic-card-summary {
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--color-text-2);
+  margin: 0 0 0.8em;
+}
+
+.topic-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 12px;
+  line-height: 1.6;
+  border: 1px solid var(--color-hairline);
+  border-radius: 999px;
+  padding: 1px 10px;
+  color: var(--color-text-2);
+}
+
+.badge-published {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/* ---- style-guide 用 ---- */
+.swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  padding: 0;
+  margin: 0 0 1.5em;
+  list-style: none;
+}
+
+.swatch {
+  border: 1px solid var(--color-hairline);
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.swatch-chip {
+  height: 44px;
+  border-radius: 5px;
+  border: 1px solid var(--color-hairline);
+  margin-bottom: 8px;
+}
+
+.swatch-chip.is-vacancy {
+  background: none;
+  border: 2px dashed var(--mat-matrix);
+}
+
+.swatch code {
+  background: none;
+  padding: 0;
+  color: var(--color-text-2);
+}
