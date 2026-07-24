@@ -21,6 +21,12 @@ export const MAT_COLORS = {
   precip: "#7d5bc7",
   /** 入射・回折ビーム(X 線・電子線) */
   beam: "#d99000",
+  /**
+   * beam の文字用暗色(白地で AA 4.5:1 を満たす)。数式・読み取り値など
+   * 小サイズ文字に使う。図中の塗り・帯は従来どおり beam を使うこと
+   * (仕様書 05 §6.3・付録 A-2)
+   */
+  beamInk: "#8a5c00",
   /** 逆格子点 */
   recip: "#2f3a4a",
   /** エヴァルト球面(塗り) */
@@ -53,6 +59,7 @@ const MAT_CSS_VARS: Record<MatColorName, string> = {
   defect: "--mat-defect",
   precip: "--mat-precip",
   beam: "--mat-beam",
+  beamInk: "--mat-beam-ink",
   recip: "--mat-recip",
   sphereFill: "--mat-sphere-fill",
   sphereLine: "--mat-sphere-line",

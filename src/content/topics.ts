@@ -52,7 +52,7 @@ export const TOPICS: readonly Topic[] = [
     summary: "結晶の周期性を「波の言葉」で捉え直す、回折理解の出発点。",
     render: "3d",
     prerequisites: [],
-    published: false,
+    published: true,
   },
   {
     order: 2,

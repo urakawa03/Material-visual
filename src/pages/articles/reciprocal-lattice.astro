@@ -1,0 +1,611 @@
+---
+/**
+ * reciprocal-lattice.astro — 記事「逆格子空間」(仕様書 05)
+ *
+ * カテゴリ A. 回折と結晶の幾何 の第 1 記事。1 本の原子列に縞を当てる
+ * 実験から出発し、2 次元の q 平面、面の族、双対基底、3 次元の立方格子、
+ * ブラベー格子ごとの逆格子までを 7 つの操作できる図版で組み立てる。
+ * タイトル・カテゴリ・前後ナビは topics.ts から解決される。
+ */
+import Article from "../../layouts/Article.astro";
+import Figure from "../../components/Figure.astro";
+import M from "../../components/M.astro";
+---
+
+<Article
+  slug="reciprocal-lattice"
+  lead="結晶に X 線や電子線を当てると、点が規則正しく並んだ図形が現れます。原子の写真ではないのに、結晶のことを何もかも知っているこの点の並び — その正体が逆格子です。この記事では、1 本の原子列に縞を当てる小さな実験から出発して、逆格子を自分の手で組み立てます。"
+  description="逆格子(reciprocal lattice)を 1 次元の縞の実験から段階的に組み立てる入門記事。空間周波数、格子面とミラー指数、双対基底、立方格子の逆格子と BCC⇄FCC の入れ替わりまでを、操作できる 7 つの図版で体感する。"
+>
+  <h2>結晶のもうひとつの姿</h2>
+  <p>
+    結晶に電子線や X 線を当てると、スクリーンの上に、点が規則正しく並んだ像が
+    得られます。回折図形と呼ばれるものです。原子を拡大した写真ではありません。
+    それなのにこの点の並びは、結晶の向き・対称性・寸法を余さず映しています。
+  </p>
+  <p>
+    まずは触ってみましょう。下の図の左パネルをドラッグして格子を回し、
+    スライダーで格子定数を小さくして、右の点の並びがどう応えるか見てください。
+  </p>
+  <Figure
+    widget="reciprocal-lattice/intro-duality"
+    aspect="2/1"
+    aspectNarrow="10/13"
+    caption="図1. 実格子(左)とその逆格子(右)。ドラッグで回転、スライダーで格子定数を変えられる。点の濃淡は見やすさのための装飾で、回折強度ではない。"
+    alt="左に原子が並んだ実格子、右に対応する逆格子の点配列。回転させると両者が同じ向きに回り、格子定数を小さくすると右の点間隔が広がる。"
+  />
+  <p>
+    回すと、右の点は同じ向きに同じ角度だけ回ります。ところが格子定数を半分に
+    すると、右の点の間隔は 2 倍に広がります。向きは連動するのに、大きさは逆に
+    動く — この記事で解く謎はこれです。なお右の点の濃淡は、図注のとおり
+    見やすさのための装飾で、物理的な意味はもたせていません。
+  </p>
+  <p>
+    右側の点の格子を逆格子(reciprocal lattice)と呼びます。そして点たちの
+    住む空間を逆格子空間、略して逆空間(reciprocal space)と呼びます。
+    名前のとおり「逆」がこの空間の合言葉です。次の節から、1 次元のいちばん
+    小さな実験を足がかりに、この点の格子を自分の手で組み立てていきます。
+  </p>
+
+  <h2>縞で格子を測る</h2>
+  <p>
+    周期をもつものを調べる基本は、周期をもつ「ものさし」を当てて比べることです。
+    ここでのものさしは縞です。縞の正体は平面波(plane wave)で、図では波の
+    山にあたる場所を帯として塗ってあります。
+  </p>
+  <p>
+    縞の細かさは、波長 <M tex={String.raw`\mbeam{\lambda}`} /> の代わりに 「1 nm あたりに山が何本あるか」で数えます。これを空間周波数
+    (spatial frequency)<M tex={String.raw`\mbeam{q}`} /> と呼びます:
+  </p>
+  <M block tex={String.raw`\mbeam{q} = 1/\mbeam{\lambda}`} />
+  <p>
+    細かい縞ほど <M tex={String.raw`\mbeam{q}`} /> は大きくなります。下の図では、
+    間隔 <M tex="a" /> で並んだ原子列にこの縞を重ねています。再生すると
+    <M tex={String.raw`\mbeam{q}`} /> がゆっくり掃引されていくので、 スライダーに切り替えて、すべての原子が山に乗る
+    <M tex={String.raw`\mbeam{q}`} /> を自分の手でも探してみてください。
+  </p>
+  <Figure
+    widget="reciprocal-lattice/wave-1d"
+    aspect="16/10"
+    aspectNarrow="1/1"
+    caption="図2. 原子列(間隔 a)に空間周波数 q の縞を重ねる。全原子が山に乗る q だけが下の軸に記録される。原子は点として描き、熱振動は無視している。原子の数が有限なので、一致の山にはわずかな幅がある。"
+    alt="上に等間隔の原子列と縦縞、下に周波数軸。縞の周波数を変えると、1/a の整数倍のときだけ全原子が縞の山と一致し、軸の上に等間隔の点が並んでいく。"
+  />
+  <p>
+    すべての原子が山に乗る <M tex={String.raw`\mbeam{q}`} /> は、
+    <M tex="1/a" /> の整数倍に限られます:
+  </p>
+  <M block tex={String.raw`\mbeam{q_n} = n/a \quad (n \in \mathbb{Z})`} />
+  <p>
+    一致した <M tex={String.raw`\mbeam{q}`} /> を下の周波数軸に記録していくと、 間隔
+    <M tex="1/a" /> の等間隔の点列が現れます。これが 1 次元の逆格子です。
+    <M tex={String.raw`\mbeam{q} = 0`} />(どこまでも一様な縞)もすべての原子が
+    山に乗っていると数えられるので、原点も逆格子の仲間です。ここでスライダーで
+    <M tex="a" /> を縮めてみてください。点列は逆に広がります。図1 の謎の「逆」が、
+    初めて自分の手の中で起きます。なお図注のとおり、原子は点として描き、 熱振動は無視しています。
+  </p>
+  <p>
+    もうひとつ、原子の数 <M tex="N" /> も変えてみてください。<M tex="N" /> が 有限だと、一致の山にはわずかな幅(およそ
+    <M tex={String.raw`1/(Na)`} />)が
+    あり、原子が多いほど山は鋭くなります。これは飾りではありません。実際の
+    回折ピークに幅がある理由の先取りで、結晶の小ささがピークの幅になる話として、
+    のちの回折の記事で再登場します。
+  </p>
+  <h3>コラム: 一致度 M の中身</h3>
+  <p>
+    図2 の一致度 <M tex="M" /> は、各原子の位置での縞の位相を単位円上の矢として 足し合わせた長さです:
+  </p>
+  <M
+    block
+    tex={String.raw`M(\mbeam{q}) = \tfrac{1}{N}\bigl\lvert \sum_j e^{2\pi i \mbeam{q} x_j} \bigr\rvert`}
+  />
+  <p>
+    すべての原子が山に乗ると矢の向きがそろって <M tex="M = 1" />、ずれると
+    打ち消し合って小さくなります。この形の関数はラウエ関数(Laue function)と
+    呼ばれ、回折強度の計算にそのまま顔を出します。
+  </p>
+
+  <h2>縞に向きが生まれる</h2>
+  <p>
+    2 次元に上がると、縞は新しい性質をもちます。向きです。そして 1 枚の縞は、
+    たった 1 本のベクトル <M tex={String.raw`\mbeam{\mathbf{q}}`} /> で過不足なく
+    表せます。向きは縞の法線方向、長さは 1/(縞間隔)。細かい縞ほど矢は長く なります。矢
+    1 本 ⇄ 縞 1 枚 — この対応が、本記事でいちばん大きな抽象化の ステップです。
+  </p>
+  <p>
+    下の図の右パネルが、ベクトル <M tex={String.raw`\mbeam{\mathbf{q}}`} /> の 住む平面です。プローブをドラッグして左の縞がどう変わるかを手で覚え、
+    格子と一致する <M tex={String.raw`\mbeam{\mathbf{q}}`} /> を全部探して ください。最初のプローブ位置のすぐ近くに、ひとつめの当たりがあります。
+  </p>
+  <Figure
+    widget="reciprocal-lattice/stripes-2d"
+    aspect="2/1"
+    aspectNarrow="10/13"
+    caption="図3. 左の縞は右のベクトル q 1 本で表せる。向き = 縞の法線、長さ = 1/(縞間隔)。プローブを動かして、格子と一致する q をすべて見つけよう。円い窓の縁の効果で、一致の山にはすそが出る。"
+    alt="左に 2 次元格子と向きをもつ縞、右に q 平面。プローブを動かすと縞の向きと間隔が変わり、とびとびの位置でだけ縞が全原子と一致して、右の平面に正方格子状の点が集まっていく。"
+  />
+  <p>
+    一致するたびに、右の平面に点がひとつ灯ります。見つけた点を集めると、
+    とびとびの正方格子が浮かび上がります。2 次元の逆格子の発見です。
+    <M tex={String.raw`\mbeam{\mathbf{q}}`} /> は連続に動かせる「探り」の変数、 逆格子点はその中の「当たり」の離散集合
+    — プローブと逆格子点の色の 使い分けは、この対比を表しています。
+  </p>
+  <h3>コラム: 2 次元の一致度</h3>
+  <p>
+    一致度の式は 1 次元とほとんど同じで、積 <M
+      tex={String.raw`\mbeam{q} x_j`}
+    /> が内積 <M tex={String.raw`\mbeam{\mathbf{q}} \cdot \mathbf{r}_j`} /> に変わるだけです:
+  </p>
+  <M
+    block
+    tex={String.raw`M(\mbeam{\mathbf{q}}) = \tfrac{1}{N}\bigl\lvert \sum_j e^{2\pi i \,\mbeam{\mathbf{q}}\cdot\mathbf{r}_j} \bigr\rvert`}
+  />
+  <p>
+    内積は、原子の位置を縞の法線方向へ射影した長さを測ります。縞に沿った方向の
+    ずれは効きません。だから縞は、向きと間隔の 2 つだけで決まるのです。
+  </p>
+
+  <h2>点は面の族</h2>
+  <p>
+    縞が格子と一致した瞬間の左パネルをよく見てください。縞の山の中心線は、
+    原子の並ぶ列にぴったり重なっています。つまり逆格子点 1 つが指しているのは、
+    「ある向きとある間隔をもつ平行線の族」です。3 次元の結晶でこれにあたるのが、
+    原子の並ぶ平面 = 格子面(lattice plane)の族です。
+  </p>
+  <p>
+    ここで結晶学の言葉を軽く思い出します。格子のくり返しの最小単位が単位胞、
+    その 1 辺の長さが格子定数 <M tex="a" /> でした。そして面(2 次元では線)の 族に付ける番地がミラー指数(Miller
+    indices)です。2 次元では整数の組 (hk) で書きます。原点のとなりにある 2 つの逆格子点を
+    <M tex={String.raw`\mrecip{\mathbf{b}_1}`} />, <M
+      tex={String.raw`\mrecip{\mathbf{b}_2}`}
+    /> と名づけると、どの 逆格子点も、その整数結合として番地付けできます:
+  </p>
+  <M
+    block
+    tex={String.raw`\mrecip{\mathbf{g}_{hk}} = h\,\mrecip{\mathbf{b}_1} + k\,\mrecip{\mathbf{b}_2}`}
+  />
+  <p>
+    点 <M tex={String.raw`\mrecip{\mathbf{g}_{hk}}`} /> は面 (hk) の族に垂直で、 面どうしの間隔、すなわち面間隔(interplanar
+    spacing, d-spacing)は、 原点から点までの距離の逆数になります:
+  </p>
+  <M
+    block
+    tex={String.raw`d_{hk} = 1/\lvert \mrecip{\mathbf{g}_{hk}} \rvert`}
+  />
+  <p>
+    下の図で h と k のステッパーを動かし、左の線族の向き・間隔と右の 1 点が
+    連動するのを確かめてください。読み取り値の <M
+      tex={String.raw`d \times \lvert\mrecip{\mathbf{g}}\rvert`}
+    /> が常に 1.00 のままであることにも注目です。
+  </p>
+  <Figure
+    widget="reciprocal-lattice/planes-2d"
+    aspect="2/1"
+    aspectNarrow="10/13"
+    caption="図4. 逆格子点 1 つは、向きと間隔をもつ格子線(面)の族 1 つに対応する。(20) では線の間隔が (10) の半分になり、原子を通らない線も族に含まれる — 図2 の 2 倍波と同じものだ。"
+    alt="左の格子に、選んだミラー指数の平行線族と間隔 d。右の逆格子に対応する 1 点と原点からの矢印。指数を変えると線の向き・間隔と点の位置が連動し、d と g の大きさの積は常に 1 になる。"
+  />
+  <p>
+    (20) を選ぶと、線の間隔は (10) のちょうど半分になります。これは図2 で見た
+    <M tex={String.raw`n/a`} /> の高調波、「同じ向きの 2 倍波」にほかなりません。
+    そして族の中には、原子を 1 個も通らない線が同格で含まれています。面の族とは 「原子の乗っている面」の集まりというより、「格子と同じ周期をもつ縞」の
+    言い換えなのです。矢印 <M tex={String.raw`\mrecip{\mathbf{g}_{hk}}`} /> が 線族と常に直交していることも、あわせて確かめてください。
+  </p>
+
+  <h2>逆格子も格子</h2>
+  <p>
+    実格子の点は、2 本の基本並進ベクトル(primitive translation vector)
+    <M tex={String.raw`\mathbf{a}_1`} />, <M tex={String.raw`\mathbf{a}_2`} /> の
+    整数結合ですべて作れます。そして前節で見たとおり、逆格子の点も <M
+      tex={String.raw`\mrecip{\mathbf{b}_1}`}
+    />, <M tex={String.raw`\mrecip{\mathbf{b}_2}`} /> の整数結合ですべて 書けました。つまり逆格子もまた、正真正銘の格子です。残る問いはひとつ。
+    <M tex={String.raw`\mathbf{a}_1`} />, <M tex={String.raw`\mathbf{a}_2`} /> を
+    決めたとき、<M tex={String.raw`\mrecip{\mathbf{b}_1}`} />, <M
+      tex={String.raw`\mrecip{\mathbf{b}_2}`}
+    /> はどう決まるのでしょうか。
+  </p>
+  <p>
+    下の図で、左の <M tex={String.raw`\mathbf{a}_1`} />, <M
+      tex={String.raw`\mathbf{a}_2`}
+    /> の先端ハンドルをつまんで動かしてみてください。回す・伸ばす・斜めにする、 の
+    3 通りを順に試すのがおすすめです。
+  </p>
+  <Figure
+    widget="reciprocal-lattice/basis-2d"
+    aspect="2/1"
+    aspectNarrow="10/13"
+    caption="図5. 実格子の基本ベクトル a_1, a_2 をつまんで動かすと、逆格子の b_1, b_2 が応答する。b_1 は常に a_2 に直交し、伸ばすほど縮む。なす角は 25°〜155° に制限している(それ以上つぶすと逆格子が発散して画面に収まらないため)。"
+    alt="左で 2 本の基本ベクトルをドラッグすると、右の逆格子の 2 本のベクトルが、回転には連動し、伸縮には逆向きに応答する。斜めにしても、互いに相手のベクトルとの直交関係を保つ。"
+  />
+  <p>
+    観察できることは 3 つあります。(i) 格子を回すと、逆格子は同じだけ回る。 (ii) <M
+      tex={String.raw`\mathbf{a}_1`}
+    /> を伸ばすと <M tex={String.raw`\mrecip{\mathbf{b}_1}`} /> は縮む — 読み取り値でも、単位胞面積
+    <M tex="S" /> と逆単位胞面積
+    <M tex="1/S" /> が常に逆数の関係を保ちます。(iii) 斜めにしても、<M
+      tex={String.raw`\mrecip{\mathbf{b}_1}`}
+    /> は常に <M tex={String.raw`\mathbf{a}_2`} /> に直交し、<M
+      tex={String.raw`\mrecip{\mathbf{b}_2}`}
+    /> は常に <M tex={String.raw`\mathbf{a}_1`} /> に直交する。
+  </p>
+  <p>この 3 つの性質は、次の 1 本の式にまとめられます:</p>
+  <M
+    block
+    tex={String.raw`\mathbf{a}_i \cdot \mrecip{\mathbf{b}_j} = \delta_{ij}`}
+  />
+  <p>
+    <M tex={String.raw`\delta_{ij}`} /> は「<M tex="i = j" /> なら 1、違えば 0」 という記号です。同じ番号の相手とは内積
+    1、違う番号の相手とは直交。この関係を 満たす <M
+      tex={String.raw`\mrecip{\mathbf{b}_1}`}
+    />, <M tex={String.raw`\mrecip{\mathbf{b}_2}`} /> を、<M
+      tex={String.raw`\mathbf{a}_1`}
+    />, <M tex={String.raw`\mathbf{a}_2`} /> の双対基底(dual basis)と呼びます。新しい仮定ではなく、いま操作で
+    確かめた性質の言い換えとして受け取ってください。
+  </p>
+  <h3>コラム: 2 次元の双対基底の作り方</h3>
+  <p>上の関係を満たす解は、2 次元では成分で直接書き下せます:</p>
+  <M
+    block
+    tex={String.raw`\mrecip{\mathbf{b}_1} = \tfrac{1}{S}(a_{2y},\,-a_{2x}),\; \mrecip{\mathbf{b}_2} = \tfrac{1}{S}(-a_{1y},\,a_{1x}),\; S = a_{1x}a_{2y} - a_{1y}a_{2x}`}
+  />
+  <p>
+    <M tex="S" /> は <M tex={String.raw`\mathbf{a}_1`} />, <M
+      tex={String.raw`\mathbf{a}_2`}
+    /> が張る単位胞の(符号付き)面積です。図5 の右パネルは、毎回この式で 計算しています。
+  </p>
+
+  <h2>3次元へ</h2>
+  <p>
+    いよいよ 3 次元の結晶へ進みます。縞は、山の面が等間隔に積み重なった
+    平面波になり、平行線の族は平面の族になります。ミラー指数も 3 つ組 (hkl) に、
+    双対基底も <M tex={String.raw`\mrecip{\mathbf{b}_1}`} />, <M
+      tex={String.raw`\mrecip{\mathbf{b}_2}`}
+    />, <M tex={String.raw`\mrecip{\mathbf{b}_3}`} /> の 3 本になります。
+  </p>
+  <p>
+    基底を作る前に、ベクトルの外積を 1 段落だけ復習します。外積 <M
+      tex={String.raw`\mathbf{a}_2 \times \mathbf{a}_3`}
+    /> は、<M tex={String.raw`\mathbf{a}_2`} /> と <M
+      tex={String.raw`\mathbf{a}_3`}
+    /> の両方に直交するベクトルです。長さは 2 本が張る平行四辺形の面積に等しく、 向きは右ねじの向きです。内積が「そろい具合」を測る道具だったのに対し、
+    外積は「両方に直交する方向」を作る道具、と思えばここでは十分です。
+  </p>
+  <p>この道具を使うと、3 次元の双対基底は次の形に書けます:</p>
+  <M
+    block
+    tex={String.raw`\mrecip{\mathbf{b}_1} = \dfrac{\mathbf{a}_2 \times \mathbf{a}_3}{V},\quad V = \mathbf{a}_1 \cdot (\mathbf{a}_2 \times \mathbf{a}_3)`}
+  />
+  <p>
+    読み下すと「<M tex={String.raw`\mathbf{a}_2`} /> と <M
+      tex={String.raw`\mathbf{a}_3`}
+    /> の両方に直交し(外積の向き)、<M tex={String.raw`\mathbf{a}_1`} /> との 内積が
+    1 になるよう、単位胞の体積 <M tex="V" /> で割ったベクトル」です。
+    <M tex={String.raw`\mrecip{\mathbf{b}_2}`} />, <M
+      tex={String.raw`\mrecip{\mathbf{b}_3}`}
+    /> は添字 1 → 2 → 3 → 1 を巡回させた同じ形で、前節の <M
+      tex={String.raw`\delta_{ij}`}
+    /> の関係がそのまま満たされます。
+  </p>
+  <p>
+    1 辺 <M tex="a" /> の立方格子なら基底どうしが直交するので、面間隔は 簡単な形になります:
+  </p>
+  <M block tex={String.raw`d_{hkl} = \dfrac{a}{\sqrt{h^2 + k^2 + l^2}}`} />
+  <p>
+    下の図でステッパーの (hkl) を変え、左の面の束と右の 1 点の対応を、
+    ドラッグで回しながらいろいろな角度から眺めてください。(111) を選ぶと、
+    <M tex="d" /> の読み取り値が <M
+      tex={String.raw`a/\sqrt{3} \approx 0.23\,\mathrm{nm}`}
+    />(<M tex={String.raw`a = 0.40\,\mathrm{nm}`} /> のとき)になるはずです。
+  </p>
+  <Figure
+    widget="reciprocal-lattice/hkl-3d"
+    aspect="2/1"
+    aspectNarrow="10/13"
+    caption="図6. 左の面の束と右の 1 点は同じ情報をもつ。面は中央から 9 枚までしか描いていない。原子の大きさは誇張してある。"
+    alt="左に立方格子と選んだ (hkl) 面の束、右に逆格子点の立体配列。指数を変えると面の向き・間隔と右の 1 点が連動して変わり、ドラッグすると両方の視点が一緒に回る。"
+  />
+  <h3>コラム: 2π を付ける流儀</h3>
+  <p>物理学の教科書(たとえばキッテル)では、逆格子ベクトルを 2π 倍した</p>
+  <M block tex={String.raw`\mrecip{\mathbf{G}} = 2\pi\,\mrecip{\mathbf{g}}`} />
+  <p>
+    を使う流儀が主流です。平面波を <M
+      tex={String.raw`e^{i\,\mrecip{\mathbf{G}}\cdot\mathbf{r}}`}
+    /> と書くと位相がそのまま <M
+      tex={String.raw`\mrecip{\mathbf{G}}\cdot\mathbf{r}`}
+    /> になる、という利点があります。中身は同じもので、目盛りの取り方だけの 違いです。本サイトでは全記事を通して、結晶学の慣習(2π
+    を付けず <M
+      tex={String.raw`\lvert\mrecip{\mathbf{g}}\rvert = 1/d`}
+    />)で書きます。
+  </p>
+
+  <h2>結晶が変われば逆格子も変わる</h2>
+  <p>
+    格子の並び方のパターンを分類したものをブラベー格子(Bravais lattice)と
+    呼びます。立方晶には 3 種類 — 単純立方・体心立方・面心立方 (simple cubic /
+    body-centered cubic / face-centered cubic)— があります。
+    同じ「立方」でも、原子の詰まり方が違えば基本並進ベクトルが違い、
+    逆格子の形も変わります。
+  </p>
+  <p>
+    下の図の切り替えボタンで格子を体心立方・面心立方へ切り替えて、右の逆格子の
+    並び方がどう変わるか見てください。
+  </p>
+  <Figure
+    widget="reciprocal-lattice/bravais-3d"
+    aspect="2/1"
+    aspectNarrow="10/13"
+    caption="図7. 体心立方の逆格子は面心立方の並びに、面心立方の逆格子は体心立方の並びになる。薄い点は、単純立方なら現れるはずの位置。なぜ消えるのかは、回折の記事であらためて扱う。"
+    alt="左に選んだ立方格子の単位胞、右にその逆格子の点配列。体心と面心を切り替えると右の並び方が入れ替わり、重ね表示にすると現れない点の位置が分かる。"
+  />
+  <p>
+    みごとな入れ替わりが起きます。体心立方の逆格子は面心立方の並びに、
+    面心立方の逆格子は体心立方の並びになるのです。体心立方の基本並進ベクトル
+    (たとえば <M tex={String.raw`\tfrac{a}{2}(-1,1,1)`} />)を前節の外積の式に
+    入れると、この入れ替わりが計算で導けます。
+  </p>
+  <p>
+    もうひとつ大事なのは「現れない点」です。トグル「単純立方の逆格子を重ねる」を
+    on にして、薄い点の位置を照会ステッパーで調べてみてください。単純立方なら
+    点があるはずの位置の一部が、空席になっています。体心立方では
+    <M tex={String.raw`h+k+l`} /> が奇数の点が、面心立方では <M tex="h" />,
+    <M tex="k" />, <M tex="l" /> の偶奇がそろわない点が現れません。この空席は のちに、回折図形で特定の反射が消える現象
+    — 系統的消滅 (systematic absence)— として再登場します(仕組みの説明は回折の記事に
+    譲ります)。
+  </p>
+
+  <h2>まとめ</h2>
+  <p>
+    逆格子点 1 つには、三つの読み方があることを見てきました。下の図で、 中央の 1
+    点から三つの顔へ、指でたどり直してみてください。
+  </p>
+  <figure
+    class="ix"
+    id="fig-reciprocal-lattice-summary"
+    style="max-width: 40rem;"
+  >
+    <svg
+      viewBox="0 0 640 400"
+      aria-hidden="true"
+      style="display: block; width: 100%; height: auto;"
+    >
+      <defs>
+        <marker
+          id="s2-arrowhead"
+          viewBox="0 0 10 10"
+          refX="8"
+          refY="5"
+          markerWidth="6"
+          markerHeight="6"
+          orient="auto-start-reverse"
+        >
+          <path d="M 0 0 L 10 5 L 0 10 z" style="fill: var(--mat-recip);"
+          ></path>
+        </marker>
+      </defs>
+
+      <!-- 引き出し線(中央の点 → 三つの顔) -->
+      <line
+        x1="308"
+        y1="182"
+        x2="195"
+        y2="122"
+        style="stroke: var(--color-hairline); stroke-width: 1.5;"></line>
+      <line
+        x1="332"
+        y1="182"
+        x2="445"
+        y2="122"
+        style="stroke: var(--color-hairline); stroke-width: 1.5;"></line>
+      <line
+        x1="320"
+        y1="202"
+        x2="306"
+        y2="262"
+        style="stroke: var(--color-hairline); stroke-width: 1.5;"></line>
+
+      <!-- 中央: 逆格子点 -->
+      <circle cx="320" cy="190" r="8" style="fill: var(--mat-recip);"></circle>
+      <text x="336" y="196" style="font-size: 14px; fill: var(--color-text-2);"
+        >逆格子点</text
+      >
+
+      <!-- ① 縞(平面波) -->
+      <g transform="translate(120 90) rotate(-25)">
+        <rect
+          x="-50"
+          y="-36"
+          width="100"
+          height="10"
+          style="fill: var(--mat-beam); opacity: 0.22;"></rect>
+        <rect
+          x="-50"
+          y="-12"
+          width="100"
+          height="10"
+          style="fill: var(--mat-beam); opacity: 0.22;"></rect>
+        <rect
+          x="-50"
+          y="12"
+          width="100"
+          height="10"
+          style="fill: var(--mat-beam); opacity: 0.22;"></rect>
+        <line
+          x1="-50"
+          y1="-31"
+          x2="50"
+          y2="-31"
+          style="stroke: var(--mat-beam); stroke-width: 1.5;"></line>
+        <line
+          x1="-50"
+          y1="-7"
+          x2="50"
+          y2="-7"
+          style="stroke: var(--mat-beam); stroke-width: 1.5;"></line>
+        <line
+          x1="-50"
+          y1="17"
+          x2="50"
+          y2="17"
+          style="stroke: var(--mat-beam); stroke-width: 1.5;"></line>
+      </g>
+      <text
+        x="120"
+        y="168"
+        text-anchor="middle"
+        style="font-size: 14px; font-weight: 600; fill: var(--color-text);"
+        >① 縞(平面波)</text
+      >
+      <text
+        x="120"
+        y="188"
+        text-anchor="middle"
+        style="font-size: 14px; fill: var(--color-text-2);"
+        >格子と同じ周期の波</text
+      >
+
+      <!-- ② 面の族 -->
+      <g transform="translate(520 90) rotate(20)">
+        <line
+          x1="-50"
+          y1="-26"
+          x2="50"
+          y2="-26"
+          style="stroke: var(--mat-recip); stroke-width: 2;"></line>
+        <line
+          x1="-50"
+          y1="0"
+          x2="50"
+          y2="0"
+          style="stroke: var(--mat-recip); stroke-width: 2;"></line>
+        <line
+          x1="-50"
+          y1="26"
+          x2="50"
+          y2="26"
+          style="stroke: var(--mat-recip); stroke-width: 2;"></line>
+      </g>
+      <text
+        x="520"
+        y="168"
+        text-anchor="middle"
+        style="font-size: 14px; font-weight: 600; fill: var(--color-text);"
+        >② 面の族</text
+      >
+      <text
+        x="520"
+        y="188"
+        text-anchor="middle"
+        style="font-size: 14px; fill: var(--color-text-2);"
+        >向きと間隔 d のカタログ</text
+      >
+
+      <!-- ③ 双対基底 b1, b2 -->
+      <line
+        x1="300"
+        y1="330"
+        x2="372"
+        y2="330"
+        style="stroke: var(--mat-recip); stroke-width: 2;"
+        marker-end="url(#s2-arrowhead)"></line>
+      <line
+        x1="300"
+        y1="330"
+        x2="324"
+        y2="268"
+        style="stroke: var(--mat-recip); stroke-width: 2;"
+        marker-end="url(#s2-arrowhead)"></line>
+      <text
+        x="382"
+        y="344"
+        style="font-size: 14px; font-style: italic; fill: var(--mat-recip);"
+        >b₁</text
+      >
+      <text
+        x="332"
+        y="266"
+        style="font-size: 14px; font-style: italic; fill: var(--mat-recip);"
+        >b₂</text
+      >
+      <text
+        x="320"
+        y="372"
+        text-anchor="middle"
+        style="font-size: 14px; font-weight: 600; fill: var(--color-text);"
+        >③ 双対基底</text
+      >
+      <text
+        x="320"
+        y="392"
+        text-anchor="middle"
+        style="font-size: 14px; fill: var(--color-text-2);"
+        >b₁, b₂ の整数結合が張る格子</text
+      >
+    </svg>
+    <p class="sr-only">
+      中央に逆格子点が 1 個あり、そこから 3 方向へ引き出し線が伸びる模式図。
+      左上は格子と同じ周期をもつ縞(平面波)、右上は向きと間隔をもつ面の族、
+      下は双対基底 b1, b2 の 2 本の矢印。1 つの逆格子点がこの三つの読み方を
+      もつことを示している。
+    </p>
+    <figcaption>
+      図8. 逆格子点の三つの顔。1 つの点は、① 格子と同じ周期をもつ縞、②
+      向きと間隔をもつ面の族、③ 双対基底が張る格子の 1
+      点、のどれとしても読める。
+    </figcaption>
+  </figure>
+  <ul>
+    <li>
+      ① 縞の集合 — 逆格子は、格子と同じ周期をもつ縞(平面波)の空間周波数
+      <M tex={String.raw`\mbeam{\mathbf{q}}`} /> を集めた離散集合である (図2・図3)。
+    </li>
+    <li>
+      ② 面の族のカタログ — 点 <M tex={String.raw`\mrecip{\mathbf{g}_{hkl}}`} /> は
+      格子面 (hkl) の族に垂直で、面間隔は <M
+        tex={String.raw`d = 1/\lvert\mrecip{\mathbf{g}}\rvert`}
+      /> で読める(図4・図6)。
+    </li>
+    <li>
+      ③ 双対基底が張る格子 — 逆格子そのものが <M
+        tex={String.raw`\mrecip{\mathbf{b}_i}`}
+      /> の整数結合の格子で、<M
+        tex={String.raw`\mathbf{a}_i \cdot \mrecip{\mathbf{b}_j} = \delta_{ij}`}
+      /> で実格子と結ばれる(図5・図6)。
+    </li>
+  </ul>
+  <p>
+    最後に、次の記事への一歩を予告します。回折とは、入射波と出射波の
+    空間周波数ベクトルの差が、ちょうど逆格子点に一致する現象です:
+  </p>
+  <M
+    block
+    tex={String.raw`\mbeam{\mathbf{k}'} - \mbeam{\mathbf{k}} = \mrecip{\mathbf{g}} \quad (\lvert\mbeam{\mathbf{k}}\rvert = 1/\mbeam{\lambda})`}
+  />
+  <p>
+    この条件がいつ・どの方向で満たされるかを、球と格子点の幾何で見わたす道具が、
+    次の記事の主役「エヴァルト球」です。
+  </p>
+
+  <h2>もっと知るには</h2>
+  <ul>
+    <li>
+      田中通義・寺内正己・津田健治『やさしい電子回折と初等結晶学』共立出版 —
+      本記事と同じ結晶学の慣習(g = 1/d)で書かれた入門書。次に読むならまずこれ。
+    </li>
+    <li>
+      カリティ 著, 松村源太郎 訳『新版 X線回折要論』アグネ承風社 —
+      面間隔・ミラー指数と回折の古典的教科書。
+    </li>
+    <li>
+      キッテル『固体物理学入門』丸善出版 — 物理学の慣習(2π 付き)での逆格子。
+      上のコラムの対応を確かめたい読者向け。
+    </li>
+    <li>
+      坂 公恭『結晶電子顕微鏡学』内田老鶴圃 —
+      材料系の読者が電子回折・転位観察へ進むための一冊。
+    </li>
+    <li>
+      D. B. Williams &amp; C. B. Carter, <em
+        >Transmission Electron Microscopy</em
+      >, Springer — 英語で学ぶ読者向け。逆格子と回折の図が豊富。
+    </li>
+  </ul>
+</Article>

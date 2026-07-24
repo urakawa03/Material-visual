@@ -13,6 +13,11 @@ interface Props {
   widget: string;
   /** アスペクト比(既定 "16/10") */
   aspect?: string;
+  /**
+   * ビューポート幅 600px 以下で差し替えるアスペクト比(省略時は aspect のまま)。
+   * 2 パネル図版が狭幅で縦積みになるときに使う(仕様書 05 付録 A-3)。
+   */
+  aspectNarrow?: string;
   /** 図注(図番号込みで手書き) */
   caption?: string;
   /** スクリーンリーダー向けの内容説明(必須) */
@@ -23,7 +28,15 @@ interface Props {
   id?: string;
 }
 
-const { widget, aspect = "16/10", caption, alt, maxWidth, id } = Astro.props;
+const {
+  widget,
+  aspect = "16/10",
+  aspectNarrow,
+  caption,
+  alt,
+  maxWidth,
+  id,
+} = Astro.props;
 const figId =
   id ?? `fig-${widget.replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
 ---
@@ -35,7 +48,10 @@ const figId =
   data-aspect={aspect}
   style={maxWidth ? `max-width: ${maxWidth};` : undefined}
 >
-  <div class="ix-stage" style={`aspect-ratio: ${aspect};`}>
+  <div
+    class="ix-stage"
+    style={`--ix-aspect: ${aspect};${aspectNarrow ? ` --ix-aspect-narrow: ${aspectNarrow};` : ""}`}
+  >
     <canvas aria-hidden="true"></canvas>
   </div>
   <div class="ix-controls"></div>
