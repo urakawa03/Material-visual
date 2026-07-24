@@ -44,6 +44,12 @@ export interface FigureHost {
    * dt = 0 で呼ぶ。
    */
   requestRender(): void;
+  /**
+   * 再生状態をユーザー操作として設定する。初期状態を「一時停止」に
+   * したい図版が初期化時に setPlaying(false) を呼ぶ(playPause ボタンの
+   * 表示も連動する)。
+   */
+  setPlaying(playing: boolean): void;
 }
 
 export interface WidgetHandle {

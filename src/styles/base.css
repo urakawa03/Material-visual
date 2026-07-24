@@ -275,6 +275,11 @@ output {
   color: var(--mat-recip);
 }
 
+/* アクセント色の数式変数(臨界半径 r* など、図中の参照線と対応) */
+.mx-acc {
+  color: var(--color-accent);
+}
+
 /* 別行立て数式のはみ出しはスクロールで逃がす */
 .katex-display {
   overflow-x: auto;

@@ -1,0 +1,231 @@
+---
+/**
+ * OstwaldS2.astro — 静的図 S-2(記事仕様書 03 §6)
+ *
+ * 平坦界面と強曲率界面(小粒子)の原子の結合数比較と、離脱の起こり
+ * やすさの矢印。図3 の界面ズーム表示と同じ視覚言語で描く。
+ */
+
+interface Props {
+  caption: string;
+  alt: string;
+}
+
+const { caption, alt } = Astro.props;
+
+const ATOM_R = 8.5;
+const SPACING = 22;
+const EDGE_SOL = "color-mix(in srgb, var(--mat-solute) 80%, black)";
+const EDGE_MAT = "color-mix(in srgb, var(--mat-matrix) 80%, black)";
+
+/* 左パネル: 平坦界面 — 下 2 段が析出物、最上段の中央原子に注目 */
+const flat: Array<{ x: number; y: number; row: number }> = [];
+for (let row = 0; row < 3; row++) {
+  for (let col = 0; col < 6; col++) {
+    flat.push({
+      x: 60 + col * SPACING + (row % 2) * (SPACING / 2),
+      y: 150 - row * SPACING * 0.87,
+      row,
+    });
+  }
+}
+const flatFocus = flat.find((a) => a.row === 2 && Math.abs(a.x - 137) < 12);
+if (!flatFocus) throw new Error("注目原子が見つかりません");
+const flatBonds = flat.filter(
+  (a) =>
+    a !== flatFocus &&
+    Math.abs(Math.hypot(a.x - flatFocus.x, a.y - flatFocus.y) - SPACING) < 3,
+);
+
+/* 右パネル: 強曲率界面 — 小粒子(リング 6 + 中心 1)、頂上の原子に注目 */
+const CX = 470;
+const CY = 128;
+const ring: Array<{ x: number; y: number }> = [];
+for (let i = 0; i < 6; i++) {
+  const a = -Math.PI / 2 + (i * Math.PI * 2) / 6;
+  ring.push({ x: CX + Math.cos(a) * SPACING, y: CY + Math.sin(a) * SPACING });
+}
+const small = [{ x: CX, y: CY }, ...ring];
+const smallFocus = ring[0]; // 頂上
+const smallBonds = small.filter(
+  (a) =>
+    a !== smallFocus &&
+    Math.abs(Math.hypot(a.x - smallFocus.x, a.y - smallFocus.y) - SPACING) < 3,
+);
+---
+
+<figure class="static-fig">
+  <svg
+    viewBox="0 0 636 236"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    <!-- 左: 平坦界面 -->
+    <g>
+      <line
+        x1="36"
+        y1="103"
+        x2="222"
+        y2="103"
+        stroke="var(--color-text-2)"
+        stroke-width="1"
+        stroke-dasharray="5 4"></line>
+      <text x="228" y="107" font-size="11.5" fill="var(--color-text-2)"
+        >母相</text
+      >
+      {
+        flatBonds.map((a) => (
+          <line
+            x1={flatFocus.x}
+            y1={flatFocus.y}
+            x2={a.x}
+            y2={a.y}
+            stroke="var(--color-accent)"
+            stroke-width="2.5"
+          />
+        ))
+      }
+      {
+        flat.map((a) => (
+          <circle
+            cx={a.x}
+            cy={a.y}
+            r={ATOM_R}
+            fill="var(--mat-solute)"
+            stroke={EDGE_SOL}
+            stroke-width="1.5"
+            opacity={a === flatFocus ? 1 : 0.85}
+          />
+        ))
+      }
+      <circle
+        cx={flatFocus.x}
+        cy={flatFocus.y}
+        r={ATOM_R + 3.5}
+        fill="none"
+        stroke="var(--color-accent)"
+        stroke-width="2"></circle>
+      <!-- 弱い離脱矢印(点線) -->
+      <line
+        x1={flatFocus.x}
+        y1={flatFocus.y - 16}
+        x2={flatFocus.x}
+        y2={flatFocus.y - 40}
+        stroke="var(--color-text-2)"
+        stroke-width="1.5"
+        stroke-dasharray="3 3"></line>
+      <path
+        d={`M ${flatFocus.x} ${flatFocus.y - 46} l -4.5 8 h 9 Z`}
+        fill="var(--color-text-2)"
+        opacity="0.7"></path>
+      <text
+        x="129"
+        y="192"
+        text-anchor="middle"
+        font-size="13"
+        fill="var(--color-text-2)">平坦な界面</text
+      >
+      <text
+        x="129"
+        y="212"
+        text-anchor="middle"
+        font-size="13.5"
+        font-weight="600"
+        fill="var(--color-text)">結合 {flatBonds.length} 本 — 離脱しにくい</text
+      >
+    </g>
+
+    <!-- 右: 強曲率界面(小粒子) -->
+    <g>
+      <circle
+        cx={CX}
+        cy={CY}
+        r="44"
+        fill="none"
+        stroke="var(--color-text-2)"
+        stroke-width="1"
+        stroke-dasharray="5 4"></circle>
+      {
+        smallBonds.map((a) => (
+          <line
+            x1={smallFocus.x}
+            y1={smallFocus.y}
+            x2={a.x}
+            y2={a.y}
+            stroke="var(--color-accent)"
+            stroke-width="2.5"
+          />
+        ))
+      }
+      {
+        small.map((a) => (
+          <circle
+            cx={a.x}
+            cy={a.y}
+            r={ATOM_R}
+            fill="var(--mat-solute)"
+            stroke={EDGE_SOL}
+            stroke-width="1.5"
+            opacity={a === smallFocus ? 1 : 0.85}
+          />
+        ))
+      }
+      <circle
+        cx={smallFocus.x}
+        cy={smallFocus.y}
+        r={ATOM_R + 3.5}
+        fill="none"
+        stroke="var(--color-accent)"
+        stroke-width="2"></circle>
+      <!-- 強い離脱矢印(実線・太) -->
+      <line
+        x1={smallFocus.x}
+        y1={smallFocus.y - 16}
+        x2={smallFocus.x}
+        y2={smallFocus.y - 48}
+        stroke="var(--color-text)"
+        stroke-width="2.5"></line>
+      <path
+        d={`M ${smallFocus.x} ${smallFocus.y - 56} l -6 10 h 12 Z`}
+        fill="var(--color-text)"></path>
+      <!-- 周囲の母相原子(まばら) -->
+      {
+        [
+          [388, 70],
+          [552, 96],
+          [548, 176],
+          [396, 186],
+          [560, 40],
+        ].map(([x, y]) => (
+          <circle
+            cx={x}
+            cy={y}
+            r={6.5}
+            fill="var(--mat-matrix)"
+            stroke={EDGE_MAT}
+            stroke-width="1.5"
+            opacity="0.6"
+          />
+        ))
+      }
+      <text
+        x={CX}
+        y="192"
+        text-anchor="middle"
+        font-size="13"
+        fill="var(--color-text-2)">強く曲がった界面(小さな粒子)</text
+      >
+      <text
+        x={CX}
+        y="212"
+        text-anchor="middle"
+        font-size="13.5"
+        font-weight="600"
+        fill="var(--color-text)"
+        >結合 {smallBonds.length} 本 — 離脱しやすい</text
+      >
+    </g>
+  </svg>
+  <figcaption>{caption}</figcaption>
+  <p class="sr-only">{alt}</p>
+</figure>
