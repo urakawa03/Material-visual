@@ -1,0 +1,321 @@
+---
+/**
+ * OctahedralSite.astro — 静的図 S-1(記事仕様 01 §6)
+ *
+ * BCC 鉄の単位胞と八面体位置。左は斜投影の単位胞(頂点 8 + 体心 1 の Fe 原子)
+ * の上面中心に八面体位置マーカー(破線円)を重ね、それを囲む 6 原子のうち
+ * 上下の体心 2 原子だけが近い「つぶれた八面体」を強調線で示す。
+ * 右は八面体隙間に入る球(半径 ≈ 0.019 nm)と炭素原子(半径 ≈ 0.077 nm)を
+ * 実比(約 1:4)の 2 つの円で比較する。
+ * 色は CSS 変数参照(§6.2)。原子の縁取り(約 20% 暗い同系色 — §6.5)のみ
+ * darken() でビルド時に確定する。
+ */
+import { darken, matColor } from "../../core/colors";
+
+/** 座標(px)。SVG 座標系は y 下向き */
+interface Pt {
+  x: number;
+  y: number;
+}
+
+/** 小数 1 桁に丸める(SVG 属性の桁あふれ防止) */
+const r1 = (v: number): number => Math.round(v * 10) / 10;
+const p = (x: number, y: number): Pt => ({ x: r1(x), y: r1(y) });
+
+// ---- 原子の縁取り色(§6.5: 同系色を約 20% 暗く。ビルド時に確定)----
+const FE_EDGE = darken(matColor("matrix"));
+const C_EDGE = darken(matColor("solute"));
+
+// ---- 左パネル: 斜投影の BCC 単位胞 ----
+const CUBE_A = 140; // 立方体の 1 辺(px)
+const CUBE_X = 84; // 前面左上の x
+const CUBE_Y = 196; // 前面左上の y
+const DEPTH_DX = 52; // 奥行き方向の投影オフセット x(右上へ)
+const DEPTH_DY = -42; // 奥行き方向の投影オフセット y
+const R_FE = 13; // Fe 原子の描画半径
+const R_SITE = 7; // 八面体位置マーカー(破線円)の半径
+const BACK_OPACITY = 0.55; // 奥の原子は少し薄く
+const PHANTOM_OPACITY = 0.4; // 隣(上)の単位胞の体心はさらに薄く
+
+// 前面 4 頂点(F)と背面 4 頂点(B)。T/B=上下、L/R=左右
+const ftl = p(CUBE_X, CUBE_Y);
+const ftr = p(CUBE_X + CUBE_A, CUBE_Y);
+const fbr = p(CUBE_X + CUBE_A, CUBE_Y + CUBE_A);
+const fbl = p(CUBE_X, CUBE_Y + CUBE_A);
+const btl = p(ftl.x + DEPTH_DX, ftl.y + DEPTH_DY);
+const btr = p(ftr.x + DEPTH_DX, ftr.y + DEPTH_DY);
+const bbr = p(fbr.x + DEPTH_DX, fbr.y + DEPTH_DY);
+const bbl = p(fbl.x + DEPTH_DX, fbl.y + DEPTH_DY);
+
+/** 八面体位置 = 上面の中心(面心の 1 つ) */
+const site = p(
+  (ftl.x + ftr.x + btl.x + btr.x) / 4,
+  (ftl.y + ftr.y + btl.y + btr.y) / 4,
+);
+/** この単位胞の体心 */
+const center = p(site.x, site.y + CUBE_A / 2);
+/** 上に隣接する単位胞の体心(八面体のもう 1 つの近接原子) */
+const phantom = p(center.x, center.y - CUBE_A);
+
+// 稜線: 見えている 9 本と、隠れた頂点(背面左下)に集まる 3 本
+const visibleEdges: ReadonlyArray<readonly [Pt, Pt]> = [
+  [ftl, ftr],
+  [ftr, fbr],
+  [fbr, fbl],
+  [fbl, ftl], // 前面
+  [ftl, btl],
+  [btl, btr],
+  [btr, ftr], // 上面
+  [fbr, bbr],
+  [bbr, btr], // 右面
+];
+const hiddenEdges: ReadonlyArray<readonly [Pt, Pt]> = [
+  [bbl, btl],
+  [bbl, bbr],
+  [bbl, fbl],
+];
+
+/** 線分の両端を pad だけ内側に詰める(マーカーや原子に食い込ませない) */
+function trimSeg(
+  a: Pt,
+  b: Pt,
+  padA: number,
+  padB: number,
+): { x1: number; y1: number; x2: number; y2: number } {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const len = Math.hypot(dx, dy);
+  const ux = dx / len;
+  const uy = dy / len;
+  return {
+    x1: r1(a.x + ux * padA),
+    y1: r1(a.y + uy * padA),
+    x2: r1(b.x - ux * padB),
+    y2: r1(b.y - uy * padB),
+  };
+}
+
+const LINK_PAD_SITE = R_SITE + 2; // マーカー側の余白
+const LINK_PAD_ATOM = R_FE + 1; // 原子側の余白
+
+// 八面体の遠い 4 原子(上面の 4 頂点、距離 a/√2)への補助リンク
+const farLinks = [ftl, ftr, btl, btr].map((c) =>
+  trimSeg(site, c, LINK_PAD_SITE, LINK_PAD_ATOM),
+);
+// 近い 2 原子(上下の体心、距離 a/2)への強調リンク
+const nearLinks = [center, phantom].map((c) =>
+  trimSeg(site, c, LINK_PAD_SITE, LINK_PAD_ATOM),
+);
+
+// ---- 右パネル: 隙間に入る球と炭素原子の実比(約 1:4)比較 ----
+const PX_PER_PM = 0.74; // 描画スケール(px / pm)
+const R_GAP_PM = 19; // 八面体隙間に入る球の半径 ≈ 0.019 nm
+const R_C_PM = 77; // 炭素原子の半径 ≈ 0.077 nm
+const rGap = r1(R_GAP_PM * PX_PER_PM);
+const rCarbon = r1(R_C_PM * PX_PER_PM);
+const gapC = p(452, 232); // 隙間球の中心
+const carbonC = p(600, 232); // 炭素原子の中心
+
+/** 半径の寸法線(中心→円周の矢印)。§6.5: 線 2px + 塗り三角の先端 */
+function radiusArrow(
+  c: Pt,
+  r: number,
+): { x1: number; x2: number; tip: string; y: number } {
+  const HEAD_LEN = 6;
+  const HEAD_HALF = 3;
+  const tipX = r1(c.x + r);
+  const baseX = r1(tipX - HEAD_LEN);
+  return {
+    x1: c.x,
+    x2: baseX,
+    y: c.y,
+    tip: `${baseX},${r1(c.y - HEAD_HALF)} ${baseX},${r1(c.y + HEAD_HALF)} ${tipX},${c.y}`,
+  };
+}
+const gapArrow = radiusArrow(gapC, rGap);
+const carbonArrow = radiusArrow(carbonC, rCarbon);
+
+const DIV_X = 368; // 左右パネルの区切り線 x
+---
+
+<svg
+  viewBox="0 0 720 400"
+  role="img"
+  aria-labelledby="s1-octahedral-title"
+  xmlns="http://www.w3.org/2000/svg"
+  font-family="inherit"
+  style="max-width: 100%; height: auto; display: block; margin-inline: auto"
+>
+  <title id="s1-octahedral-title">
+    BCC 鉄の単位胞と八面体位置。隙間の半径と炭素原子の大きさの比較
+  </title>
+
+  <!-- パネル区切り -->
+  <line
+    x1={DIV_X}
+    y1={24}
+    x2={DIV_X}
+    y2={376}
+    stroke="var(--color-hairline)"
+    stroke-width="1"></line>
+
+  <!-- ==== 左: 単位胞と八面体位置 ==== -->
+  <text
+    x="188"
+    y="34"
+    text-anchor="middle"
+    font-size="14"
+    fill="var(--color-text-2)">BCC 鉄の単位胞と八面体位置</text
+  >
+
+  <!-- 隠れた稜線(破線)-->
+  <g
+    stroke="var(--color-text-2)"
+    stroke-width="1.2"
+    opacity="0.3"
+    stroke-dasharray="5 4"
+  >
+    {hiddenEdges.map(([a, b]) => <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} />)}
+  </g>
+
+  <!-- 奥の Fe 原子(少し薄く)-->
+  <g
+    fill="var(--mat-matrix)"
+    stroke={FE_EDGE}
+    stroke-width="1.5"
+    opacity={BACK_OPACITY}
+  >
+    {[btl, btr, bbr, bbl].map((c) => <circle cx={c.x} cy={c.y} r={R_FE} />)}
+  </g>
+
+  <!-- 見えている稜線(hairline より濃い線)-->
+  <g stroke="var(--color-text-2)" stroke-width="1.2" opacity="0.55">
+    {visibleEdges.map(([a, b]) => <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} />)}
+  </g>
+
+  <!-- 八面体の遠い 4 原子(上面の頂点、a/√2)への補助リンク -->
+  <g stroke="var(--color-text-2)" stroke-width="1" opacity="0.3">
+    {farLinks.map((s) => <line x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2} />)}
+  </g>
+
+  <!-- 近い 2 原子(上下の体心、a/2)への強調リンク = つぶれた八面体の軸 -->
+  <g stroke="var(--color-accent)" stroke-width="2" stroke-linecap="round">
+    {nearLinks.map((s) => <line x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2} />)}
+  </g>
+
+  <!-- 上に隣接する単位胞の体心(薄く)-->
+  <g opacity={PHANTOM_OPACITY}>
+    <circle
+      cx={phantom.x}
+      cy={phantom.y}
+      r={R_FE}
+      fill="var(--mat-matrix)"
+      stroke={FE_EDGE}
+      stroke-width="1.5"></circle>
+  </g>
+
+  <!-- この単位胞の体心 + 前面の頂点 4 個 -->
+  <g fill="var(--mat-matrix)" stroke={FE_EDGE} stroke-width="1.5">
+    <circle cx={center.x} cy={center.y} r={R_FE}></circle>
+    {[ftl, ftr, fbr, fbl].map((c) => <circle cx={c.x} cy={c.y} r={R_FE} />)}
+  </g>
+
+  <!-- 八面体位置マーカー(上面の面心。小さい破線円)-->
+  <circle
+    cx={site.x}
+    cy={site.y}
+    r={R_SITE}
+    fill="none"
+    stroke="var(--mat-solute)"
+    stroke-width="1.5"
+    stroke-dasharray="3 2.5"></circle>
+
+  <!-- ラベル・凡例 -->
+  <g fill="var(--color-text-2)" font-size="14">
+    <text x="204" y="109" font-size="12.5">隣の単位胞の体心</text>
+    <circle
+      cx="36"
+      cy="364"
+      r="6.5"
+      fill="var(--mat-matrix)"
+      stroke={FE_EDGE}
+      stroke-width="1.5"></circle>
+    <text x="50" y="369">Fe 原子</text>
+    <circle
+      cx="148"
+      cy="364"
+      r="6"
+      fill="none"
+      stroke="var(--mat-solute)"
+      stroke-width="1.5"
+      stroke-dasharray="3 2.5"></circle>
+    <text x="160" y="369">八面体位置</text>
+    <text x="24" y="390" font-size="13"
+      >上下の体心 2 原子だけが近い、つぶれた八面体</text
+    >
+  </g>
+
+  <!-- ==== 右: 隙間に入る球と炭素原子の大きさ比較(実比 約 1:4)==== -->
+  <text
+    x="536"
+    y="34"
+    text-anchor="middle"
+    font-size="14"
+    fill="var(--color-text-2)">隙間と炭素原子の大きさ(実比)</text
+  >
+
+  <!-- 八面体隙間に入る球(空きサイトなので破線の輪郭)-->
+  <circle
+    cx={gapC.x}
+    cy={gapC.y}
+    r={rGap}
+    fill="none"
+    stroke="var(--mat-matrix)"
+    stroke-width="1.5"
+    stroke-dasharray="4 3"></circle>
+  <line
+    x1={gapArrow.x1}
+    y1={gapArrow.y}
+    x2={gapArrow.x2}
+    y2={gapArrow.y}
+    stroke="var(--color-text-2)"
+    stroke-width="2"></line>
+  <polygon points={gapArrow.tip} fill="var(--color-text-2)"></polygon>
+
+  <!-- 炭素原子(塗り円 + 20% 暗い縁)-->
+  <circle
+    cx={carbonC.x}
+    cy={carbonC.y}
+    r={rCarbon}
+    fill="var(--mat-solute)"
+    stroke={C_EDGE}
+    stroke-width="1.5"></circle>
+  <!-- 参考: 炭素の中に隙間球を重ねて実比を見せる -->
+  <circle
+    cx={carbonC.x}
+    cy={carbonC.y}
+    r={rGap}
+    fill="none"
+    stroke="var(--color-bg)"
+    stroke-width="1.5"
+    stroke-dasharray="4 3"
+    opacity="0.9"></circle>
+  <line
+    x1={carbonArrow.x1}
+    y1={carbonArrow.y}
+    x2={carbonArrow.x2}
+    y2={carbonArrow.y}
+    stroke="var(--color-bg)"
+    stroke-width="2"></line>
+  <polygon points={carbonArrow.tip} fill="var(--color-bg)"></polygon>
+
+  <g fill="var(--color-text-2)" font-size="14" text-anchor="middle">
+    <text x={gapC.x} y="200">八面体隙間に入る球</text>
+    <text x={gapC.x} y="272">半径 ≈ 0.019 nm</text>
+    <text x={carbonC.x} y="158">炭素原子</text>
+    <text x={carbonC.x} y="313">半径 ≈ 0.077 nm</text>
+    <text x="536" y="352" font-size="13"
+      >半径は隙間の約 4 倍 — 炭素はどこにいても窮屈</text
+    >
+  </g>
+</svg>
