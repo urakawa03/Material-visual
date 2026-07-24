@@ -88,9 +88,10 @@ export function linTicks(min: number, max: number, target = 5): number[] {
   return out;
 }
 
-/** 対数軸の 10 の冪の目盛り列 */
+/** 対数軸の 10 の冪の目盛り列(min ≤ 0 は空配列を返す — log10(0) の発散防止) */
 export function logTicks(min: number, max: number): number[] {
   const out: number[] = [];
+  if (min <= 0 || max <= 0 || max < min) return out;
   for (
     let e = Math.ceil(Math.log10(min) - 1e-9);
     e <= Math.floor(Math.log10(max) + 1e-9);

@@ -15,12 +15,7 @@
 
 import type { FigureHost, WidgetHandle } from "../types";
 import { matColor, uiColor } from "../../core/colors";
-import {
-  KELVIN,
-  K_REF_NM3S,
-  formatDuration,
-  timeDilation,
-} from "./lib/constants";
+import { KELVIN, formatDuration, timeDilation } from "./lib/constants";
 import { RipeningEnsemble, lswPdf } from "./lib/ripening";
 import { font, fmtSig, linTicks, logTicks } from "./lib/draw";
 
@@ -33,8 +28,12 @@ const SEED_STRIDE = 17;
 /** スナップショットの基準時刻 T1 と比 1:8:64(τ 秒) */
 const T1 = 1200;
 const SNAP_TAUS = [T1, 8 * T1, 64 * T1] as const;
-/** 履歴の終端 τ */
-const TAU_END = 64 * T1 * 1.05;
+/**
+ * 曲線履歴の終端 τ。最後のスナップショット(64·T1)より先まで走らせて、
+ * 両対数プロットが漸近域(局所傾き → 1/3)まで伸びるようにする。
+ * これ以上延ばすと有限 N の枯渇で末端が荒れるため 96·T1 で止める(数値検証済み)。
+ */
+const TAU_END = 96 * T1;
 /** ヒストグラムのビン(u = r/r̄、0〜2) */
 const HIST_BINS = 16;
 const HIST_MAX_U = 2;
@@ -64,8 +63,10 @@ function toHist(us: number[]): number[] {
   const h = new Array<number>(HIST_BINS).fill(0);
   const bw = HIST_MAX_U / HIST_BINS;
   for (const u of us) {
-    const b = Math.floor(u / bw);
-    if (b >= 0 && b < HIST_BINS) h[b] += 1;
+    // 範囲外(u ≥ 2、初期スナップの上位 0.1% 程度)は最終ビンへ寄せて
+    // 総面積を厳密に 1 に保つ
+    const b = Math.min(HIST_BINS - 1, Math.max(0, Math.floor(u / bw)));
+    h[b] += 1;
   }
   const n = us.length;
   for (let i = 0; i < HIST_BINS; i++) h[i] /= n * bw;
@@ -377,16 +378,13 @@ export default function oneThirdLaw(host: FigureHost): WidgetHandle {
     ctx.fillStyle = solute;
     ctx.fill();
 
-    // K の読み出し(200 °C 基準)
+    // K の読み出し(描画したフィット直線の傾きそのもの。200 °C 基準)。
+    // 有限アンサンブルの実測値は理論値 (4/9)Dc∞l_c ≈ K_REF にほぼ一致する。
     ctx.font = font(12);
     ctx.fillStyle = text;
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
-    ctx.fillText(
-      `傾き K ≈ ${fmtSig(K_REF_NM3S)} nm³/s(200 °C)`,
-      p.x + 8,
-      p.y + 6,
-    );
+    ctx.fillText(`傾き K ≈ ${fmtSig(d.kFit)} nm³/s(200 °C)`, p.x + 8, p.y + 6);
   }
 
   function drawLogLog(d: Precomputed, p: Plot): void {
@@ -430,22 +428,24 @@ export default function oneThirdLaw(host: FigureHost): WidgetHandle {
     ctx.textBaseline = "top";
     ctx.fillText("r̄ [nm]", p.x + 2, p.y - 2);
 
-    // 傾き 1/3 の参照線(後半のデータに沿わせる)
-    const iRef = Math.floor(d.t.length * 0.5);
-    const tRef = d.t[iRef];
-    const rRef = d.rbar[iRef];
-    const refR = (t: number): number => rRef * Math.cbrt(t / tRef);
+    // 漸近線 r̄ = (K t)^(1/3)(切片 r̄0³ を落とした純冪則)。両対数では傾き
+    // ちょうど 1/3 の直線で、データは初期の遷移域では下にずれ、時間が経つと
+    // この線に合流していく(§S6 の「漸近則」を絵で示す)。K は tab(a) と同じ
+    // フィット値を使うので、末端でデータと線がほぼ重なる。
+    const asymR = (t: number): number => Math.cbrt(d.kFit * t);
+    // プロット内に収まる範囲だけ描く(左端は下枠でクリップ)
+    const tLineLo = Math.max(tMin, (rMin * 0.9) ** 3 / d.kFit);
     ctx.strokeStyle = accent;
     ctx.lineWidth = 1.25;
     ctx.setLineDash([5, 4]);
     ctx.beginPath();
-    ctx.moveTo(mapX(tRef), mapY(refR(tRef)));
-    ctx.lineTo(mapX(tMax), mapY(refR(tMax)));
+    ctx.moveTo(mapX(tLineLo), mapY(asymR(tLineLo)));
+    ctx.lineTo(mapX(tMax), mapY(asymR(tMax)));
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.fillStyle = accent;
     ctx.font = font(11);
-    ctx.fillText("傾き 1/3", mapX(tMax) - 52, mapY(refR(tMax)) - 16);
+    ctx.fillText("傾き 1/3", mapX(tMax) - 52, mapY(asymR(tMax)) - 14);
 
     // データ
     ctx.strokeStyle = solute;
