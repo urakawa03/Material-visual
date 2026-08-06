@@ -3,6 +3,8 @@
 材料科学の代表的な現象を「長文記事 + 操作可能な図版」で学ぶ、完全静的な教材サイトです。
 本リポジトリはその母体(デザインシステム・コアライブラリ・ページ雛形)を実装しています。
 
+公開サイト: <https://urakawa03.github.io/Material-visual/>
+
 仕様書: [`docs/specs/00_base_site_spec.md`](docs/specs/00_base_site_spec.md)
 
 ## 技術スタック
