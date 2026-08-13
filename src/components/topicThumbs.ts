@@ -102,20 +102,27 @@ function cottrellAtmosphere(): string {
   );
 }
 
-/** 5. カーケンドール効果: 拡散対(A|B)と流束の非対称 */
+/**
+ * 5. カーケンドール効果: 拡散対(左 Cu | 右 真鍮)と、初期界面から
+ * 真鍮側へずれた目印。色は記事本体と同じ約束(A = --mat-matrix、
+ * B = --mat-second、目印 = --color-accent — 仕様書 06 §5.0)。
+ */
 function kirkendallEffect(): string {
   const aPts = grid(22, 24, 82, 104, 20, 20);
   const bPts = grid(118, 24, 178, 104, 20, 20);
   return svg(
-    dots(aPts, 4, "var(--mat-solute)", 0.9) +
+    dots(aPts, 4, "var(--mat-matrix)", 0.9) +
       dots(bPts, 4, "var(--mat-second)", 0.9) +
+      // 初期界面(破線)と、真鍮側へ動いた目印(accent)
       `<line x1="100" y1="14" x2="100" y2="111" stroke="var(--mat-recip)" stroke-width="1.5" stroke-dasharray="5 4"/>` +
+      `<line x1="122" y1="18" x2="122" y2="107" stroke="var(--color-accent)" stroke-width="3"/>` +
+      // Zn は左へ、Cu は右へ(足の速さが違うので長さも違う)
       `<g stroke-width="2.5" fill="none">` +
-      `<line x1="70" y1="14" x2="128" y2="14" stroke="var(--mat-solute)"/>` +
-      `<line x1="124" y1="120" x2="96" y2="120" stroke="var(--mat-second)"/>` +
+      `<line x1="150" y1="14" x2="62" y2="14" stroke="var(--mat-second)"/>` +
+      `<line x1="76" y1="118" x2="124" y2="118" stroke="var(--mat-matrix)"/>` +
       `</g>` +
-      `<path d="M 128 14 l -7 -4 v 8 Z" fill="var(--mat-solute)"/>` +
-      `<path d="M 96 120 l 7 -4 v 8 Z" fill="var(--mat-second)"/>`,
+      `<path d="M 62 14 l 7 -4 v 8 Z" fill="var(--mat-second)"/>` +
+      `<path d="M 124 118 l -7 -4 v 8 Z" fill="var(--mat-matrix)"/>`,
   );
 }
 

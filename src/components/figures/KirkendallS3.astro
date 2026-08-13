@@ -1,0 +1,141 @@
+---
+/**
+ * KirkendallS3.astro — 静的図 S-3(記事仕様書 06 §6)
+ *
+ * Cu/Sn はんだ接合部の模式断面。Cu 側の界面に並ぶカーケンドールボイドが、
+ * 電子機器の信頼性問題(強度低下・断線)になる。
+ *
+ * 色: Cu = --mat-matrix、はんだ(Sn)= --mat-second、金属間化合物 =
+ * --mat-precip、ボイド = 白 + --mat-defect の輪郭(記事仕様 §5.0)。
+ */
+
+interface Props {
+  caption: string;
+  alt: string;
+}
+
+const { caption, alt } = Astro.props;
+
+const X0 = 60;
+const X1 = 560;
+const TOP = 44;
+const BOT = 150;
+
+/** 層の境界(左からの位置) */
+const CU_END = 250;
+const CU3SN_END = 286;
+const CU6SN5_END = 330;
+
+/** ボイド(Cu / Cu₃Sn 界面に並ぶ) */
+const voids = [
+  { cx: CU_END - 6, cy: 62, r: 7 },
+  { cx: CU_END - 4, cy: 88, r: 10 },
+  { cx: CU_END - 7, cy: 116, r: 8 },
+  { cx: CU_END - 3, cy: 137, r: 6 },
+];
+---
+
+<figure class="static-fig">
+  <svg
+    viewBox="0 0 620 212"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    {/* Cu(基板側) */}
+    <rect
+      x={X0}
+      y={TOP}
+      width={CU_END - X0}
+      height={BOT - TOP}
+      fill="var(--mat-matrix)"
+      opacity="0.6"></rect>
+    {/* Cu₃Sn / Cu₆Sn₅(金属間化合物) */}
+    <rect
+      x={CU_END}
+      y={TOP}
+      width={CU3SN_END - CU_END}
+      height={BOT - TOP}
+      fill="var(--mat-precip)"
+      opacity="0.75"></rect>
+    <rect
+      x={CU3SN_END}
+      y={TOP}
+      width={CU6SN5_END - CU3SN_END}
+      height={BOT - TOP}
+      fill="var(--mat-precip)"
+      opacity="0.45"></rect>
+    {/* はんだ(Sn) */}
+    <rect
+      x={CU6SN5_END}
+      y={TOP}
+      width={X1 - CU6SN5_END}
+      height={BOT - TOP}
+      fill="var(--mat-second)"
+      opacity="0.5"></rect>
+    <rect
+      x={X0}
+      y={TOP}
+      width={X1 - X0}
+      height={BOT - TOP}
+      fill="none"
+      stroke="var(--color-hairline)"></rect>
+
+    {/* カーケンドールボイド(白い塗り + 欠陥色の輪郭) */}
+    {
+      voids.map((v) => (
+        <circle
+          cx={v.cx}
+          cy={v.cy}
+          r={v.r}
+          fill="var(--color-bg)"
+          stroke="var(--mat-defect)"
+          stroke-width="2"
+        />
+      ))
+    }
+
+    {/* 拡散の向き(Cu が速く出ていく → 空孔が Cu 側へ) */}
+    <g stroke="var(--mat-matrix)" stroke-width="2.5" fill="var(--mat-matrix)">
+      <line x1="180" y1="30" x2="330" y2="30"></line>
+      <path d="M 334 30 l -8 -4.5 v 9 Z"></path>
+    </g>
+    <text x="182" y="24" font-size="12" fill="var(--color-text-2)">
+      Cu が化合物層へ出ていく(速い)
+    </text>
+
+    {/* ラベル */}
+    <text
+      x={(X0 + CU_END) / 2}
+      y={TOP + 22}
+      text-anchor="middle"
+      font-size="13"
+      fill="var(--color-text-2)">Cu(基板・端子)</text
+    >
+    <text
+      x={(CU6SN5_END + X1) / 2}
+      y={TOP + 22}
+      text-anchor="middle"
+      font-size="13"
+      fill="var(--color-text-2)">はんだ(Sn)</text
+    >
+    <text
+      x={(CU_END + CU3SN_END) / 2}
+      y={BOT + 16}
+      text-anchor="middle"
+      font-size="12"
+      fill="var(--color-text-2)">Cu₃Sn</text
+    >
+    <text
+      x={(CU3SN_END + CU6SN5_END) / 2}
+      y={BOT + 32}
+      text-anchor="middle"
+      font-size="12"
+      fill="var(--color-text-2)">Cu₆Sn₅</text
+    >
+    <text x={X0} y={BOT + 50} font-size="12.5" fill="var(--mat-defect)"
+      >白い穴 = カーケンドールボイド(Cu/Cu₃Sn 界面に並ぶ)</text
+    >
+  </svg>
+  <figcaption>{caption}</figcaption>
+  <p class="sr-only">{alt}</p>
+</figure>

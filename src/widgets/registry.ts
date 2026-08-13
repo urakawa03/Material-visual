@@ -61,6 +61,21 @@ export const registry: Record<
   "ostwald-ripening/coarsening-design": () =>
     import("./ostwald-ripening/coarsening-design"),
 
+  // 記事「カーケンドール効果」(仕様書 06)
+  "kirkendall-effect/random-walk": () =>
+    import("./kirkendall-effect/random-walk"),
+  "kirkendall-effect/vacancy-hop": () =>
+    import("./kirkendall-effect/vacancy-hop"),
+  "kirkendall-effect/diffusion-couple": () =>
+    import("./kirkendall-effect/diffusion-couple"),
+  "kirkendall-effect/flux-balance": () =>
+    import("./kirkendall-effect/flux-balance"),
+  "kirkendall-effect/darken": () => import("./kirkendall-effect/darken"),
+  "kirkendall-effect/void-formation": () =>
+    import("./kirkendall-effect/void-formation"),
+  "kirkendall-effect/hollow-nanoparticle": () =>
+    import("./kirkendall-effect/hollow-nanoparticle"),
+
   // 記事「コットレル雰囲気」(仕様書 04)
   "cottrell-atmosphere/yield-tooth": () =>
     import("./cottrell-atmosphere/yield-tooth"),
