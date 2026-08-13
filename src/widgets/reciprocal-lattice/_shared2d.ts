@@ -348,8 +348,12 @@ export interface Readout {
   /**
    * 読み取り値の項目を追加する。color を指定するとラベルが意味色
    * (文字用 ink トークン)になる(§2.3 の q / g の色分け)。
+   * "sphere" はエヴァルト球の量用(仕様書 04 §6.3)。
    */
-  item(label: string, opts?: { color?: "beam" | "recip" }): ReadoutItem;
+  item(
+    label: string,
+    opts?: { color?: "beam" | "recip" | "sphere" },
+  ): ReadoutItem;
 }
 
 /**
@@ -369,8 +373,7 @@ export function createReadout(host: FigureHost): Readout {
       const item = document.createElement("span");
       item.className = "ix-readout-item";
       const lab = document.createElement("span");
-      if (opts?.color === "beam") lab.className = "ix-readout-beam";
-      if (opts?.color === "recip") lab.className = "ix-readout-recip";
+      if (opts?.color) lab.className = `ix-readout-${opts.color}`;
       lab.textContent = label;
       const out = document.createElement("output");
       item.append(lab, out);
@@ -401,6 +404,11 @@ export interface StepperControl {
   el: HTMLElement;
   readonly value: number;
   set(v: number): void;
+  /**
+   * 上限を変える(選べる項目数が状態で変わる図版用 — 仕様書 04 §5.6 の
+   * 「測る環」は格子と波長で本数が変わる)。現在値は新しい上限に丸められる。
+   */
+  setMax(max: number): void;
   onChange(cb: (v: number) => void): void;
 }
 
@@ -442,14 +450,15 @@ export function createStepper(
   container?.appendChild(el);
 
   let current = opts.value;
+  let max = opts.max;
   const listeners: Array<(v: number) => void> = [];
   const display = (): void => {
     out.textContent = format(current);
     minus.disabled = current <= opts.min;
-    plus.disabled = current >= opts.max;
+    plus.disabled = current >= max;
   };
   const apply = (v: number, notify: boolean): void => {
-    const nv = Math.min(opts.max, Math.max(opts.min, v));
+    const nv = Math.min(max, Math.max(opts.min, v));
     if (nv === current) {
       display();
       return;
@@ -472,6 +481,12 @@ export function createStepper(
     },
     set(v: number): void {
       apply(v, true);
+    },
+    setMax(newMax: number): void {
+      max = Math.max(opts.min, newMax);
+      // 現在値が新しい上限を超えていれば丸めて通知する
+      if (current > max) apply(max, true);
+      else display();
     },
     onChange(cb: (v: number) => void): void {
       listeners.push(cb);

@@ -1,0 +1,662 @@
+---
+/**
+ * ewald-sphere.astro — 記事「エヴァルト球」(仕様書 04)
+ *
+ * カテゴリ A. 回折と結晶の幾何 の第 2 記事。前提記事「逆格子空間」で作った
+ * 「回折が起こりうる場所の地図」の上に、入射波の向きと波長が決める探照灯 =
+ * エヴァルト球を置き、どの反射が実際に光るのかを 7 つの操作できる図版で
+ * 追いかける。記号・慣習(|k| = 1/λ、|g| = 1/d)は前提記事に合わせている。
+ * タイトル・カテゴリ・前後ナビは topics.ts から解決される。
+ */
+import Article from "../../layouts/Article.astro";
+import Figure from "../../components/Figure.astro";
+import M from "../../components/M.astro";
+---
+
+<Article
+  slug="ewald-sphere"
+  lead="逆格子は、回折が起こりうる場所の地図でした。では、そのうちのどれが実際に光るのでしょうか。決めるのは入射波の向きと波長です。その関係を一枚の作図に落としたものがエヴァルト球です。球を手で回し、波長を変え、最後は「なぜ粉末では環になり、電子線では一度に無数の点が出るのか」までを一気に見わたします。"
+  description="エヴァルト球(Ewald sphere)の作図を、ブラッグ則とラウエ条件の等価性から組み立てる記事。弾性散乱の拘束、励起誤差と結晶の厚さ、回転結晶法・ラウエ法・粉末法、電子線で球が平らに見える理由までを、操作できる 7 つの図版で体感する。"
+>
+  <h2>同じ条件を、二つの言葉で</h2>
+  <p>
+    前の記事は、次の 1 行を予告して終わりました。回折とは、入射波と出射波の
+    波数ベクトル(wave vector)の差が、ちょうど逆格子点に一致する現象です:
+  </p>
+  <M
+    block
+    tex={String.raw`\mbeam{\mathbf{k}'} - \mbeam{\mathbf{k}} = \mrecip{\mathbf{g}} \quad (\lvert\mbeam{\mathbf{k}}\rvert = 1/\mbeam{\lambda})`}
+  />
+  <p>
+    これをラウエ条件(Laue condition)と呼びます。ところが多くの人は、回折を
+    別の式で習っています。ブラッグ則(Bragg's law)です:
+  </p>
+  <M block tex={String.raw`2d\sin\theta = \mbeam{\lambda}`} />
+  <p>
+    面間隔 <M tex="d" /> の格子面を鏡と見立て、隣り合う 2 枚の面で反射した波の 光路差
+    <M tex={String.raw`2d\sin\theta`} /> が波長のちょうど整数倍になると、 波が強め合う
+    — という話でした。この二つは、まったく違う顔をしています。 実はこれは、同じ 1
+    つの条件を実空間と逆空間で書いただけのものです。
+  </p>
+  <p>
+    下の図で確かめましょう。左が実空間のブラッグの絵、右が逆空間のラウエの絵です。
+    入射角 <M tex={String.raw`\theta`} /> のスライダーを動かして、左の光路差の帯が
+    波長の帯とぴったり同じ長さになる角度を探してください。
+  </p>
+  <Figure
+    widget="ewald-sphere/bragg-vs-laue"
+    aspect="2/1"
+    aspectNarrow="10/13"
+    caption="図1. 同じ 1 つの条件を、実空間(左)と逆空間(右)で書いたもの。θ を動かして、光路差 2d sinθ が λ に一致する角度を探そう。一致した瞬間、右では Δk の先端がちょうど逆格子点に着地する。2 次元の断面で描いており、強度は扱っていない(線の太さは一致の印であって強度ではない)。"
+    alt="左に等間隔の格子面と入射・反射の光線、右に逆格子の原点・逆格子点と 3 本のベクトル。入射角を変えると光路差と散乱ベクトルの長さが同時に変わり、光路差が波長に一致したとき、散乱ベクトルの先端がちょうど逆格子点に重なる。"
+  />
+  <p>
+    左が一致した瞬間、右でも <M tex={String.raw`\mrecip{\Delta\mathbf{k}}`} /> の
+    先端がちょうど逆格子点に着地します。偶然ではありません。散乱ベクトル (scattering
+    vector)<M tex={String.raw`\mrecip{\Delta\mathbf{k}}`} /> の長さは、 二等辺三角形の底辺として
+  </p>
+  <M
+    block
+    tex={String.raw`\lvert\mrecip{\Delta\mathbf{k}}\rvert = \frac{2\sin\theta}{\mbeam{\lambda}}`}
+  />
+  <p>
+    と書けます。一方、前の記事で見たとおり逆格子ベクトルの長さは面間隔の逆数
+    <M tex={String.raw`\lvert\mrecip{\mathbf{g}}\rvert = 1/d`} /> でした。だから 両者が等しいという条件は、
+  </p>
+  <M
+    block
+    tex={String.raw`\frac{2\sin\theta}{\mbeam{\lambda}} = \frac{1}{d} \iff 2d\sin\theta = \mbeam{\lambda}`}
+  />
+  <p>
+    となり、ブラッグ則そのものになります。<M
+      tex={String.raw`\lvert\mrecip{\mathbf{g}}\rvert = 1/d`}
+    /> が二つの言葉をつなぐ橋だったわけです。向きについても心配は要りません。 鏡面反射の作図から、<M
+      tex={String.raw`\mrecip{\Delta\mathbf{k}}`}
+    /> は 必ず面の法線方向 — つまり <M tex={String.raw`\mrecip{\mathbf{g}}`} /> の方向
+    — を向くからです。
+  </p>
+  <p>
+    ここで、この記事の守備範囲をはっきりさせておきます。扱うのは
+    <strong>どの反射が光りうるか</strong>という幾何の条件だけです。
+    「どれくらい強く光るか」(構造因子, structure factor)には踏み込みません。
+    地図の上で光る場所を決める話に集中します。
+  </p>
+
+  <h2>波を矢で書く</h2>
+  <p>
+    ここから道具を 1 つに絞ります。波を 1 本の矢で表すことにしましょう。
+    向きは波の進む向き、長さは <M
+      tex={String.raw`\lvert\mbeam{\mathbf{k}}\rvert = 1/\mbeam{\lambda}`}
+    /> です。短い波長ほど長い矢になります。前の記事で縞の空間周波数を
+    <M tex={String.raw`\mbeam{q} = 1/\mbeam{\lambda}`} /> と書いたのと同じ目盛りです。
+  </p>
+  <p>
+    回折は弾性散乱(elastic scattering)です。波が原子とエネルギーをやりとり
+    しないので、波長が変わりません。つまり:
+  </p>
+  <M
+    block
+    tex={String.raw`\lvert\mbeam{\mathbf{k}'}\rvert = \lvert\mbeam{\mathbf{k}}\rvert = 1/\mbeam{\lambda}`}
+  />
+  <p>
+    <strong>散乱波の矢は、長さを変えられない</strong
+    >。変えられるのは向きだけです。
+    この一言が、この記事のすべてを決めます。下の図で、散乱波
+    <M tex={String.raw`\mbeam{\mathbf{k}'}`} /> の先端のつまみをドラッグして ぐるりと回してみてください。「先端の軌跡を残す」が入っているので、
+    通った跡が残ります。
+  </p>
+  <Figure
+    widget="ewald-sphere/k-triangle"
+    aspect="16/10"
+    aspectNarrow="1/1"
+    caption="図2. 弾性散乱では k′ の長さは変えられない。向きだけを変えて、Δk の先端がどこを通れるかを確かめよう。2 次元の断面として描いている(実際には k′ は 3 次元の球面上を動ける)。"
+    alt="結晶の位置から出る入射波と散乱波の 2 本の矢と、その差のベクトル。散乱波の先端をドラッグすると向きだけが変わり、差のベクトルの先端は入射波の根元を中心とする円の上だけを動く。"
+  />
+  <p>
+    現れたのは円です。しかも、この円の中心は <M
+      tex={String.raw`\mbeam{\mathbf{k}}`}
+    /> の根元、半径は <M tex={String.raw`\msph{1/\mbeam{\lambda}}`} />。
+    <M tex={String.raw`\mrecip{\Delta\mathbf{k}}`} /> を逆格子の原点 O から 生やしているので、<strong
+      >その先端が届ける場所は、この円(3 次元では球面)の上だけ</strong
+    >です。
+  </p>
+  <p>
+    これでもう答えは出ています。回折が起きるのは
+    <M tex={String.raw`\mrecip{\Delta\mathbf{k}} = \mrecip{\mathbf{g}}`} /> のとき。
+    <M tex={String.raw`\mrecip{\Delta\mathbf{k}}`} /> の先端は球面上にしかいられない。
+    ならば、<strong>球面に乗った逆格子点だけが回折する</strong>。
+    この球にはエヴァルト球(Ewald sphere)という名前が付いています。
+  </p>
+
+  <h2>球を描く</h2>
+  <p>作図の手順は 3 行です。</p>
+  <ol>
+    <li>
+      逆格子の原点 O に入射波 <M tex={String.raw`\mbeam{\mathbf{k}}`} /> の
+      <strong>先端</strong>が来るように、矢を描く。
+    </li>
+    <li>
+      その矢の根元を中心 <M tex={String.raw`\mathbf{C}`} />
+      として、半径 <M tex={String.raw`\msph{1/\mbeam{\lambda}}`} /> の球を描く。
+    </li>
+    <li>
+      球面に乗った逆格子点 <M tex={String.raw`\mrecip{\mathbf{g}}`} /> だけが回折する。
+      回折波は <M tex={String.raw`\mathbf{C}`} /> からその点へ向かう矢である。
+    </li>
+  </ol>
+  <p>式で書けばこれだけです:</p>
+  <M
+    block
+    tex={String.raw`\lvert\mrecip{\mathbf{g}} - \mathbf{C}\rvert = \msph{1/\mbeam{\lambda}},\quad \mathbf{C} = -\mbeam{\mathbf{k}}`}
+  />
+  <p>
+    <M tex={String.raw`\mrecip{\mathbf{g}} = 0`} />(原点そのもの)は必ずこの式を
+    満たします。球は原点を必ず通る、と覚えてください。あとで効いてきます。
+  </p>
+  <p>
+    下がこの記事の中心の図です。まず何も操作せずに眺めてください。
+    点はひとつも光っていません。「結晶の向き φ」のスライダーをゆっくり動かして、
+    逆格子点を球面の上に乗せてみてください。うまく当たらないときは
+    「いちばん近い反射に合わせる」を押してください。
+  </p>
+  <Figure
+    widget="ewald-sphere/construction"
+    aspect="16/10"
+    aspectNarrow="1/1"
+    caption="図3. エヴァルト球。中心は入射波の矢の根元、半径は 1/λ。球面に乗った逆格子点だけが回折する。初期状態では 1 つも乗っていない。点が「乗った」と判定される幅は、結晶の厚さ t による逆格子点の広がり(およそ 1/t)である。単純立方・a = 0.40 nm・|h|,|k|,|l| ≤ 3 に限っており、強度は扱っていないので、幾何条件を満たす点はすべて同じ大きさで点灯する。"
+    alt="逆格子の点が立方状に並ぶ中に、原点を通る半透明の球が描かれている。結晶の向きのスライダーを動かすと点の配列だけが回り、球面に乗った点が大きくなって、球の中心からその点へ回折波の矢が伸びる。"
+  />
+  <p>
+    ここが、この記事でいちばん大事な体験です。<strong
+      >静止した単結晶に単色の X 線を当てても、ふつうは何も起こらない</strong
+    >。逆格子はとびとびの点の集まりで、球は 2 次元の面です。3 次元空間の中で
+    点と面がぴったり出会う確率は、ほとんどゼロだからです。
+  </p>
+  <p>
+    …だとすると、次の疑問がすぐ湧きます。それならなぜ、現実には回折が観測できる
+    のでしょうか。理由のひとつは、<strong>逆格子点が本当は点ではない</strong>
+    ことです。結晶は無限に大きくありません。厚さ <M tex="t" /> の結晶では、 逆格子点は
+    <M tex={String.raw`\pm 1/t`} /> 程度に広がります。前の記事の図2 で 「原子の数
+    <M tex="N" /> が有限だと一致の山に幅が出る」のを見ましたが、 それと同じ話です(形状因子,
+    shape factor)。球面からのずれを励起誤差 (excitation error)<M tex="s" /> と呼び、
+  </p>
+  <M
+    block
+    tex={String.raw`s = \lvert\mrecip{\mathbf{g}} - \mathbf{C}\rvert - 1/\mbeam{\lambda},\qquad \lvert s\rvert \lesssim 1/t`}
+  />
+  <p>
+    のあいだなら回折が出ます。図3 の「結晶の厚さ <M tex="t" />」を動かしてみて
+    ください。薄い結晶ほど許容幅 <M tex="1/t" /> が広く、反射を捕まえやすく なります。これは幾何をごまかすための便法ではなく、実際に起きていることです。
+  </p>
+  <p>
+    それでもなお、条件はめったに満たされません。ここから先の 3 つの節は、
+    この「めったに満たされない条件」を、それぞれ違う自由度を振ることで
+    満たしにいく方法の話です。
+  </p>
+  <h3>コラム: 2π を付ける流儀</h3>
+  <p>
+    物理学の教科書では、波数ベクトルを <M
+      tex={String.raw`\lvert\mbeam{\mathbf{k}}\rvert = 2\pi/\mbeam{\lambda}`}
+    /> と定義し、逆格子ベクトルも <M
+      tex={String.raw`\mrecip{\mathbf{G}} = 2\pi\,\mrecip{\mathbf{g}}`}
+    /> と 2π 倍して使う流儀が主流です。その場合、エヴァルト球の半径は
+    <M tex={String.raw`2\pi/\mbeam{\lambda}`} />、限界球は <M
+      tex={String.raw`4\pi/\mbeam{\lambda}`}
+    /> になります。中身は同じもので、目盛りの取り方だけの違いです。本サイトは 全記事を通して結晶学の慣習(2π
+    を付けない)で書きます。
+  </p>
+  <h3>コラム: 球の式をほどく</h3>
+  <p>
+    球の式 <M
+      tex={String.raw`\lvert\mrecip{\mathbf{g}} + \mbeam{\mathbf{k}}\rvert = \lvert\mbeam{\mathbf{k}}\rvert`}
+    /> の両辺を 2 乗して整理すると、こう書けます:
+  </p>
+  <M
+    block
+    tex={String.raw`\lvert\mrecip{\mathbf{g}}\rvert^{2} + 2\,\mbeam{\mathbf{k}}\cdot\mrecip{\mathbf{g}} = 0`}
+  />
+  <p>
+    これは「<M
+      tex={String.raw`\mbeam{\mathbf{k}'} = \mbeam{\mathbf{k}} + \mrecip{\mathbf{g}}`}
+    />(ラウエ条件)かつ <M
+      tex={String.raw`\lvert\mbeam{\mathbf{k}'}\rvert = \lvert\mbeam{\mathbf{k}}\rvert`}
+    />(弾性散乱)」を 1 本にまとめた形です。エヴァルト球は、この式の絵に
+    ほかなりません。
+  </p>
+
+  <h2>結晶を回す</h2>
+  <p>
+    いちばん素直な手は、結晶を回すことです。結晶が回れば逆格子も一緒に回り、
+    点が次々と球面を横切ります。横切った一瞬だけ、反射が光ります。
+  </p>
+  <p>
+    下の図を再生してください。反射が現れては消え、また別のが現れます。
+    一時停止して「結晶の向き φ」を手で少しずつ送れば、1 つの反射が現れてから
+    消えるまでをコマ送りで追えます。
+  </p>
+  <Figure
+    widget="ewald-sphere/rotation-method"
+    aspect="16/10"
+    aspectNarrow="1/1"
+    caption="図4. 結晶を回すと逆格子が回り、点が次々と球面を横切る。横切った一瞬だけ反射が光る。光っている時間に幅があるのは、結晶が有限の厚さをもち、逆格子点がおよそ 1/t だけ広がっているからである。回転速度は現象を見せるための値で、実際の測定条件ではない。回転結晶法の幾何的な核心だけを取り出した模式である。"
+    alt="逆格子の点の配列がゆっくり回転し、半透明の球の面を横切った点だけが大きくなって回折波の矢が伸びる。横切り終わると消える。一度光った点の位置には印が残っていく。"
+  />
+  <p>
+    ここでつかんでほしい感覚はひとつです。<strong
+      >回折は「常に起きている」のではなく、「条件を満たした一瞬に起きる」</strong
+    >。回折写真に写っているのは、その一瞬の積み重ねなのです。これを測定法に
+    仕立てたのが回転結晶法(rotating-crystal method)で、結晶を 1 軸まわりに
+    回しながら、通り過ぎた反射を順に記録していきます。
+  </p>
+  <p>
+    「記録を残す」を入れておくと、一度光った点に印が残ります。印は逆格子側に
+    付くので、結晶と一緒に回ります。しばらく回すと、球が掃いていける範囲が
+    見えてきます。ここで自然に次の問いが出てきます —
+    <strong>いくら回しても届かない点は、あるのでしょうか。</strong>
+  </p>
+
+  <h2>波長を変える</h2>
+  <p>
+    答えは「あります」。理由は、球が必ず原点 O を通ることにあります。中心 <M
+      tex={String.raw`\mathbf{C}`}
+    /> は原点から <M tex={String.raw`\msph{1/\mbeam{\lambda}}`} /> の距離にしか 置けないので、結晶をどう回しても球面が到達できるのは原点から
+    <M tex={String.raw`2/\mbeam{\lambda}`} /> 以内の点だけです:
+  </p>
+  <M
+    block
+    tex={String.raw`\lvert\mrecip{\mathbf{g}}\rvert \le 2/\mbeam{\lambda} \quad\Longleftrightarrow\quad d \ge \mbeam{\lambda}/2`}
+  />
+  <p>
+    この半径 <M tex={String.raw`2/\mbeam{\lambda}`} /> の球を限界球 (limiting sphere)と呼びます。<M
+      tex={String.raw`\mbeam{\lambda}`}
+    /> の 半分より狭い面間隔は、その波長では原理的に測れないのです。X 線回折で 波長の選択が効くのはこのためです。
+  </p>
+  <p>
+    下の図で波長のスライダーを動かして、球と限界球が一緒に伸び縮みするのを
+    見てください。そのあと「光源」を白色に切り替えてみてください。
+  </p>
+  <Figure
+    widget="ewald-sphere/wavelength-limiting"
+    aspect="16/10"
+    aspectNarrow="1/1"
+    caption="図5. 波長を変えると球の大きさが変わる。球は必ず原点を通るので、届く範囲は原点まわりの半径 2/λ の限界球(細いワイヤの球)の内側だけ。白色 X 線に切り替えると球が殻に太り、静止した結晶からでも多数の反射が同時に出る(ラウエ法)。連続スペクトルの強度分布は無視し、範囲内の波長を等価に扱っている。"
+    alt="逆格子の点の配列に、原点を通る半透明の球と、原点を中心とする大きなワイヤの球が重なっている。波長を短くすると内側の球が大きくなって多くの点を拾い、外側の限界球も大きくなる。白色モードでは球が厚い殻になり、殻に入った点が一斉に点灯する。"
+  />
+  <p>
+    白色 X 線(white X-rays)は、波長が連続に分布している光です。波長 1 つに
+    つき球が 1 つ引けるので、全部重ねると球は<strong>殻</strong>になります。
+    殻の中に入った点は、どれかの波長でちょうど条件を満たします。だから
+    <strong>結晶を回さなくても、静止したまま多数の反射が同時に出ます</strong>。
+    これがラウエ法(Laue method)で、結晶の対称性を一目で見るのに使われます。
+  </p>
+  <h3>コラム: その点が光る波長</h3>
+  <p>
+    ある逆格子点 <M tex={String.raw`\mrecip{\mathbf{g}}`} /> が球面にちょうど 乗る波長は、上のコラムの式
+    <M
+      tex={String.raw`\lvert\mrecip{\mathbf{g}}\rvert^{2} + 2\,\mbeam{\mathbf{k}}\cdot\mrecip{\mathbf{g}} = 0`}
+    /> を <M tex={String.raw`\mbeam{\lambda}`} /> について解けば出ます:
+  </p>
+  <M
+    block
+    tex={String.raw`\mbeam{\lambda_{hkl}} = -\,\frac{2\,\hat{\mbeam{\mathbf{k}}}\cdot\mrecip{\mathbf{g}}}{\lvert\mrecip{\mathbf{g}}\rvert^{2}}`}
+  />
+  <p>
+    <M tex={String.raw`\hat{\mbeam{\mathbf{k}}}`} /> は入射方向の単位ベクトルです。
+    この値が光源の波長範囲に入っていれば、その点は光ります。図5 の白色モードは、 殻の見た目ではなく、点ごとにこの式で判定しています。入射方向と同じ側にある点
+    (<M
+      tex={String.raw`\hat{\mbeam{\mathbf{k}}}\cdot\mrecip{\mathbf{g}} > 0`}
+    />) は、どんな波長でも光れないことも読み取れます。
+  </p>
+
+  <h2>粉末にする</h2>
+  <p>
+    3 つめの手は、結晶を回すかわりに<strong
+      >あらゆる向きの結晶を一度に用意する</strong
+    >
+    ことです。試料を粉にすればよい — 粉末法(powder method)です。
+  </p>
+  <p>
+    逆空間で何が起きるかを考えましょう。1 つの逆格子点
+    <M tex={String.raw`\mrecip{\mathbf{g}_{hkl}}`} /> は、結晶の向きが変われば 原点まわりを動きます。あらゆる向きを集めれば、その点は<strong
+      >原点を中心とする半径 <M
+        tex={String.raw`\lvert\mrecip{\mathbf{g}_{hkl}}\rvert`}
+      /> の球殻</strong
+    >に塗り広げられます。球殻とエヴァルト球が交われば、そこはもう「点と面が
+    出会うか」という賭けではありません。必ず 1 本の円で交わります。
+  </p>
+  <p>
+    下の図の左が逆空間の作図、右が検出器を正面から見た図です。「測る環」の ±
+    ボタンで環を選び、読み取り値の <M tex={String.raw`2\theta`} /> から計算した面間隔が、式の値と合うか確かめてください。
+  </p>
+  <Figure
+    widget="ewald-sphere/powder-rings"
+    aspect="2/1"
+    aspectNarrow="10/13"
+    caption="図6. 粉末ではあらゆる方位の結晶が含まれるので、1 つの逆格子点は原点まわりの球殻に塗り広げられる。球殻とエヴァルト球の交わりは円で、そこへ向かう回折波は円錐をなし、検出器では環になる。強度(多重度・構造因子・吸収)は扱っていないので、環の濃さはすべて同じである。検出器は平板で、試料からの距離を 1 として半径を表示している。粒子は十分多いものとして連続な環で描いた。"
+    alt="左は逆空間の作図で、原点を中心とする球殻とエヴァルト球が円で交わり、その円へ向かう回折波が円錐をつくる。右は検出器を正面から見た図で、中心の透過スポットのまわりに同心の環が並ぶ。環を選ぶと、その 2θ から計算した面間隔が表示される。"
+  />
+  <p>
+    円へ向かう回折波は、入射方向を軸とする<strong>円錐</strong>をなします。
+    検出器を置けば、円錐が切り取る形 — つまり環が写ります。デバイ・シェラー環
+    (Debye–Scherrer ring)です。環の半径は、試料から検出器までの距離を
+    <M tex="L" /> として
+  </p>
+  <M block tex={String.raw`r = L\tan 2\theta`} />
+  <p>
+    で決まります。そして <M tex={String.raw`2\theta`} /> が分かれば、ブラッグ則を
+    逆に使って面間隔が測れます:<M
+      tex={String.raw`d = \mbeam{\lambda}/(2\sin\theta)`}
+    />。読み取り値の「測った d」と「式の d」がぴたりと合うはずです。
+    粉末回折が材料の同定にそのまま使えるのは、この一本道があるからです。
+  </p>
+  <p>
+    「格子」を体心立方・面心立方に切り替えてみてください。環の本数と位置が
+    変わります。前の記事で見た「現れない点」— 体心立方では <M
+      tex={String.raw`h+k+l`}
+    /> が奇数の点、面心立方では <M tex="h" />, <M tex="k" />, <M tex="l" /> の 偶奇がそろわない点が無い、というあの話
+    — が、そのまま「現れない環」として 出てきます。粉末回折図形のパターンから結晶構造が読めるのは、このおかげです。
+  </p>
+
+  <h2>球が平らに見えるとき</h2>
+  <p>
+    最後に、まったく別の道を紹介します。回すのでも、波長を振るのでも、
+    粉にするのでもなく — <strong>球を平らにしてしまう</strong>道です。
+  </p>
+  <p>
+    透過型電子顕微鏡(TEM)で使う 200 kV の電子線は、波長が
+    <M tex={String.raw`\mbeam{\lambda} \approx 2.5`} /> pm しかありません。 X 線(Cu
+    Kα で 154 pm)の 60 分の 1 ほどです。ということは球の半径
+    <M tex={String.raw`\msph{1/\mbeam{\lambda}}`} /> は 60 倍。逆格子の間隔 (<M
+      tex={String.raw`1/a = 2.5`}
+    /> nm⁻¹ 程度)に比べて桁違いに大きな球に なります。
+  </p>
+  <p>
+    大きな球の表面は、狭い範囲では平らに見えます。どれくらい平らかは、
+    球面が接平面から離れていく距離(サジッタ)で測れます:
+  </p>
+  <M
+    block
+    tex={String.raw`\Delta = \msph{R} - \sqrt{\msph{R}^{2} - \lvert\mrecip{\mathbf{g}}\rvert^{2}} \approx \frac{\lvert\mrecip{\mathbf{g}}\rvert^{2}\mbeam{\lambda}}{2}`}
+  />
+  <p>
+    下の図で、左右の弧の形を見比べてください。加速電圧を下げると右の弧が
+    目に見えて曲がりはじめます。
+  </p>
+  <Figure
+    widget="ewald-sphere/electron-vs-xray"
+    aspect="2/1"
+    aspectNarrow="10/13"
+    caption="図7. 同じ逆格子の断面(入射方向に垂直な面を横から見たもの)に、X 線(左)と電子線(右)のエヴァルト球の弧を同じ縮尺で重ねたもの。電子線では球の半径が 2 桁大きく、原点付近では球面と逆格子面がほとんど区別できない。2 次元の断面で描いており、動力学的効果(多重散乱)や、X 線と電子線で散乱の強さがまったく違うことは扱っていない。"
+    alt="左右に同じ逆格子の断面が並び、左には強く湾曲した X 線のエヴァルト球の弧、右にはほとんど直線に見える電子線の弧が重なっている。右では原点から左右に並ぶ点が一列に点灯し、左では条件を満たす点がない。"
+  />
+  <p>
+    数字で見ると差は歴然です。<M
+      tex={String.raw`\lvert\mrecip{\mathbf{g}}\rvert = 5`}
+    /> nm⁻¹(逆格子 2 格子ぶん)の位置で、Cu Kα の X 線では <M
+      tex={String.raw`\Delta \approx 2.35`}
+    /> nm⁻¹ — 逆格子の間隔 2.5 nm⁻¹ と同じくらいで、まったく平らではありません。 200
+    kV の電子線では <M tex={String.raw`\Delta \approx 0.03`} /> nm⁻¹、 逆格子の間隔の
+    1% 程度です。厚さ 30 nm の薄膜なら許容幅は <M
+      tex={String.raw`1/t \approx 0.033`}
+    /> nm⁻¹ ですから、この範囲の点は<strong>まとめて条件を満たします</strong>。
+  </p>
+  <p>
+    だから TEM の回折図形は、逆格子の断面図そのものに見えます。電子線を
+    結晶軸(晶帯軸, zone axis)に沿って入れると、その軸に垂直な逆格子面が
+    一枚まるごと光り、格子の対称性がそのまま画面に出るのです。 「結晶の厚さ <M
+      tex="t"
+    />」を薄くすると点灯する範囲がさらに広がることも、
+    図で確かめられます。薄い試料ほどきれいな回折図形が撮れる理由がここにあります。
+  </p>
+
+  <h2>まとめ</h2>
+  <p>
+    逆格子が「回折が起こりうる場所の地図」だとすれば、エヴァルト球は
+    <strong>その地図の上を走る探照灯</strong>です。探照灯には 3 つのつまみが
+    あります。下の図で、それぞれがどこを決めているのか確かめてください。
+  </p>
+  <figure class="ix" id="fig-ewald-sphere-summary" style="max-width: 40rem;">
+    <svg
+      viewBox="0 0 640 460"
+      aria-hidden="true"
+      style="display: block; width: 100%; height: auto;"
+    >
+      <defs>
+        <marker
+          id="ew-arrowhead"
+          viewBox="0 0 10 10"
+          refX="8"
+          refY="5"
+          markerWidth="6"
+          markerHeight="6"
+          orient="auto-start-reverse"
+        >
+          <path d="M 0 0 L 10 5 L 0 10 z" style="fill: var(--mat-beam);"></path>
+        </marker>
+      </defs>
+
+      <!-- エヴァルト球(中心 (260,210)・半径 130。原点 (390,210) を通る) -->
+      <circle
+        cx="260"
+        cy="210"
+        r="130"
+        style="fill: var(--mat-sphere-fill); stroke: var(--mat-sphere-line); stroke-width: 2;"
+      ></circle>
+
+      <!-- 逆格子点(地図) -->
+      <g style="fill: var(--mat-recip);">
+        <circle cx="234" cy="106" r="5"></circle>
+        <circle cx="286" cy="106" r="5"></circle>
+        <circle cx="390" cy="106" r="5"></circle>
+        <circle cx="442" cy="106" r="5"></circle>
+        <circle cx="234" cy="158" r="5"></circle>
+        <circle cx="286" cy="158" r="5"></circle>
+        <circle cx="338" cy="158" r="5"></circle>
+        <circle cx="390" cy="158" r="5"></circle>
+        <circle cx="442" cy="158" r="5"></circle>
+        <circle cx="234" cy="210" r="5"></circle>
+        <circle cx="286" cy="210" r="5"></circle>
+        <circle cx="338" cy="210" r="5"></circle>
+        <circle cx="442" cy="210" r="5"></circle>
+        <circle cx="234" cy="262" r="5"></circle>
+        <circle cx="286" cy="262" r="5"></circle>
+        <circle cx="338" cy="262" r="5"></circle>
+        <circle cx="390" cy="262" r="5"></circle>
+        <circle cx="442" cy="262" r="5"></circle>
+        <circle cx="234" cy="314" r="5"></circle>
+        <circle cx="286" cy="314" r="5"></circle>
+        <circle cx="338" cy="314" r="5"></circle>
+        <circle cx="390" cy="314" r="5"></circle>
+        <circle cx="442" cy="314" r="5"></circle>
+        <!-- 原点 000 -->
+        <circle cx="390" cy="210" r="8"></circle>
+      </g>
+      <!-- 球面に乗った点(点灯) -->
+      <circle cx="338" cy="106" r="9" style="fill: var(--mat-beam);"></circle>
+
+      <!-- 入射ビームと k・k′ -->
+      <line
+        x1="60"
+        y1="210"
+        x2="250"
+        y2="210"
+        style="stroke: var(--mat-beam); stroke-width: 2; opacity: 0.45;"></line>
+      <line
+        x1="260"
+        y1="210"
+        x2="382"
+        y2="210"
+        style="stroke: var(--mat-beam); stroke-width: 2.5;"
+        marker-end="url(#ew-arrowhead)"></line>
+      <line
+        x1="260"
+        y1="210"
+        x2="333"
+        y2="113"
+        style="stroke: var(--mat-beam); stroke-width: 2.5;"
+        marker-end="url(#ew-arrowhead)"></line>
+      <circle cx="260" cy="210" r="4" style="fill: var(--mat-matrix);"></circle>
+
+      <!-- ラベル -->
+      <text
+        x="300"
+        y="232"
+        text-anchor="middle"
+        style="font-size: 14px; font-style: italic; fill: var(--mat-beam-ink);"
+        >k</text
+      >
+      <text
+        x="272"
+        y="150"
+        text-anchor="middle"
+        style="font-size: 14px; font-style: italic; fill: var(--mat-beam-ink);"
+        >k′</text
+      >
+      <text x="398" y="234" style="font-size: 13px; fill: var(--color-text-2);"
+        >O</text
+      >
+
+      <!-- 引き出し線と 3 つのつまみ -->
+      <line
+        x1="150"
+        y1="128"
+        x2="196"
+        y2="152"
+        style="stroke: var(--color-hairline); stroke-width: 1.5;"></line>
+      <text
+        x="146"
+        y="104"
+        text-anchor="end"
+        style="font-size: 14px; font-weight: 600; fill: var(--mat-sphere-ink);"
+        >① 大きさ = 1/λ</text
+      >
+      <text
+        x="146"
+        y="124"
+        text-anchor="end"
+        style="font-size: 13px; fill: var(--color-text-2);">波長が決める</text
+      >
+
+      <line
+        x1="120"
+        y1="258"
+        x2="140"
+        y2="216"
+        style="stroke: var(--color-hairline); stroke-width: 1.5;"></line>
+      <text
+        x="116"
+        y="282"
+        text-anchor="end"
+        style="font-size: 14px; font-weight: 600; fill: var(--mat-beam-ink);"
+        >② 向き</text
+      >
+      <text
+        x="116"
+        y="302"
+        text-anchor="end"
+        style="font-size: 13px; fill: var(--color-text-2);"
+        >入射方向が決める</text
+      >
+
+      <line
+        x1="470"
+        y1="120"
+        x2="448"
+        y2="152"
+        style="stroke: var(--color-hairline); stroke-width: 1.5;"></line>
+      <text
+        x="476"
+        y="104"
+        style="font-size: 14px; font-weight: 600; fill: var(--mat-recip);"
+        >③ 地図の向き</text
+      >
+      <text x="476" y="124" style="font-size: 13px; fill: var(--color-text-2);"
+        >結晶方位が決める</text
+      >
+
+      <!-- 3 つの方法 -->
+      <text x="60" y="392" style="font-size: 14px; fill: var(--color-text);"
+        >結晶を回す = ③ を振る(回転結晶法)</text
+      >
+      <text x="60" y="418" style="font-size: 14px; fill: var(--color-text);"
+        >白色 X 線 = ① を振る(ラウエ法)</text
+      >
+      <text x="60" y="444" style="font-size: 14px; fill: var(--color-text);"
+        >粉末にする = ③ を全部集める(粉末法)</text
+      >
+    </svg>
+    <p class="sr-only">
+      逆格子点が格子状に並ぶ地図の上に、原点を通る円(エヴァルト球の断面)が
+      描かれた模式図。円の中心から原点へ入射波の矢が伸び、円周上に乗った
+      逆格子点へ回折波の矢が伸びている。円の大きさは波長が、向きは入射方向が、
+      地図の向きは結晶方位が決めることを 3 つのラベルで示し、下に
+      回転結晶法・ラウエ法・粉末法がそれぞれどのつまみを振る方法かを並べている。
+    </p>
+    <figcaption>
+      図8. 探照灯の 3 つのつまみ。球の大きさ(①)は波長、球の向き(②)は
+      入射方向、地図の向き(③)は結晶方位が決める。回転結晶法・ラウエ法・粉末法は、
+      このうちどれを振るかの違いである。
+    </figcaption>
+  </figure>
+  <ul>
+    <li>
+      <strong>ブラッグ則とラウエ条件は同じもの</strong> — <M
+        tex={String.raw`\lvert\mrecip{\mathbf{g}}\rvert = 1/d`}
+      /> が橋渡しになる(図1)。
+    </li>
+    <li>
+      <strong>球は弾性散乱の拘束の姿</strong> — <M
+        tex={String.raw`\lvert\mbeam{\mathbf{k}'}\rvert = \lvert\mbeam{\mathbf{k}}\rvert`}
+      /> だから、<M tex={String.raw`\mrecip{\Delta\mathbf{k}}`} /> の先端は 球面上にしかいられない(図2・図3)。
+    </li>
+    <li>
+      <strong>静止した単結晶に単色光では、ふつう何も光らない</strong> — それでも反射が出るのは、結晶が有限の厚さをもち、逆格子点が
+      <M tex="1/t" /> ほど広がっているから(図3・図4)。
+    </li>
+    <li>
+      <strong>届く範囲には限りがある</strong> — 限界球
+      <M
+        tex={String.raw`\lvert\mrecip{\mathbf{g}}\rvert \le 2/\mbeam{\lambda}`}
+      />、 すなわち <M tex={String.raw`d \ge \mbeam{\lambda}/2`} />(図5)。
+    </li>
+    <li>
+      <strong>電子線では球がほぼ平ら</strong> — <M
+        tex={String.raw`\msph{1/\mbeam{\lambda}}`}
+      /> が逆格子の間隔より 2 桁大きいので、断面が一枚まるごと光る(図7)。
+    </li>
+  </ul>
+  <p>
+    残した問いがひとつあります。この記事が答えたのは「どの反射が光りうるか」
+    だけで、「どれくらい強く光るか」には触れていません。原子の種類と単位胞の
+    中での並び方が決めるその強度 — 構造因子(structure factor)— を入れると、
+    幾何的には許されるのに実際には消える反射が出てきます。前の記事の
+    「現れない点」の正体でもあります。それはまた別の話として、いつか。
+  </p>
+
+  <h2>もっと知るには</h2>
+  <ul>
+    <li>
+      田中通義・寺内正己・津田健治『やさしい電子回折と初等結晶学』共立出版 —
+      本記事と同じ結晶学の慣習(|g| = 1/d)。エヴァルト球と電子回折の関係 (図7
+      の話)を最短距離で追える。
+    </li>
+    <li>
+      カリティ 著, 松村源太郎 訳『新版 X線回折要論』アグネ承風社 —
+      ラウエ法・回転結晶法・粉末法の 3 つを、エヴァルト球の作図とともに
+      丁寧に扱った古典。図5・図6 の背景。
+    </li>
+    <li>
+      キッテル『固体物理学入門』丸善出版 — 物理学の慣習(2π 付き)での
+      エヴァルト作図。上のコラムの対応を確かめたい読者向け。
+    </li>
+    <li>
+      坂 公恭『結晶電子顕微鏡学』内田老鶴圃 —
+      励起誤差・逆格子ロッド・晶帯軸の実務的な扱い。図3 の 1/t と図7 の続き。
+    </li>
+    <li>
+      D. B. Williams &amp; C. B. Carter, <em
+        >Transmission Electron Microscopy</em
+      >, Springer — 電子回折図形の読み方。図7 の先にある話が英語で詳しく読める。
+    </li>
+  </ul>
+</Article>
