@@ -9,6 +9,7 @@
  *   \mmat{a}   母相     \msol{C}  溶質     \msec{B}   第二元素
  *   \mdef{U}   欠陥     \mppt{r}  析出物   \mbeam{k}  ビーム
  *   \mrecip{g} 逆格子点 \macc{r^*} アクセント色(参照量・臨界値など)
+ *   \mel{E_F}  電子・占有(カテゴリ D)  \mhole{p} 正孔(カテゴリ D)
  * (対応する CSS クラス .mx-* は base.css に定義)
  *
  * 使い方: インライン <M tex="…" />、別行立て <M block tex="…" />
@@ -34,6 +35,8 @@ const COLOR_MACROS: Record<string, string> = {
   "\\mppt": "\\htmlClass{mx-ppt}{#1}",
   "\\mbeam": "\\htmlClass{mx-beam}{#1}",
   "\\mrecip": "\\htmlClass{mx-recip}{#1}",
+  "\\mel": "\\htmlClass{mx-el}{#1}",
+  "\\mhole": "\\htmlClass{mx-hole}{#1}",
   "\\macc": "\\htmlClass{mx-acc}{#1}",
 };
 

@@ -349,7 +349,10 @@ export interface Readout {
    * 読み取り値の項目を追加する。color を指定するとラベルが意味色
    * (文字用 ink トークン)になる(§2.3 の q / g の色分け)。
    */
-  item(label: string, opts?: { color?: "beam" | "recip" }): ReadoutItem;
+  item(
+    label: string,
+    opts?: { color?: "beam" | "recip" | "electron" },
+  ): ReadoutItem;
 }
 
 /**
@@ -371,6 +374,7 @@ export function createReadout(host: FigureHost): Readout {
       const lab = document.createElement("span");
       if (opts?.color === "beam") lab.className = "ix-readout-beam";
       if (opts?.color === "recip") lab.className = "ix-readout-recip";
+      if (opts?.color === "electron") lab.className = "ix-readout-electron";
       lab.textContent = label;
       const out = document.createElement("output");
       item.append(lab, out);

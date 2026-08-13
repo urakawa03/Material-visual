@@ -275,6 +275,15 @@ output {
   color: var(--mat-recip);
 }
 
+/* カテゴリ D「電子とバンド」の変数(仕様書 11 §6.3) */
+.mx-el {
+  color: var(--mat-electron);
+}
+
+.mx-hole {
+  color: var(--mat-hole);
+}
+
 /* アクセント色の数式変数(臨界半径 r* など、図中の参照線と対応) */
 .mx-acc {
   color: var(--color-accent);

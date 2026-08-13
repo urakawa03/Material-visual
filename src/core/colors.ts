@@ -29,6 +29,18 @@ export const MAT_COLORS = {
   beamInk: "#8a5c00",
   /** 逆格子点 */
   recip: "#2f3a4a",
+  /** 電子(負の電荷キャリア — カテゴリ D) */
+  electron: "#2f7d5b",
+  /** 正孔(正の電荷キャリア — カテゴリ D) */
+  hole: "#b5476b",
+  /** 許容帯(バンド)の塗り — カテゴリ D */
+  band: "rgba(154, 167, 184, 0.18)",
+  /**
+   * エネルギー準位線(フェルミ準位・バンド端 — カテゴリ D)。
+   * 禁制帯は専用色を持たず「塗りなし + --color-hairline の破線」で描く
+   * (--mat-vacancy と同じ扱い — 仕様書 11 付録 A-3)
+   */
+  level: "#2f3a4a",
   /** エヴァルト球面(塗り) */
   sphereFill: "rgba(15, 138, 138, 0.14)",
   /** エヴァルト球面(線) */
@@ -61,6 +73,10 @@ const MAT_CSS_VARS: Record<MatColorName, string> = {
   beam: "--mat-beam",
   beamInk: "--mat-beam-ink",
   recip: "--mat-recip",
+  electron: "--mat-electron",
+  hole: "--mat-hole",
+  band: "--mat-band",
+  level: "--mat-level",
   sphereFill: "--mat-sphere-fill",
   sphereLine: "--mat-sphere-line",
   tension: "--mat-tension",

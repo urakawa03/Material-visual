@@ -68,7 +68,7 @@ function prefersReducedMotion(): boolean {
   );
 }
 
-/* ------------------------------------------------------------ 2 ビュー雛形 */
+/* ------------------------------------------------- オービット(視点操作) */
 
 export interface ViewRect {
   x: number;
@@ -77,11 +77,13 @@ export interface ViewRect {
   h: number;
 }
 
-export interface DualViewOptions {
-  /** 実空間(第 1)ビューのカメラ距離 */
-  distFirst: number;
-  /** 逆空間(第 2)ビューのカメラ距離 */
-  distSecond: number;
+/** オービットが動かすカメラと、その基準距離 */
+interface OrbitTarget {
+  cam: THREE.PerspectiveCamera;
+  dist: number;
+}
+
+interface OrbitOptions {
   /** 初期方位角(度)。既定 30(§5.6) */
   azimuthDeg?: number;
   /** 初期仰角(度)。既定 20(§5.6) */
@@ -90,61 +92,29 @@ export interface DualViewOptions {
   onChange: () => void;
   /** stage の aria-label(キーボード視点操作の説明) */
   ariaLabel: string;
+  /** ポインタ操作を受けるキャンバス(既定 host.canvas) */
+  canvas?: HTMLCanvasElement;
 }
 
-export interface DualViewKit {
-  renderer: THREE.WebGLRenderer;
-  sceneFirst: THREE.Scene;
-  sceneSecond: THREE.Scene;
-  camFirst: THREE.PerspectiveCamera;
-  camSecond: THREE.PerspectiveCamera;
-  /** 現在のビューポート矩形(CSS px、上原点)。resize() で更新される */
-  rects: [ViewRect, ViewRect];
-  /** 縦積みかどうか */
-  stacked: boolean;
-  /** engine の resize 通知から呼ぶ(host.size を読む) */
-  resize(): void;
-  /** 2 ビューを scissor で描く(host.onRender に渡す) */
-  render(): void;
-  /** 視点を初期値へ戻す */
-  resetView(): void;
+interface OrbitController {
+  /** 現在の角度・ズームをカメラへ反映する */
+  apply(): void;
+  /** 初期の視点へ戻す */
+  reset(): void;
   dispose(): void;
 }
 
 /**
- * 単一 canvas を 2 ビューポートに分割し、連動カメラで描く雛形を作る
- * (§5.6)。ドラッグ・ピンチ・ホイール・キーボードの視点操作つき。
+ * ドラッグ(慣性つき)・ピンチ / ホイールズーム・キーボードによる視点操作。
+ * 単一ビュー(createSingleView)と 2 ビュー(createDualView)で共用する。
+ * 描画はダーティ方式で、変化があったときだけ onChange を呼ぶ(§5.6)。
  */
-export function createDualView(
+function createOrbit(
   host: FigureHost,
-  opts: DualViewOptions,
-): DualViewKit {
-  const renderer = new THREE.WebGLRenderer({
-    canvas: host.canvas,
-    antialias: true,
-  });
-  renderer.setClearColor(0xffffff, 1);
-
-  const makeScene = (): THREE.Scene => {
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xffffff);
-    scene.add(new THREE.HemisphereLight(HEMI_SKY, HEMI_GROUND, HEMI_INTENSITY));
-    const dir = new THREE.DirectionalLight(0xffffff, DIR_INTENSITY);
-    dir.position.set(3, 6, 4);
-    scene.add(dir);
-    return scene;
-  };
-  const sceneFirst = makeScene();
-  const sceneSecond = makeScene();
-
-  const camFirst = new THREE.PerspectiveCamera(
-    CAMERA_FOV_DEG,
-    1,
-    CAMERA_NEAR,
-    CAMERA_FAR,
-  );
-  const camSecond = camFirst.clone();
-
+  targets: readonly OrbitTarget[],
+  opts: OrbitOptions,
+): OrbitController {
+  const canvas = opts.canvas ?? host.canvas;
   const az0 = (opts.azimuthDeg ?? 30) * DEG;
   const el0 = (opts.elevationDeg ?? 20) * DEG;
   let azimuth = az0;
@@ -158,12 +128,11 @@ export function createDualView(
     const se = Math.sin(elevation);
     const sa = Math.sin(azimuth);
     const ca = Math.cos(azimuth);
-    const d1 = opts.distFirst * zoom;
-    camFirst.position.set(d1 * ce * sa, d1 * se, d1 * ce * ca);
-    camFirst.lookAt(0, 0, 0);
-    const d2 = opts.distSecond * zoom;
-    camSecond.position.set(d2 * ce * sa, d2 * se, d2 * ce * ca);
-    camSecond.lookAt(0, 0, 0);
+    for (const t of targets) {
+      const d = t.dist * zoom;
+      t.cam.position.set(d * ce * sa, d * se, d * ce * ca);
+      t.cam.lookAt(0, 0, 0);
+    }
   };
 
   const rotate = (dAz: number, dEl: number): void => {
@@ -205,6 +174,12 @@ export function createDualView(
       inertiaRaf = requestAnimationFrame(inertiaTick);
     }
   };
+  const stopInertia = (): void => {
+    if (inertiaRaf !== 0) {
+      cancelAnimationFrame(inertiaRaf);
+      inertiaRaf = 0;
+    }
+  };
 
   /* ---- ポインタ操作(タッチ・マウス両対応) ---- */
   const pointers = new Map<number, { x: number; y: number }>();
@@ -221,17 +196,14 @@ export function createDualView(
 
   const down = (e: PointerEvent): void => {
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    host.canvas.setPointerCapture(e.pointerId);
+    canvas.setPointerCapture(e.pointerId);
     if (pointers.size === 1) {
       dragging = true;
       lastX = e.clientX;
       lastY = e.clientY;
       velAz = 0;
       velEl = 0;
-      if (inertiaRaf !== 0) {
-        cancelAnimationFrame(inertiaRaf);
-        inertiaRaf = 0;
-      }
+      stopInertia();
     } else if (pointers.size === 2) {
       dragging = false;
       pinchDist = pinchDistance();
@@ -305,12 +277,138 @@ export function createDualView(
     e.preventDefault();
   };
 
-  host.canvas.addEventListener("pointerdown", down);
-  host.canvas.addEventListener("pointermove", move);
-  host.canvas.addEventListener("pointerup", up);
-  host.canvas.addEventListener("pointercancel", up);
-  host.canvas.addEventListener("wheel", wheel, { passive: false });
+  canvas.addEventListener("pointerdown", down);
+  canvas.addEventListener("pointermove", move);
+  canvas.addEventListener("pointerup", up);
+  canvas.addEventListener("pointercancel", up);
+  canvas.addEventListener("wheel", wheel, { passive: false });
   host.stage.addEventListener("keydown", keydown);
+
+  applyCameras();
+
+  return {
+    apply: applyCameras,
+    reset(): void {
+      azimuth = az0;
+      elevation = el0;
+      zoom = 1;
+      velAz = 0;
+      velEl = 0;
+      stopInertia();
+      applyCameras();
+      opts.onChange();
+    },
+    dispose(): void {
+      stopInertia();
+      canvas.removeEventListener("pointerdown", down);
+      canvas.removeEventListener("pointermove", move);
+      canvas.removeEventListener("pointerup", up);
+      canvas.removeEventListener("pointercancel", up);
+      canvas.removeEventListener("wheel", wheel);
+      host.stage.removeEventListener("keydown", keydown);
+    },
+  };
+}
+
+/** 白背景・半球光 + 弱い平行光のシーン雛形(§6.5) */
+function makeScene(): THREE.Scene {
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xffffff);
+  scene.add(new THREE.HemisphereLight(HEMI_SKY, HEMI_GROUND, HEMI_INTENSITY));
+  const dir = new THREE.DirectionalLight(0xffffff, DIR_INTENSITY);
+  dir.position.set(3, 6, 4);
+  scene.add(dir);
+  return scene;
+}
+
+/** シーン内のジオメトリ・マテリアルをまとめて破棄する */
+function disposeScene(scene: THREE.Scene): void {
+  scene.traverse((obj) => {
+    const mesh = obj as Partial<THREE.Mesh>;
+    if (mesh.geometry) mesh.geometry.dispose();
+    const mat = mesh.material;
+    if (Array.isArray(mat)) {
+      for (const m of mat) m.dispose();
+    } else if (mat) {
+      mat.dispose();
+    }
+  });
+}
+
+/* ------------------------------------------------------------ 2 ビュー雛形 */
+
+export interface DualViewOptions {
+  /** 実空間(第 1)ビューのカメラ距離 */
+  distFirst: number;
+  /** 逆空間(第 2)ビューのカメラ距離 */
+  distSecond: number;
+  /** 初期方位角(度)。既定 30(§5.6) */
+  azimuthDeg?: number;
+  /** 初期仰角(度)。既定 20(§5.6) */
+  elevationDeg?: number;
+  /** 視点変更時に呼ばれる(host.requestRender を渡すこと) */
+  onChange: () => void;
+  /** stage の aria-label(キーボード視点操作の説明) */
+  ariaLabel: string;
+}
+
+export interface DualViewKit {
+  renderer: THREE.WebGLRenderer;
+  sceneFirst: THREE.Scene;
+  sceneSecond: THREE.Scene;
+  camFirst: THREE.PerspectiveCamera;
+  camSecond: THREE.PerspectiveCamera;
+  /** 現在のビューポート矩形(CSS px、上原点)。resize() で更新される */
+  rects: [ViewRect, ViewRect];
+  /** 縦積みかどうか */
+  stacked: boolean;
+  /** engine の resize 通知から呼ぶ(host.size を読む) */
+  resize(): void;
+  /** 2 ビューを scissor で描く(host.onRender に渡す) */
+  render(): void;
+  /** 視点を初期値へ戻す */
+  resetView(): void;
+  dispose(): void;
+}
+
+/**
+ * 単一 canvas を 2 ビューポートに分割し、連動カメラで描く雛形を作る
+ * (§5.6)。ドラッグ・ピンチ・ホイール・キーボードの視点操作つき。
+ */
+export function createDualView(
+  host: FigureHost,
+  opts: DualViewOptions,
+): DualViewKit {
+  const renderer = new THREE.WebGLRenderer({
+    canvas: host.canvas,
+    antialias: true,
+  });
+  renderer.setClearColor(0xffffff, 1);
+
+  const sceneFirst = makeScene();
+  const sceneSecond = makeScene();
+
+  const camFirst = new THREE.PerspectiveCamera(
+    CAMERA_FOV_DEG,
+    1,
+    CAMERA_NEAR,
+    CAMERA_FAR,
+  );
+  const camSecond = camFirst.clone();
+
+  const orbit = createOrbit(
+    host,
+    [
+      { cam: camFirst, dist: opts.distFirst },
+      { cam: camSecond, dist: opts.distSecond },
+    ],
+    {
+      azimuthDeg: opts.azimuthDeg,
+      elevationDeg: opts.elevationDeg,
+      onChange: opts.onChange,
+      ariaLabel: opts.ariaLabel,
+    },
+  );
 
   /* ---- レイアウトと描画 ---- */
   const rects: [ViewRect, ViewRect] = [
@@ -346,7 +444,7 @@ export function createDualView(
       camFirst.updateProjectionMatrix();
       camSecond.aspect = aspect;
       camSecond.updateProjectionMatrix();
-      applyCameras();
+      orbit.apply();
     },
     render(): void {
       const { h } = host.size;
@@ -365,38 +463,10 @@ export function createDualView(
       renderer.setScissorTest(false);
     },
     resetView(): void {
-      azimuth = az0;
-      elevation = el0;
-      zoom = 1;
-      velAz = 0;
-      velEl = 0;
-      if (inertiaRaf !== 0) {
-        cancelAnimationFrame(inertiaRaf);
-        inertiaRaf = 0;
-      }
-      applyCameras();
-      opts.onChange();
+      orbit.reset();
     },
     dispose(): void {
-      if (inertiaRaf !== 0) cancelAnimationFrame(inertiaRaf);
-      host.canvas.removeEventListener("pointerdown", down);
-      host.canvas.removeEventListener("pointermove", move);
-      host.canvas.removeEventListener("pointerup", up);
-      host.canvas.removeEventListener("pointercancel", up);
-      host.canvas.removeEventListener("wheel", wheel);
-      host.stage.removeEventListener("keydown", keydown);
-      const disposeScene = (scene: THREE.Scene): void => {
-        scene.traverse((obj) => {
-          const mesh = obj as Partial<THREE.Mesh>;
-          if (mesh.geometry) mesh.geometry.dispose();
-          const mat = mesh.material;
-          if (Array.isArray(mat)) {
-            for (const m of mat) m.dispose();
-          } else if (mat) {
-            mat.dispose();
-          }
-        });
-      };
+      orbit.dispose();
       disposeScene(sceneFirst);
       disposeScene(sceneSecond);
       renderer.dispose();
@@ -404,7 +474,87 @@ export function createDualView(
   };
 
   kit.resize();
-  applyCameras();
+  return kit;
+}
+
+/* ----------------------------------------------------------- 単一ビュー */
+
+export interface SingleViewOptions {
+  /** カメラ距離 */
+  dist: number;
+  /** 描画先キャンバス(省略時は host.canvas) */
+  canvas?: HTMLCanvasElement;
+  /** ビューポートの寸法。省略時は host.size を使う */
+  size?: { w: number; h: number; dpr: number };
+  azimuthDeg?: number;
+  elevationDeg?: number;
+  onChange: () => void;
+  ariaLabel: string;
+}
+
+export interface SingleViewKit {
+  renderer: THREE.WebGLRenderer;
+  scene: THREE.Scene;
+  camera: THREE.PerspectiveCamera;
+  resize(): void;
+  render(): void;
+  resetView(): void;
+  dispose(): void;
+}
+
+/**
+ * 1 ビューだけの 3D 雛形(仕様書 11 §5.5 の図5 が使う)。
+ * 視点操作は createDualView と同じ createOrbit を共用する(再実装しない)。
+ * `canvas` / `size` を渡すと、図版の一部だけを占める専用キャンバスに描ける
+ * (2D の canvas に 3D を重ねる図版のため)。
+ */
+export function createSingleView(
+  host: FigureHost,
+  opts: SingleViewOptions,
+): SingleViewKit {
+  const canvas = opts.canvas ?? host.canvas;
+  const size = opts.size ?? host.size;
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setClearColor(0xffffff, 1);
+  const scene = makeScene();
+  const camera = new THREE.PerspectiveCamera(
+    CAMERA_FOV_DEG,
+    1,
+    CAMERA_NEAR,
+    CAMERA_FAR,
+  );
+  const orbit = createOrbit(host, [{ cam: camera, dist: opts.dist }], {
+    azimuthDeg: opts.azimuthDeg,
+    elevationDeg: opts.elevationDeg,
+    onChange: opts.onChange,
+    ariaLabel: opts.ariaLabel,
+    canvas,
+  });
+
+  const kit: SingleViewKit = {
+    renderer,
+    scene,
+    camera,
+    resize(): void {
+      renderer.setPixelRatio(size.dpr);
+      renderer.setSize(size.w, size.h, false);
+      camera.aspect = size.w / Math.max(1, size.h);
+      camera.updateProjectionMatrix();
+      orbit.apply();
+    },
+    render(): void {
+      renderer.render(scene, camera);
+    },
+    resetView(): void {
+      orbit.reset();
+    },
+    dispose(): void {
+      orbit.dispose();
+      disposeScene(scene);
+      renderer.dispose();
+    },
+  };
+  kit.resize();
   return kit;
 }
 
