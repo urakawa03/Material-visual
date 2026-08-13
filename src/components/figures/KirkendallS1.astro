@@ -1,0 +1,216 @@
+---
+/**
+ * KirkendallS1.astro — 静的図 S-1(記事仕様書 06 §6)
+ *
+ * Smigelskas–Kirkendall(1947)の試料構成と、焼鈍前後での目印の位置。
+ * α真鍮の角棒に Mo 線を巻き、外側に Cu を電気めっきする。785 °C・56 日の
+ * 焼鈍で、目印(Mo 線)は真鍮側 = 内側へ寄る。
+ *
+ * 色は意味パレット(CSS 変数)経由: Cu = --mat-matrix、真鍮 = --mat-second、
+ * 目印 = --color-accent(記事仕様 §5.0)。
+ */
+
+interface Props {
+  caption: string;
+  alt: string;
+}
+
+const { caption, alt } = Astro.props;
+
+/** パネルの寸法(viewBox 座標) */
+const PANEL_W = 300;
+const PANEL_X = [10, 326];
+const TOP = 42;
+const BOT = 150;
+/** 焼鈍前の Cu / 真鍮の境界(パネル内座標) */
+const EDGE_L = 74;
+const EDGE_R = PANEL_W - 74;
+/** 焼鈍後に目印が内側へ寄る量 */
+const SHIFT = 20;
+/** 焼鈍後の相互拡散帯の広がり */
+const ZONE = 34;
+
+const panels = [
+  { x: PANEL_X[0], title: "焼鈍前", shift: 0, zone: 0 },
+  { x: PANEL_X[1], title: "785 °C・56 日の焼鈍後", shift: SHIFT, zone: ZONE },
+];
+---
+
+<figure class="static-fig">
+  <svg
+    viewBox="0 0 636 208"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    {
+      panels.map((p) => (
+        <g>
+          {/* 銅めっき(両側) */}
+          <rect
+            x={p.x}
+            y={TOP}
+            width={PANEL_W}
+            height={BOT - TOP}
+            fill="var(--mat-matrix)"
+            opacity="0.55"
+          />
+          {/* α真鍮の芯 */}
+          <rect
+            x={p.x + EDGE_L}
+            y={TOP}
+            width={EDGE_R - EDGE_L}
+            height={BOT - TOP}
+            fill="var(--mat-second)"
+            opacity="0.55"
+          />
+          {/* 相互拡散帯(焼鈍後のみ。境界がなまっていることの表現) */}
+          {p.zone > 0 && (
+            <g>
+              <rect
+                x={p.x + EDGE_L - p.zone}
+                y={TOP}
+                width={p.zone * 2}
+                height={BOT - TOP}
+                fill="var(--mat-second)"
+                opacity="0.28"
+              />
+              <rect
+                x={p.x + EDGE_R - p.zone}
+                y={TOP}
+                width={p.zone * 2}
+                height={BOT - TOP}
+                fill="var(--mat-second)"
+                opacity="0.28"
+              />
+            </g>
+          )}
+          {/* 試料の外枠 */}
+          <rect
+            x={p.x}
+            y={TOP}
+            width={PANEL_W}
+            height={BOT - TOP}
+            fill="none"
+            stroke="var(--color-hairline)"
+          />
+          {/* 焼鈍前の目印の位置(焼鈍後は破線で残す) */}
+          {p.shift > 0 && (
+            <g
+              stroke="var(--color-text-2)"
+              stroke-width="1"
+              stroke-dasharray="5 4"
+            >
+              <line
+                x1={p.x + EDGE_L}
+                y1={TOP - 8}
+                x2={p.x + EDGE_L}
+                y2={BOT + 8}
+              />
+              <line
+                x1={p.x + EDGE_R}
+                y1={TOP - 8}
+                x2={p.x + EDGE_R}
+                y2={BOT + 8}
+              />
+            </g>
+          )}
+          {/* 目印(Mo 線)。断面なので上下に切り口が見える */}
+          {[EDGE_L + p.shift, EDGE_R - p.shift].map((ex) => (
+            <g>
+              <line
+                x1={p.x + ex}
+                y1={TOP - 6}
+                x2={p.x + ex}
+                y2={BOT + 6}
+                stroke="var(--color-accent)"
+                stroke-width="3"
+              />
+              <circle
+                cx={p.x + ex}
+                cy={TOP - 6}
+                r="4"
+                fill="var(--color-accent)"
+              />
+              <circle
+                cx={p.x + ex}
+                cy={BOT + 6}
+                r="4"
+                fill="var(--color-accent)"
+              />
+            </g>
+          ))}
+          {/* 移動量の矢印(焼鈍後のみ) */}
+          {p.shift > 0 && (
+            <g>
+              <line
+                x1={p.x + EDGE_L}
+                y1={(TOP + BOT) / 2}
+                x2={p.x + EDGE_L + p.shift - 4}
+                y2={(TOP + BOT) / 2}
+                stroke="var(--color-accent)"
+                stroke-width="2"
+              />
+              <path
+                d={`M ${p.x + EDGE_L + p.shift} ${(TOP + BOT) / 2} l -7 -4 v 8 Z`}
+                fill="var(--color-accent)"
+              />
+              <line
+                x1={p.x + EDGE_R}
+                y1={(TOP + BOT) / 2}
+                x2={p.x + EDGE_R - p.shift + 4}
+                y2={(TOP + BOT) / 2}
+                stroke="var(--color-accent)"
+                stroke-width="2"
+              />
+              <path
+                d={`M ${p.x + EDGE_R - p.shift} ${(TOP + BOT) / 2} l 7 -4 v 8 Z`}
+                fill="var(--color-accent)"
+              />
+            </g>
+          )}
+          {/* ラベル */}
+          <text
+            x={p.x + PANEL_W / 2}
+            y="26"
+            text-anchor="middle"
+            font-size="13.5"
+            font-weight="600"
+            fill="var(--color-text)"
+          >
+            {p.title}
+          </text>
+          <text
+            x={p.x + 6}
+            y={TOP + 20}
+            font-size="12"
+            fill="var(--color-text-2)"
+          >
+            Cu めっき
+          </text>
+          <text
+            x={p.x + PANEL_W / 2}
+            y={TOP + 20}
+            text-anchor="middle"
+            font-size="12"
+            fill="var(--color-text-2)"
+          >
+            α真鍮(Cu–30%Zn)
+          </text>
+          <text
+            x={p.x + PANEL_W / 2}
+            y="196"
+            text-anchor="middle"
+            font-size="12.5"
+            fill="var(--color-text-2)"
+          >
+            {p.shift > 0
+              ? "目印は内側(真鍮側)へ寄る"
+              : "目印(Mo 線)は界面にある"}
+          </text>
+        </g>
+      ))
+    }
+  </svg>
+  <figcaption>{caption}</figcaption>
+  <p class="sr-only">{alt}</p>
+</figure>

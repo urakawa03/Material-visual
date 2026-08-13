@@ -92,7 +92,7 @@ export const TOPICS: readonly Topic[] = [
     summary: "拡散速度の差が生む、界面の移動と空孔の集まり。",
     render: "2d",
     prerequisites: [],
-    published: false,
+    published: true,
   },
   {
     order: 6,
