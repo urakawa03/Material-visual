@@ -14,6 +14,10 @@ import M from "../../components/M.astro";
 import StaticCarpet from "../../components/figures/frank-read/StaticCarpet.astro";
 import StaticLoopAnatomy from "../../components/figures/frank-read/StaticLoopAnatomy.astro";
 import StaticDash from "../../components/figures/frank-read/StaticDash.astro";
+import { withBase } from "../../lib/paths";
+
+const gpZones = withBase("/articles/gp-zones/");
+const cottrell = withBase("/articles/cottrell-atmosphere/");
 ---
 
 <Article
@@ -294,8 +298,9 @@ import StaticDash from "../../components/figures/frank-read/StaticDash.astro";
       >障害物の間隔を詰めれば、転位は張り出しにくくなり、材料は 強くなる</strong
     >。析出物を細かく分散させて L を縮めるのが析出強化 (precipitation
     strengthening)で、転位が析出物の間を張り出して
-    通り抜ける機構をオロワン機構(Orowan mechanism)と呼びます。 ジュラルミンの GP
-    ゾーンの記事(準備中)で、この続きを扱います。
+    通り抜ける機構をオロワン機構(Orowan mechanism)と呼びます。 ジュラルミンの <a
+      href={gpZones}>GP ゾーン</a
+    >の記事で、この続きを扱います。
   </p>
   <p>
     古典的な観察とも辻褄が合います。変形した金属の表面には、すべり線 (slip
@@ -377,8 +382,9 @@ import StaticDash from "../../components/figures/frank-read/StaticDash.astro";
   </ul>
   <p>
     続きは 2 本あります。湧き出した転位を、今度は炭素原子が捕まえる話が
-    「コットレル雰囲気」(準備中)。障害物を人工的に撒いて L を縮める話が 「GP
-    ゾーン」(準備中)です。
+    <a href={cottrell}>コットレル雰囲気</a>。障害物を人工的に撒いて L
+    を縮める話が
+    <a href={gpZones}>GP ゾーン</a>です。
   </p>
 
   <h2>もっと知るには</h2>

@@ -1,0 +1,177 @@
+---
+/**
+ * StaticNucleation.astro — 静的図 S-2(記事仕様書 07 §6)
+ *
+ * 核生成の自由エネルギー障壁 ΔG(r) = −(4/3)πr³ΔG_v + 4πr²γ の比較。
+ * 整合(γ が小さい)では障壁 ΔG* が低く臨界核も小さいので、室温でも
+ * 越えられる。非整合では高い山になる。
+ *
+ * 縦軸・横軸は相対目盛り(モデル値)。γ の比は 1 : 4 とし、ΔG* ∝ γ³ で
+ * 64 倍になる関係が読めるようにしている。
+ */
+
+interface Props {
+  caption: string;
+  alt: string;
+}
+
+const { caption, alt } = Astro.props;
+
+const W = 636;
+const H = 260;
+const X0 = 56; // 縦軸の位置
+const Y0 = 196; // 横軸(ΔG = 0)の位置
+const XR = W - 40;
+
+/** ΔG(r) = −A r³ + B r²(A は駆動力、B ∝ γ) */
+const A = 1;
+const GAMMA = [0.55, 2.2] as const; // 整合 / 非整合(比 1 : 4)
+const R_MAX = 5.2;
+/** 縦軸のスケール(非整合の山が収まるように) */
+const Y_SCALE = 3.0;
+
+function dG(r: number, g: number): number {
+  return -A * r ** 3 + g * r ** 2;
+}
+function mapX(r: number): number {
+  return X0 + ((XR - X0) * r) / R_MAX;
+}
+function mapY(v: number): number {
+  return Y0 - v * Y_SCALE;
+}
+
+function path(g: number): string {
+  const pts: string[] = [];
+  for (let i = 0; i <= 160; i++) {
+    const r = (R_MAX * i) / 160;
+    const y = mapY(dG(r, g));
+    if (y > H - 6) break;
+    pts.push(`${i === 0 ? "M" : "L"} ${mapX(r).toFixed(1)} ${y.toFixed(1)}`);
+  }
+  return pts.join(" ");
+}
+
+/** 臨界核 r* = 2γ/(3A)、障壁 ΔG* = 4γ³/(27A²) */
+const crit = GAMMA.map((g) => ({
+  g,
+  r: (2 * g) / (3 * A),
+  v: (4 * g ** 3) / (27 * A * A),
+}));
+---
+
+<figure class="static-fig">
+  <svg
+    viewBox={`0 0 ${W} ${H}`}
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    <!-- 軸 -->
+    <line
+      x1={X0}
+      y1="26"
+      x2={X0}
+      y2={H - 26}
+      stroke="var(--color-hairline)"
+      stroke-width="1"></line>
+    <line
+      x1={X0}
+      y1={Y0}
+      x2={XR}
+      y2={Y0}
+      stroke="var(--color-hairline)"
+      stroke-width="1"></line>
+    <text
+      x={X0 - 8}
+      y="34"
+      text-anchor="end"
+      font-size="12"
+      fill="var(--color-text-2)">ΔG</text
+    >
+    <text
+      x={XR}
+      y={Y0 + 18}
+      text-anchor="end"
+      font-size="12"
+      fill="var(--color-text-2)">核の半径 r →</text
+    >
+
+    <!-- 非整合(高い山) -->
+    <path
+      d={path(GAMMA[1])}
+      fill="none"
+      stroke="var(--color-text-2)"
+      stroke-width="2"></path>
+    <!-- 整合(低い山) -->
+    <path
+      d={path(GAMMA[0])}
+      fill="none"
+      stroke="var(--mat-precip)"
+      stroke-width="2.5"></path>
+
+    <!-- 障壁の高さ -->
+    {
+      crit.map((c, i) => (
+        <g>
+          <line
+            x1={mapX(c.r)}
+            y1={Y0}
+            x2={mapX(c.r)}
+            y2={mapY(c.v)}
+            stroke={i === 0 ? "var(--mat-precip)" : "var(--color-text-2)"}
+            stroke-width="1.25"
+            stroke-dasharray="4 3"
+          />
+          <circle
+            cx={mapX(c.r)}
+            cy={mapY(c.v)}
+            r="4"
+            fill={i === 0 ? "var(--mat-precip)" : "var(--color-text-2)"}
+          />
+        </g>
+      ))
+    }
+
+    <text
+      x={mapX(crit[0].r) + 10}
+      y={mapY(crit[0].v) - 8}
+      font-size="12.5"
+      font-weight="600"
+      fill="var(--mat-precip)">整合(GP ゾーン): 山が低い</text
+    >
+    <text
+      x={mapX(crit[0].r) + 10}
+      y={mapY(crit[0].v) + 10}
+      font-size="12"
+      fill="var(--color-text-2)">→ 室温でも越えられる</text
+    >
+    <text
+      x={mapX(crit[1].r) + 12}
+      y={mapY(crit[1].v) + 4}
+      font-size="12.5"
+      font-weight="600"
+      fill="var(--color-text)">非整合: 山が高い(ΔG* ∝ γ³)</text
+    >
+    <text
+      x={mapX(crit[1].r) + 12}
+      y={mapY(crit[1].v) + 22}
+      font-size="12"
+      fill="var(--color-text-2)">→ 低温では核ができない</text
+    >
+    <text
+      x={mapX(crit[0].r)}
+      y={Y0 + 16}
+      text-anchor="middle"
+      font-size="11.5"
+      fill="var(--mat-precip)">r*</text
+    >
+    <text
+      x={mapX(crit[1].r)}
+      y={Y0 + 16}
+      text-anchor="middle"
+      font-size="11.5"
+      fill="var(--color-text-2)">r*</text
+    >
+  </svg>
+  <figcaption>{caption}</figcaption>
+  <p class="sr-only">{alt}</p>
+</figure>

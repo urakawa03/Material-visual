@@ -1,0 +1,265 @@
+---
+/**
+ * StaticCoherent.astro — 静的図 S-1(記事仕様書 07 §6)
+ *
+ * 整合界面と非整合界面の対比。整合では母相の格子面が粒子を貫いて連続し、
+ * 非整合では界面で断絶する。「格子がつながっている = 界面のコストが小さい」
+ * を一目で示す。
+ */
+
+interface Props {
+  caption: string;
+  alt: string;
+}
+
+const { caption, alt } = Astro.props;
+
+const EDGE_MAT = "color-mix(in srgb, var(--mat-matrix) 80%, black)";
+const EDGE_PPT = "color-mix(in srgb, var(--mat-precip) 80%, black)";
+
+const SP = 22; // 格子間隔
+const R = 45; // 粒子の半径
+const ATOM = 6.4;
+
+/** 左パネル(整合)と右パネル(非整合)の中心 */
+const LEFT = { x: 158, y: 112 };
+const RIGHT = { x: 470, y: 112 };
+
+/** 格子点(中心まわり ±5 列 ±4 行) */
+function grid(cx: number, cy: number) {
+  const pts: Array<{ x: number; y: number; inside: boolean }> = [];
+  for (let j = -4; j <= 4; j++) {
+    for (let i = -5; i <= 5; i++) {
+      const x = cx + i * SP;
+      const y = cy + j * SP;
+      pts.push({ x, y, inside: Math.hypot(x - cx, y - cy) < R - 2 });
+    }
+  }
+  return pts;
+}
+
+/** 整合側: 粒子の内側でわずかに引き込まれる(整合ひずみ) */
+function pull(p: { x: number; y: number }, cx: number, cy: number) {
+  const dx = p.x - cx;
+  const dy = p.y - cy;
+  const d = Math.hypot(dx, dy);
+  if (d < 1e-6) return p;
+  const u = d < R ? -0.08 * d : (-0.08 * (R * R)) / d;
+  return { x: p.x + (u * dx) / d, y: p.y + (u * dy) / d };
+}
+
+const leftPts = grid(LEFT.x, LEFT.y).map((p) => ({
+  ...pull(p, LEFT.x, LEFT.y),
+  inside: p.inside,
+}));
+const rightPts = grid(RIGHT.x, RIGHT.y);
+
+/** 整合側の格子線(行・列)。引き込みを反映した折れ線 */
+const leftRows: string[] = [];
+for (let j = -4; j <= 4; j++) {
+  const d = leftPts
+    .slice((j + 4) * 11, (j + 4) * 11 + 11)
+    .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
+    .join(" ");
+  leftRows.push(d);
+}
+const leftCols: string[] = [];
+for (let i = 0; i < 11; i++) {
+  const d = Array.from({ length: 9 }, (_, j) => leftPts[j * 11 + i])
+    .map((p, k) => `${k === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
+    .join(" ");
+  leftCols.push(d);
+}
+
+/** 非整合側: 粒子の中は向きの違う自前の格子(25° 回転) */
+const ANG = (25 * Math.PI) / 180;
+const innerLines: string[] = [];
+for (let k = -3; k <= 3; k++) {
+  const o = k * SP * 0.9;
+  const L = R * 1.1;
+  for (const dir of [0, 1]) {
+    const a = ANG + (dir * Math.PI) / 2;
+    const nx = -Math.sin(a);
+    const ny = Math.cos(a);
+    const tx = Math.cos(a);
+    const ty = Math.sin(a);
+    innerLines.push(
+      `M ${(RIGHT.x + nx * o - tx * L).toFixed(1)} ${(RIGHT.y + ny * o - ty * L).toFixed(1)} ` +
+        `L ${(RIGHT.x + nx * o + tx * L).toFixed(1)} ${(RIGHT.y + ny * o + ty * L).toFixed(1)}`,
+    );
+  }
+}
+---
+
+<figure class="static-fig">
+  <svg
+    viewBox="0 0 636 250"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    <defs>
+      <clipPath id="gpz-s1-outside">
+        <path
+          d={`M 300 0 H 636 V 250 H 300 Z M ${RIGHT.x + R} ${RIGHT.y} a ${R} ${R} 0 1 0 ${-2 * R} 0 a ${R} ${R} 0 1 0 ${2 * R} 0`}
+          clip-rule="evenodd"></path>
+      </clipPath>
+      <clipPath id="gpz-s1-inside">
+        <circle cx={RIGHT.x} cy={RIGHT.y} r={R}></circle>
+      </clipPath>
+    </defs>
+
+    <!-- 左: 整合界面 -->
+    <g>
+      {
+        [...leftRows, ...leftCols].map((d) => (
+          <path
+            d={d}
+            fill="none"
+            stroke="var(--color-hairline)"
+            stroke-width="1"
+          />
+        ))
+      }
+      <circle
+        cx={LEFT.x}
+        cy={LEFT.y}
+        r={R}
+        fill="var(--mat-precip)"
+        opacity="0.16"></circle>
+      <circle
+        cx={LEFT.x}
+        cy={LEFT.y}
+        r={R}
+        fill="none"
+        stroke={EDGE_PPT}
+        stroke-width="1.5"
+        stroke-dasharray="6 4"></circle>
+      {
+        leftPts.map((p) => (
+          <circle
+            cx={p.x}
+            cy={p.y}
+            r={ATOM}
+            fill={p.inside ? "var(--mat-precip)" : "var(--mat-matrix)"}
+            stroke={p.inside ? EDGE_PPT : EDGE_MAT}
+            stroke-width="1.4"
+          />
+        ))
+      }
+      <text
+        x={LEFT.x}
+        y="212"
+        text-anchor="middle"
+        font-size="13.5"
+        font-weight="600"
+        fill="var(--color-text)">整合(coherent)</text
+      >
+      <text
+        x={LEFT.x}
+        y="232"
+        text-anchor="middle"
+        font-size="12.5"
+        fill="var(--color-text-2)">格子面がつながる → 界面のコストが小さい</text
+      >
+    </g>
+
+    <!-- 右: 非整合界面 -->
+    <g>
+      <g clip-path="url(#gpz-s1-outside)">
+        {
+          Array.from({ length: 9 }, (_, j) => (
+            <path
+              d={`M ${RIGHT.x - 5 * SP} ${RIGHT.y + (j - 4) * SP} H ${RIGHT.x + 5 * SP}`}
+              stroke="var(--color-hairline)"
+              stroke-width="1"
+              fill="none"
+            />
+          ))
+        }
+        {
+          Array.from({ length: 11 }, (_, i) => (
+            <path
+              d={`M ${RIGHT.x + (i - 5) * SP} ${RIGHT.y - 4 * SP} V ${RIGHT.y + 4 * SP}`}
+              stroke="var(--color-hairline)"
+              stroke-width="1"
+              fill="none"
+            />
+          ))
+        }
+        {
+          rightPts.map((p) => (
+            <circle
+              cx={p.x}
+              cy={p.y}
+              r={ATOM}
+              fill="var(--mat-matrix)"
+              stroke={EDGE_MAT}
+              stroke-width="1.4"
+            />
+          ))
+        }
+      </g>
+      <circle
+        cx={RIGHT.x}
+        cy={RIGHT.y}
+        r={R}
+        fill="var(--mat-precip)"
+        opacity="0.16"></circle>
+      <g clip-path="url(#gpz-s1-inside)">
+        {
+          innerLines.map((d) => (
+            <path
+              d={d}
+              stroke={EDGE_PPT}
+              stroke-width="1"
+              opacity="0.55"
+              fill="none"
+            />
+          ))
+        }
+        {
+          [-1, 0, 1].flatMap((j) =>
+            [-1, 0, 1].map((i) => {
+              const o1 = i * SP * 0.9;
+              const o2 = j * SP * 0.9;
+              return (
+                <circle
+                  cx={RIGHT.x + Math.cos(ANG) * o1 - Math.sin(ANG) * o2}
+                  cy={RIGHT.y + Math.sin(ANG) * o1 + Math.cos(ANG) * o2}
+                  r={ATOM}
+                  fill="var(--mat-precip)"
+                  stroke={EDGE_PPT}
+                  stroke-width="1.4"
+                />
+              );
+            }),
+          )
+        }
+      </g>
+      <circle
+        cx={RIGHT.x}
+        cy={RIGHT.y}
+        r={R}
+        fill="none"
+        stroke={EDGE_PPT}
+        stroke-width="2.5"></circle>
+      <text
+        x={RIGHT.x}
+        y="212"
+        text-anchor="middle"
+        font-size="13.5"
+        font-weight="600"
+        fill="var(--color-text)">非整合(incoherent)</text
+      >
+      <text
+        x={RIGHT.x}
+        y="232"
+        text-anchor="middle"
+        font-size="12.5"
+        fill="var(--color-text-2)">界面で格子が途切れる → コストが大きい</text
+      >
+    </g>
+  </svg>
+  <figcaption>{caption}</figcaption>
+  <p class="sr-only">{alt}</p>
+</figure>

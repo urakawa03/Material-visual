@@ -11,6 +11,11 @@ import M from "../../components/M.astro";
 import OstwaldS1 from "../../components/figures/OstwaldS1.astro";
 import OstwaldS2 from "../../components/figures/OstwaldS2.astro";
 import OstwaldS3 from "../../components/figures/OstwaldS3.astro";
+import { withBase } from "../../lib/paths";
+
+const gpZones = withBase("/articles/gp-zones/");
+const frankRead = withBase("/articles/frank-read-source/");
+const cottrell = withBase("/articles/cottrell-atmosphere/");
 ---
 
 <Article
@@ -273,9 +278,8 @@ import OstwaldS3 from "../../components/figures/OstwaldS3.astro";
     決めるのは、粒子の大きさそのものではなく<strong>間隔</strong>です。
     転位(dislocation)は粒子を切れないとき、粒子の間を弓なりに張り出して
     通り抜けます(オロワン機構、Orowan mechanism。張り出しの物理は
-    フランク・リード源の記事で詳しく扱う予定です)。必要な応力は間隔 <M
-      tex="L"
-    /> に反比例します。
+    <a href={frankRead}>フランク・リード源</a
+    >の記事で詳しく扱っています)。必要な応力は間隔 <M tex="L" /> に反比例します。
   </p>
   <M
     block
@@ -297,8 +301,9 @@ import OstwaldS3 from "../../components/figures/OstwaldS3.astro";
   />
   <p>
     右のグラフのゴースト線(もし粗大化しなかったら)との差が、粗大化に
-    奪われた強さです。時効処理とは、時効硬化の「登り」(GP ゾーンの記事で
-    扱う予定)とこの「下り」の間にある頂上で止める、時間との勝負なのです。
+    奪われた強さです。時効処理とは、時効硬化の「登り」(<a href={gpZones}
+      >GP ゾーン</a
+    >の記事)とこの「下り」の間にある頂上で止める、時間との勝負なのです。
     温度を上げれば頂上に早く着きますが、下りも同じだけ速くなります。
     現場で時効温度と時間が分単位で管理されるのは、このためです。
   </p>
@@ -379,8 +384,8 @@ import OstwaldS3 from "../../components/figures/OstwaldS3.astro";
   </ul>
   <p>
     そして、この鎖のどこか 1 環を断つことが耐熱材料の設計でした。
-    時効硬化の「登り」側の物語は GP ゾーンの記事で、溶質と拡散のもう一つの
-    物語はコットレル雰囲気の記事で扱う予定です(いずれも準備中)。
+    時効硬化の「登り」側の物語は <a href={gpZones}>GP ゾーン</a> の記事で、 溶質と拡散のもう一つの物語は
+    <a href={cottrell}>コットレル雰囲気</a> の記事で 扱っています。
   </p>
 
   <h2>もっと知るには</h2>
