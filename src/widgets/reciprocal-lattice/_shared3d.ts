@@ -8,15 +8,20 @@
  * 1 バイトも混入しない。
  *
  * 提供するもの:
- * - 単一 canvas を左右(狭幅では上下)2 ビューポートに分割する scissor
- *   描画のシーン雛形(白背景・半球光 + 弱い平行光 — §6.5)
- * - 両ビューポートで連動するオービット(ドラッグ + 慣性 + ピンチ/ホイール
+ * - 単一 canvas を 1〜2 ビューポート(2 分割は左右、狭幅では上下)に分ける
+ *   scissor 描画のシーン雛形(白背景・半球光 + 弱い平行光 — §6.5)
+ * - 各ビューポートで連動するオービット(ドラッグ + 慣性 + ピンチ/ホイール
  *   ズーム + キーボード: 矢印 3°/押下・+/− 10% ズーム — §5.6)。
  *   描画はダーティ方式: 変化があったときだけ onChange → requestRender で
  *   1 フレーム描き、静止時の GPU 消費はゼロ(§5.6)。慣性はヘルパ内部の
  *   rAF で進め、prefers-reduced-motion では慣性を使わない
  * - ラベルスプライト・3D 矢印・ポリゴン束(面束)・線分群・パネルの単位
  *   ラベルなどの小物
+ *
+ * 記事「エヴァルト球」(仕様書 04 §5.0・付録 A-2)のために、
+ * createMultiView でビュー数 1 と「ビューごとにカメラ連動を切る」(固定
+ * カメラ)に対応した。createDualView / DualViewKit は従来どおりの薄い
+ * ラッパーで、公開 API と挙動は変えていない。
  */
 
 import * as THREE from "three";
@@ -68,13 +73,50 @@ function prefersReducedMotion(): boolean {
   );
 }
 
-/* ------------------------------------------------------------ 2 ビュー雛形 */
+/* --------------------------------------------------------- 1〜2 ビュー雛形 */
 
 export interface ViewRect {
   x: number;
   y: number;
   w: number;
   h: number;
+}
+
+export interface MultiViewOptions {
+  /** 各ビューのカメラ距離(要素数がビュー数。1 または 2) */
+  dists: readonly number[];
+  /**
+   * 連動オービットから外すビュー(true = 正面固定カメラ)。省略時は
+   * すべて連動する。図6 の検出器ビューが使う(仕様書 04 §5.6)。
+   */
+  fixed?: readonly boolean[];
+  /** 初期方位角(度)。既定 30(§5.6) */
+  azimuthDeg?: number;
+  /** 初期仰角(度)。既定 20(§5.6) */
+  elevationDeg?: number;
+  /** 視点変更時に呼ばれる(host.requestRender を渡すこと) */
+  onChange: () => void;
+  /** stage の aria-label(キーボード視点操作の説明) */
+  ariaLabel: string;
+}
+
+export interface MultiViewKit {
+  renderer: THREE.WebGLRenderer;
+  /** ビューごとのシーン(要素数 = dists.length) */
+  scenes: THREE.Scene[];
+  /** ビューごとのカメラ */
+  cameras: THREE.PerspectiveCamera[];
+  /** 現在のビューポート矩形(CSS px、上原点)。resize() で更新される */
+  rects: ViewRect[];
+  /** 縦積みかどうか(ビュー数 1 では常に false) */
+  stacked: boolean;
+  /** engine の resize 通知から呼ぶ(host.size を読む) */
+  resize(): void;
+  /** 全ビューを scissor で描く(host.onRender に渡す) */
+  render(): void;
+  /** 視点を初期値へ戻す */
+  resetView(): void;
+  dispose(): void;
 }
 
 export interface DualViewOptions {
@@ -92,33 +134,40 @@ export interface DualViewOptions {
   ariaLabel: string;
 }
 
-export interface DualViewKit {
-  renderer: THREE.WebGLRenderer;
+export interface DualViewKit extends MultiViewKit {
   sceneFirst: THREE.Scene;
   sceneSecond: THREE.Scene;
   camFirst: THREE.PerspectiveCamera;
   camSecond: THREE.PerspectiveCamera;
-  /** 現在のビューポート矩形(CSS px、上原点)。resize() で更新される */
-  rects: [ViewRect, ViewRect];
-  /** 縦積みかどうか */
-  stacked: boolean;
-  /** engine の resize 通知から呼ぶ(host.size を読む) */
-  resize(): void;
-  /** 2 ビューを scissor で描く(host.onRender に渡す) */
-  render(): void;
-  /** 視点を初期値へ戻す */
-  resetView(): void;
-  dispose(): void;
+}
+
+export interface SingleViewOptions {
+  /** カメラ距離 */
+  dist: number;
+  azimuthDeg?: number;
+  elevationDeg?: number;
+  onChange: () => void;
+  ariaLabel: string;
+}
+
+export interface SingleViewKit extends MultiViewKit {
+  scene: THREE.Scene;
+  camera: THREE.PerspectiveCamera;
 }
 
 /**
- * 単一 canvas を 2 ビューポートに分割し、連動カメラで描く雛形を作る
+ * 単一 canvas を 1〜2 ビューポートに分割し、連動カメラで描く雛形を作る
  * (§5.6)。ドラッグ・ピンチ・ホイール・キーボードの視点操作つき。
+ * opts.fixed[i] が true のビューは連動せず、正面(+z 方向)から見た
+ * 固定カメラになる(仕様書 04 §5.6 の検出器ビュー)。
  */
-export function createDualView(
+export function createMultiView(
   host: FigureHost,
-  opts: DualViewOptions,
-): DualViewKit {
+  opts: MultiViewOptions,
+): MultiViewKit {
+  const viewCount = opts.dists.length;
+  const isFixed = (i: number): boolean => opts.fixed?.[i] === true;
+
   const renderer = new THREE.WebGLRenderer({
     canvas: host.canvas,
     antialias: true,
@@ -134,16 +183,12 @@ export function createDualView(
     scene.add(dir);
     return scene;
   };
-  const sceneFirst = makeScene();
-  const sceneSecond = makeScene();
-
-  const camFirst = new THREE.PerspectiveCamera(
-    CAMERA_FOV_DEG,
-    1,
-    CAMERA_NEAR,
-    CAMERA_FAR,
+  const scenes = Array.from({ length: viewCount }, makeScene);
+  const cameras = Array.from(
+    { length: viewCount },
+    () =>
+      new THREE.PerspectiveCamera(CAMERA_FOV_DEG, 1, CAMERA_NEAR, CAMERA_FAR),
   );
-  const camSecond = camFirst.clone();
 
   const az0 = (opts.azimuthDeg ?? 30) * DEG;
   const el0 = (opts.elevationDeg ?? 20) * DEG;
@@ -158,12 +203,17 @@ export function createDualView(
     const se = Math.sin(elevation);
     const sa = Math.sin(azimuth);
     const ca = Math.cos(azimuth);
-    const d1 = opts.distFirst * zoom;
-    camFirst.position.set(d1 * ce * sa, d1 * se, d1 * ce * ca);
-    camFirst.lookAt(0, 0, 0);
-    const d2 = opts.distSecond * zoom;
-    camSecond.position.set(d2 * ce * sa, d2 * se, d2 * ce * ca);
-    camSecond.lookAt(0, 0, 0);
+    for (let i = 0; i < viewCount; i++) {
+      const cam = cameras[i];
+      if (isFixed(i)) {
+        // 固定カメラ: 常に +z から原点を正面に見る(検出器の正面図)
+        cam.position.set(0, 0, opts.dists[i]);
+      } else {
+        const d = opts.dists[i] * zoom;
+        cam.position.set(d * ce * sa, d * se, d * ce * ca);
+      }
+      cam.lookAt(0, 0, 0);
+    }
   };
 
   const rotate = (dAz: number, dEl: number): void => {
@@ -313,54 +363,54 @@ export function createDualView(
   host.stage.addEventListener("keydown", keydown);
 
   /* ---- レイアウトと描画 ---- */
-  const rects: [ViewRect, ViewRect] = [
-    { x: 0, y: 0, w: 1, h: 1 },
-    { x: 0, y: 0, w: 1, h: 1 },
-  ];
+  const rects: ViewRect[] = Array.from({ length: viewCount }, () => ({
+    x: 0,
+    y: 0,
+    w: 1,
+    h: 1,
+  }));
 
-  const kit: DualViewKit = {
+  const kit: MultiViewKit = {
     renderer,
-    sceneFirst,
-    sceneSecond,
-    camFirst,
-    camSecond,
+    scenes,
+    cameras,
     rects,
     stacked: false,
     resize(): void {
       const { w, h, dpr } = host.size;
       renderer.setPixelRatio(dpr);
       renderer.setSize(w, h, false);
-      if (w >= h * SIDE_BY_SIDE_MIN_ASPECT) {
+      if (viewCount === 1) {
         kit.stacked = false;
-        const pw = (w - VIEW_GAP) / 2;
+        rects[0] = { x: 0, y: 0, w, h };
+      } else if (w >= h * SIDE_BY_SIDE_MIN_ASPECT) {
+        kit.stacked = false;
+        // 初期化直後などキャンバスが極小のときに負の幅にならないよう下限を置く
+        const pw = Math.max(1, (w - VIEW_GAP) / 2);
         rects[0] = { x: 0, y: 0, w: pw, h };
         rects[1] = { x: pw + VIEW_GAP, y: 0, w: pw, h };
       } else {
         kit.stacked = true;
-        const ph = (h - VIEW_GAP) / 2;
+        const ph = Math.max(1, (h - VIEW_GAP) / 2);
         rects[0] = { x: 0, y: 0, w, h: ph };
         rects[1] = { x: 0, y: ph + VIEW_GAP, w, h: ph };
       }
-      const aspect = rects[0].w / rects[0].h;
-      camFirst.aspect = aspect;
-      camFirst.updateProjectionMatrix();
-      camSecond.aspect = aspect;
-      camSecond.updateProjectionMatrix();
+      for (let i = 0; i < viewCount; i++) {
+        cameras[i].aspect = rects[i].w / rects[i].h;
+        cameras[i].updateProjectionMatrix();
+      }
       applyCameras();
     },
     render(): void {
       const { h } = host.size;
       renderer.setScissorTest(true);
-      const views: Array<[ViewRect, THREE.Scene, THREE.PerspectiveCamera]> = [
-        [rects[0], sceneFirst, camFirst],
-        [rects[1], sceneSecond, camSecond],
-      ];
-      for (const [r, scene, cam] of views) {
+      for (let i = 0; i < viewCount; i++) {
+        const r = rects[i];
         // three の viewport は左下原点(CSS px 単位、DPR は renderer が掛ける)
         const yGl = h - (r.y + r.h);
         renderer.setViewport(r.x, yGl, r.w, r.h);
         renderer.setScissor(r.x, yGl, r.w, r.h);
-        renderer.render(scene, cam);
+        renderer.render(scenes[i], cameras[i]);
       }
       renderer.setScissorTest(false);
     },
@@ -397,8 +447,7 @@ export function createDualView(
           }
         });
       };
-      disposeScene(sceneFirst);
-      disposeScene(sceneSecond);
+      for (const scene of scenes) disposeScene(scene);
       renderer.dispose();
     },
   };
@@ -408,10 +457,51 @@ export function createDualView(
   return kit;
 }
 
+/**
+ * 2 ビューポート(左 = 実空間、右 = 逆空間)の雛形(§5.6)。
+ * createMultiView の薄いラッパーで、従来の名前でシーン・カメラを参照できる。
+ */
+export function createDualView(
+  host: FigureHost,
+  opts: DualViewOptions,
+): DualViewKit {
+  const kit = createMultiView(host, {
+    dists: [opts.distFirst, opts.distSecond],
+    azimuthDeg: opts.azimuthDeg,
+    elevationDeg: opts.elevationDeg,
+    onChange: opts.onChange,
+    ariaLabel: opts.ariaLabel,
+  });
+  return Object.assign(kit, {
+    sceneFirst: kit.scenes[0],
+    sceneSecond: kit.scenes[1],
+    camFirst: kit.cameras[0],
+    camSecond: kit.cameras[1],
+  });
+}
+
+/**
+ * 単一ビューポートの雛形(仕様書 04 §5.0)。エヴァルト球の 3D 図版のように
+ * 逆空間だけを描く図版が使う。
+ */
+export function createSingleView(
+  host: FigureHost,
+  opts: SingleViewOptions,
+): SingleViewKit {
+  const kit = createMultiView(host, {
+    dists: [opts.dist],
+    azimuthDeg: opts.azimuthDeg,
+    elevationDeg: opts.elevationDeg,
+    onChange: opts.onChange,
+    ariaLabel: opts.ariaLabel,
+  });
+  return Object.assign(kit, { scene: kit.scenes[0], camera: kit.cameras[0] });
+}
+
 /* --------------------------------------------------- パネルの単位ラベル */
 
 export interface PanelTags {
-  update(rects: readonly [ViewRect, ViewRect]): void;
+  update(rects: readonly ViewRect[]): void;
   /** i 番目のラベル文字列を差し替える */
   set(i: number, text: string): void;
   dispose(): void;
@@ -424,7 +514,7 @@ export interface PanelTags {
  */
 export function createPanelTags(
   stage: HTMLElement,
-  labels: readonly [string, string],
+  labels: readonly string[],
 ): PanelTags {
   const els = labels.map((text) => {
     const el = document.createElement("span");

@@ -62,7 +62,7 @@ export const TOPICS: readonly Topic[] = [
     summary: "どの方向に回折が起きるかを、球と格子点の幾何で見わたす。",
     render: "3d",
     prerequisites: [{ slug: "reciprocal-lattice", recommended: false }],
-    published: false,
+    published: true,
   },
   {
     order: 3,

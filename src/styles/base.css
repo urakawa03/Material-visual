@@ -275,6 +275,12 @@ output {
   color: var(--mat-recip);
 }
 
+.mx-sphere {
+  /* 文字には AA を満たす暗色トークンを使う(仕様書 04 §6.3・付録 A-1)。
+     図中の塗り・線は従来どおり --mat-sphere-fill / --mat-sphere-line */
+  color: var(--mat-sphere-ink);
+}
+
 /* アクセント色の数式変数(臨界半径 r* など、図中の参照線と対応) */
 .mx-acc {
   color: var(--color-accent);

@@ -43,6 +43,18 @@ export const registry: Record<
   "reciprocal-lattice/bravais-3d": () =>
     import("./reciprocal-lattice/bravais-3d"),
 
+  // 記事「エヴァルト球」(仕様書 04 §4)。図3〜図6 のみ three.js を含む
+  "ewald-sphere/bragg-vs-laue": () => import("./ewald-sphere/bragg-vs-laue"),
+  "ewald-sphere/k-triangle": () => import("./ewald-sphere/k-triangle"),
+  "ewald-sphere/construction": () => import("./ewald-sphere/construction"),
+  "ewald-sphere/rotation-method": () =>
+    import("./ewald-sphere/rotation-method"),
+  "ewald-sphere/wavelength-limiting": () =>
+    import("./ewald-sphere/wavelength-limiting"),
+  "ewald-sphere/powder-rings": () => import("./ewald-sphere/powder-rings"),
+  "ewald-sphere/electron-vs-xray": () =>
+    import("./ewald-sphere/electron-vs-xray"),
+
   // 記事「オストワルド成長」(仕様書 03)
   "ostwald-ripening/coarsening-timelapse": () =>
     import("./ostwald-ripening/coarsening-timelapse"),

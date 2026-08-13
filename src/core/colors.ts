@@ -33,6 +33,12 @@ export const MAT_COLORS = {
   sphereFill: "rgba(15, 138, 138, 0.14)",
   /** エヴァルト球面(線) */
   sphereLine: "#0f8a8a",
+  /**
+   * 球面の文字用暗色(白地で AA 4.5:1 を満たす)。数式・読み取り値など
+   * 小サイズ文字に使う。図中の塗り・線は従来どおり sphereFill / sphereLine
+   * を使うこと(仕様書 04 §6.3・付録 A-1)
+   */
+  sphereInk: "#0c7676",
   /** 引張応力場の塗り */
   tension: "rgba(209, 72, 63, 0.12)",
   /** 圧縮応力場の塗り */
@@ -63,6 +69,7 @@ const MAT_CSS_VARS: Record<MatColorName, string> = {
   recip: "--mat-recip",
   sphereFill: "--mat-sphere-fill",
   sphereLine: "--mat-sphere-line",
+  sphereInk: "--mat-sphere-ink",
   tension: "--mat-tension",
   compression: "--mat-compression",
 };
