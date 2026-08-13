@@ -88,6 +88,18 @@ export const registry: Record<
   "kirkendall-effect/hollow-nanoparticle": () =>
     import("./kirkendall-effect/hollow-nanoparticle"),
 
+  // 記事「バンド理論」(仕様書 11 §4)。図5 のみ three.js を含む
+  "band-theory/free-electron": () => import("./band-theory/free-electron"),
+  "band-theory/bragg-reflection-gap": () =>
+    import("./band-theory/bragg-reflection-gap"),
+  "band-theory/standing-waves": () => import("./band-theory/standing-waves"),
+  "band-theory/kronig-penney": () => import("./band-theory/kronig-penney"),
+  "band-theory/zone-folding": () => import("./band-theory/zone-folding"),
+  "band-theory/metal-semi-insulator": () =>
+    import("./band-theory/metal-semi-insulator"),
+  "band-theory/real-band-diagram": () =>
+    import("./band-theory/real-band-diagram"),
+
   // 記事「コットレル雰囲気」(仕様書 04)
   "cottrell-atmosphere/yield-tooth": () =>
     import("./cottrell-atmosphere/yield-tooth"),

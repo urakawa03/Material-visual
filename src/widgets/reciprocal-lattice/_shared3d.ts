@@ -20,8 +20,11 @@
  *
  * 記事「エヴァルト球」(仕様書 04 §5.0・付録 A-2)のために、
  * createMultiView でビュー数 1 と「ビューごとにカメラ連動を切る」(固定
- * カメラ)に対応した。createDualView / DualViewKit は従来どおりの薄い
- * ラッパーで、公開 API と挙動は変えていない。
+ * カメラ)に対応した。また記事「バンド理論」(仕様書 11 §5.5)のために、
+ * 視点操作を createOrbit として切り出し、createSingleView は canvas /
+ * size 指定で「図版の一部を占める専用キャンバス」にも描けるようにした。
+ * createDualView / DualViewKit は従来どおりの薄いラッパーで、公開 API と
+ * 挙動は変えていない。
  */
 
 import * as THREE from "three";
@@ -73,7 +76,7 @@ function prefersReducedMotion(): boolean {
   );
 }
 
-/* --------------------------------------------------------- 1〜2 ビュー雛形 */
+/* ------------------------------------------------- オービット(視点操作) */
 
 export interface ViewRect {
   x: number;
@@ -82,14 +85,13 @@ export interface ViewRect {
   h: number;
 }
 
-export interface MultiViewOptions {
-  /** 各ビューのカメラ距離(要素数がビュー数。1 または 2) */
-  dists: readonly number[];
-  /**
-   * 連動オービットから外すビュー(true = 正面固定カメラ)。省略時は
-   * すべて連動する。図6 の検出器ビューが使う(仕様書 04 §5.6)。
-   */
-  fixed?: readonly boolean[];
+/** オービットが動かすカメラと、その基準距離 */
+interface OrbitTarget {
+  cam: THREE.PerspectiveCamera;
+  dist: number;
+}
+
+interface OrbitOptions {
   /** 初期方位角(度)。既定 30(§5.6) */
   azimuthDeg?: number;
   /** 初期仰角(度)。既定 20(§5.6) */
@@ -98,98 +100,29 @@ export interface MultiViewOptions {
   onChange: () => void;
   /** stage の aria-label(キーボード視点操作の説明) */
   ariaLabel: string;
+  /** ポインタ操作を受けるキャンバス(既定 host.canvas) */
+  canvas?: HTMLCanvasElement;
 }
 
-export interface MultiViewKit {
-  renderer: THREE.WebGLRenderer;
-  /** ビューごとのシーン(要素数 = dists.length) */
-  scenes: THREE.Scene[];
-  /** ビューごとのカメラ */
-  cameras: THREE.PerspectiveCamera[];
-  /** 現在のビューポート矩形(CSS px、上原点)。resize() で更新される */
-  rects: ViewRect[];
-  /** 縦積みかどうか(ビュー数 1 では常に false) */
-  stacked: boolean;
-  /** engine の resize 通知から呼ぶ(host.size を読む) */
-  resize(): void;
-  /** 全ビューを scissor で描く(host.onRender に渡す) */
-  render(): void;
-  /** 視点を初期値へ戻す */
-  resetView(): void;
+interface OrbitController {
+  /** 現在の角度・ズームをカメラへ反映する */
+  apply(): void;
+  /** 初期の視点へ戻す */
+  reset(): void;
   dispose(): void;
 }
 
-export interface DualViewOptions {
-  /** 実空間(第 1)ビューのカメラ距離 */
-  distFirst: number;
-  /** 逆空間(第 2)ビューのカメラ距離 */
-  distSecond: number;
-  /** 初期方位角(度)。既定 30(§5.6) */
-  azimuthDeg?: number;
-  /** 初期仰角(度)。既定 20(§5.6) */
-  elevationDeg?: number;
-  /** 視点変更時に呼ばれる(host.requestRender を渡すこと) */
-  onChange: () => void;
-  /** stage の aria-label(キーボード視点操作の説明) */
-  ariaLabel: string;
-}
-
-export interface DualViewKit extends MultiViewKit {
-  sceneFirst: THREE.Scene;
-  sceneSecond: THREE.Scene;
-  camFirst: THREE.PerspectiveCamera;
-  camSecond: THREE.PerspectiveCamera;
-}
-
-export interface SingleViewOptions {
-  /** カメラ距離 */
-  dist: number;
-  azimuthDeg?: number;
-  elevationDeg?: number;
-  onChange: () => void;
-  ariaLabel: string;
-}
-
-export interface SingleViewKit extends MultiViewKit {
-  scene: THREE.Scene;
-  camera: THREE.PerspectiveCamera;
-}
-
 /**
- * 単一 canvas を 1〜2 ビューポートに分割し、連動カメラで描く雛形を作る
- * (§5.6)。ドラッグ・ピンチ・ホイール・キーボードの視点操作つき。
- * opts.fixed[i] が true のビューは連動せず、正面(+z 方向)から見た
- * 固定カメラになる(仕様書 04 §5.6 の検出器ビュー)。
+ * ドラッグ(慣性つき)・ピンチ / ホイールズーム・キーボードによる視点操作。
+ * 単一ビュー・2 ビューの雛形(createMultiView / createSingleView)で共用
+ * する。描画はダーティ方式で、変化があったときだけ onChange を呼ぶ(§5.6)。
  */
-export function createMultiView(
+function createOrbit(
   host: FigureHost,
-  opts: MultiViewOptions,
-): MultiViewKit {
-  const viewCount = opts.dists.length;
-  const isFixed = (i: number): boolean => opts.fixed?.[i] === true;
-
-  const renderer = new THREE.WebGLRenderer({
-    canvas: host.canvas,
-    antialias: true,
-  });
-  renderer.setClearColor(0xffffff, 1);
-
-  const makeScene = (): THREE.Scene => {
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xffffff);
-    scene.add(new THREE.HemisphereLight(HEMI_SKY, HEMI_GROUND, HEMI_INTENSITY));
-    const dir = new THREE.DirectionalLight(0xffffff, DIR_INTENSITY);
-    dir.position.set(3, 6, 4);
-    scene.add(dir);
-    return scene;
-  };
-  const scenes = Array.from({ length: viewCount }, makeScene);
-  const cameras = Array.from(
-    { length: viewCount },
-    () =>
-      new THREE.PerspectiveCamera(CAMERA_FOV_DEG, 1, CAMERA_NEAR, CAMERA_FAR),
-  );
-
+  targets: readonly OrbitTarget[],
+  opts: OrbitOptions,
+): OrbitController {
+  const canvas = opts.canvas ?? host.canvas;
   const az0 = (opts.azimuthDeg ?? 30) * DEG;
   const el0 = (opts.elevationDeg ?? 20) * DEG;
   let azimuth = az0;
@@ -203,16 +136,10 @@ export function createMultiView(
     const se = Math.sin(elevation);
     const sa = Math.sin(azimuth);
     const ca = Math.cos(azimuth);
-    for (let i = 0; i < viewCount; i++) {
-      const cam = cameras[i];
-      if (isFixed(i)) {
-        // 固定カメラ: 常に +z から原点を正面に見る(検出器の正面図)
-        cam.position.set(0, 0, opts.dists[i]);
-      } else {
-        const d = opts.dists[i] * zoom;
-        cam.position.set(d * ce * sa, d * se, d * ce * ca);
-      }
-      cam.lookAt(0, 0, 0);
+    for (const t of targets) {
+      const d = t.dist * zoom;
+      t.cam.position.set(d * ce * sa, d * se, d * ce * ca);
+      t.cam.lookAt(0, 0, 0);
     }
   };
 
@@ -255,6 +182,12 @@ export function createMultiView(
       inertiaRaf = requestAnimationFrame(inertiaTick);
     }
   };
+  const stopInertia = (): void => {
+    if (inertiaRaf !== 0) {
+      cancelAnimationFrame(inertiaRaf);
+      inertiaRaf = 0;
+    }
+  };
 
   /* ---- ポインタ操作(タッチ・マウス両対応) ---- */
   const pointers = new Map<number, { x: number; y: number }>();
@@ -271,17 +204,14 @@ export function createMultiView(
 
   const down = (e: PointerEvent): void => {
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    host.canvas.setPointerCapture(e.pointerId);
+    canvas.setPointerCapture(e.pointerId);
     if (pointers.size === 1) {
       dragging = true;
       lastX = e.clientX;
       lastY = e.clientY;
       velAz = 0;
       velEl = 0;
-      if (inertiaRaf !== 0) {
-        cancelAnimationFrame(inertiaRaf);
-        inertiaRaf = 0;
-      }
+      stopInertia();
     } else if (pointers.size === 2) {
       dragging = false;
       pinchDist = pinchDistance();
@@ -355,12 +285,147 @@ export function createMultiView(
     e.preventDefault();
   };
 
-  host.canvas.addEventListener("pointerdown", down);
-  host.canvas.addEventListener("pointermove", move);
-  host.canvas.addEventListener("pointerup", up);
-  host.canvas.addEventListener("pointercancel", up);
-  host.canvas.addEventListener("wheel", wheel, { passive: false });
+  canvas.addEventListener("pointerdown", down);
+  canvas.addEventListener("pointermove", move);
+  canvas.addEventListener("pointerup", up);
+  canvas.addEventListener("pointercancel", up);
+  canvas.addEventListener("wheel", wheel, { passive: false });
   host.stage.addEventListener("keydown", keydown);
+
+  applyCameras();
+
+  return {
+    apply: applyCameras,
+    reset(): void {
+      azimuth = az0;
+      elevation = el0;
+      zoom = 1;
+      velAz = 0;
+      velEl = 0;
+      stopInertia();
+      applyCameras();
+      opts.onChange();
+    },
+    dispose(): void {
+      stopInertia();
+      canvas.removeEventListener("pointerdown", down);
+      canvas.removeEventListener("pointermove", move);
+      canvas.removeEventListener("pointerup", up);
+      canvas.removeEventListener("pointercancel", up);
+      canvas.removeEventListener("wheel", wheel);
+      host.stage.removeEventListener("keydown", keydown);
+    },
+  };
+}
+
+/** 白背景・半球光 + 弱い平行光のシーン雛形(§6.5) */
+function makeScene(): THREE.Scene {
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xffffff);
+  scene.add(new THREE.HemisphereLight(HEMI_SKY, HEMI_GROUND, HEMI_INTENSITY));
+  const dir = new THREE.DirectionalLight(0xffffff, DIR_INTENSITY);
+  dir.position.set(3, 6, 4);
+  scene.add(dir);
+  return scene;
+}
+
+/** シーン内のジオメトリ・マテリアルをまとめて破棄する */
+function disposeScene(scene: THREE.Scene): void {
+  scene.traverse((obj) => {
+    const mesh = obj as Partial<THREE.Mesh>;
+    if (mesh.geometry) mesh.geometry.dispose();
+    const mat = mesh.material;
+    if (Array.isArray(mat)) {
+      for (const m of mat) m.dispose();
+    } else if (mat) {
+      mat.dispose();
+    }
+  });
+}
+
+/* --------------------------------------------------------- 1〜2 ビュー雛形 */
+
+export interface MultiViewOptions {
+  /** 各ビューのカメラ距離(要素数がビュー数。1 または 2) */
+  dists: readonly number[];
+  /**
+   * 連動オービットから外すビュー(true = 正面固定カメラ)。省略時は
+   * すべて連動する。図6 の検出器ビューが使う(仕様書 04 §5.6)。
+   */
+  fixed?: readonly boolean[];
+  /** 初期方位角(度)。既定 30(§5.6) */
+  azimuthDeg?: number;
+  /** 初期仰角(度)。既定 20(§5.6) */
+  elevationDeg?: number;
+  /** 視点変更時に呼ばれる(host.requestRender を渡すこと) */
+  onChange: () => void;
+  /** stage の aria-label(キーボード視点操作の説明) */
+  ariaLabel: string;
+}
+
+export interface MultiViewKit {
+  renderer: THREE.WebGLRenderer;
+  /** ビューごとのシーン(要素数 = dists.length) */
+  scenes: THREE.Scene[];
+  /** ビューごとのカメラ */
+  cameras: THREE.PerspectiveCamera[];
+  /** 現在のビューポート矩形(CSS px、上原点)。resize() で更新される */
+  rects: ViewRect[];
+  /** 縦積みかどうか(ビュー数 1 では常に false) */
+  stacked: boolean;
+  /** engine の resize 通知から呼ぶ(host.size を読む) */
+  resize(): void;
+  /** 全ビューを scissor で描く(host.onRender に渡す) */
+  render(): void;
+  /** 視点を初期値へ戻す */
+  resetView(): void;
+  dispose(): void;
+}
+
+/**
+ * 単一 canvas を 1〜2 ビューポートに分割し、連動カメラで描く雛形を作る
+ * (§5.6)。ドラッグ・ピンチ・ホイール・キーボードの視点操作は createOrbit
+ * を共用する。opts.fixed[i] が true のビューは連動せず、正面(+z 方向)
+ * から見た固定カメラになる(仕様書 04 §5.6 の検出器ビュー)。
+ */
+export function createMultiView(
+  host: FigureHost,
+  opts: MultiViewOptions,
+): MultiViewKit {
+  const viewCount = opts.dists.length;
+  const isFixed = (i: number): boolean => opts.fixed?.[i] === true;
+
+  const renderer = new THREE.WebGLRenderer({
+    canvas: host.canvas,
+    antialias: true,
+  });
+  renderer.setClearColor(0xffffff, 1);
+
+  const scenes = Array.from({ length: viewCount }, makeScene);
+  const cameras = Array.from(
+    { length: viewCount },
+    () =>
+      new THREE.PerspectiveCamera(CAMERA_FOV_DEG, 1, CAMERA_NEAR, CAMERA_FAR),
+  );
+
+  // 固定カメラは常に +z から原点を正面に見る(検出器の正面図)。位置は
+  // 角度・ズームに依存しないので、ここで一度だけ決める。
+  const orbitTargets: OrbitTarget[] = [];
+  for (let i = 0; i < viewCount; i++) {
+    if (isFixed(i)) {
+      cameras[i].position.set(0, 0, opts.dists[i]);
+      cameras[i].lookAt(0, 0, 0);
+    } else {
+      orbitTargets.push({ cam: cameras[i], dist: opts.dists[i] });
+    }
+  }
+
+  const orbit = createOrbit(host, orbitTargets, {
+    azimuthDeg: opts.azimuthDeg,
+    elevationDeg: opts.elevationDeg,
+    onChange: opts.onChange,
+    ariaLabel: opts.ariaLabel,
+  });
 
   /* ---- レイアウトと描画 ---- */
   const rects: ViewRect[] = Array.from({ length: viewCount }, () => ({
@@ -399,7 +464,7 @@ export function createMultiView(
         cameras[i].aspect = rects[i].w / rects[i].h;
         cameras[i].updateProjectionMatrix();
       }
-      applyCameras();
+      orbit.apply();
     },
     render(): void {
       const { h } = host.size;
@@ -415,46 +480,41 @@ export function createMultiView(
       renderer.setScissorTest(false);
     },
     resetView(): void {
-      azimuth = az0;
-      elevation = el0;
-      zoom = 1;
-      velAz = 0;
-      velEl = 0;
-      if (inertiaRaf !== 0) {
-        cancelAnimationFrame(inertiaRaf);
-        inertiaRaf = 0;
-      }
-      applyCameras();
-      opts.onChange();
+      orbit.reset();
     },
     dispose(): void {
-      if (inertiaRaf !== 0) cancelAnimationFrame(inertiaRaf);
-      host.canvas.removeEventListener("pointerdown", down);
-      host.canvas.removeEventListener("pointermove", move);
-      host.canvas.removeEventListener("pointerup", up);
-      host.canvas.removeEventListener("pointercancel", up);
-      host.canvas.removeEventListener("wheel", wheel);
-      host.stage.removeEventListener("keydown", keydown);
-      const disposeScene = (scene: THREE.Scene): void => {
-        scene.traverse((obj) => {
-          const mesh = obj as Partial<THREE.Mesh>;
-          if (mesh.geometry) mesh.geometry.dispose();
-          const mat = mesh.material;
-          if (Array.isArray(mat)) {
-            for (const m of mat) m.dispose();
-          } else if (mat) {
-            mat.dispose();
-          }
-        });
-      };
+      orbit.dispose();
       for (const scene of scenes) disposeScene(scene);
       renderer.dispose();
     },
   };
 
   kit.resize();
-  applyCameras();
   return kit;
+}
+
+/* ------------------------------------------------------------ 2 ビュー雛形 */
+
+export interface DualViewOptions {
+  /** 実空間(第 1)ビューのカメラ距離 */
+  distFirst: number;
+  /** 逆空間(第 2)ビューのカメラ距離 */
+  distSecond: number;
+  /** 初期方位角(度)。既定 30(§5.6) */
+  azimuthDeg?: number;
+  /** 初期仰角(度)。既定 20(§5.6) */
+  elevationDeg?: number;
+  /** 視点変更時に呼ばれる(host.requestRender を渡すこと) */
+  onChange: () => void;
+  /** stage の aria-label(キーボード視点操作の説明) */
+  ariaLabel: string;
+}
+
+export interface DualViewKit extends MultiViewKit {
+  sceneFirst: THREE.Scene;
+  sceneSecond: THREE.Scene;
+  camFirst: THREE.PerspectiveCamera;
+  camSecond: THREE.PerspectiveCamera;
 }
 
 /**
@@ -480,22 +540,101 @@ export function createDualView(
   });
 }
 
+/* ----------------------------------------------------------- 単一ビュー */
+
+export interface SingleViewOptions {
+  /** カメラ距離 */
+  dist: number;
+  /**
+   * 描画先キャンバス(省略時は host.canvas に scissor 描画)。
+   * 2D の canvas に 3D を重ねる図版が専用キャンバスを渡す(仕様書 11 §5.5)。
+   */
+  canvas?: HTMLCanvasElement;
+  /** 描画先の寸法。canvas を渡すときに一緒に渡す(省略時は host.size) */
+  size?: { w: number; h: number; dpr: number };
+  azimuthDeg?: number;
+  elevationDeg?: number;
+  onChange: () => void;
+  ariaLabel: string;
+}
+
+export interface SingleViewKit extends MultiViewKit {
+  scene: THREE.Scene;
+  camera: THREE.PerspectiveCamera;
+}
+
 /**
- * 単一ビューポートの雛形(仕様書 04 §5.0)。エヴァルト球の 3D 図版のように
- * 逆空間だけを描く図版が使う。
+ * 単一ビューポートの雛形。エヴァルト球の 3D 図版のように逆空間だけを
+ * 描く図版(仕様書 04 §5.0)と、2D 図版の一部に 3D を重ねる図版
+ * (仕様書 11 §5.5 の図5)が使う。視点操作は createOrbit を共用する。
  */
 export function createSingleView(
   host: FigureHost,
   opts: SingleViewOptions,
 ): SingleViewKit {
-  const kit = createMultiView(host, {
-    dists: [opts.dist],
+  if (!opts.canvas && !opts.size) {
+    // ホストのキャンバス全面に描く(scissor 1 ビュー)
+    const kit = createMultiView(host, {
+      dists: [opts.dist],
+      azimuthDeg: opts.azimuthDeg,
+      elevationDeg: opts.elevationDeg,
+      onChange: opts.onChange,
+      ariaLabel: opts.ariaLabel,
+    });
+    return Object.assign(kit, { scene: kit.scenes[0], camera: kit.cameras[0] });
+  }
+
+  // 専用キャンバスに直接描く(図版の一部だけを 3D にする場合)
+  const canvas = opts.canvas ?? host.canvas;
+  const size = opts.size ?? host.size;
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setClearColor(0xffffff, 1);
+  const scene = makeScene();
+  const camera = new THREE.PerspectiveCamera(
+    CAMERA_FOV_DEG,
+    1,
+    CAMERA_NEAR,
+    CAMERA_FAR,
+  );
+  const orbit = createOrbit(host, [{ cam: camera, dist: opts.dist }], {
     azimuthDeg: opts.azimuthDeg,
     elevationDeg: opts.elevationDeg,
     onChange: opts.onChange,
     ariaLabel: opts.ariaLabel,
+    canvas,
   });
-  return Object.assign(kit, { scene: kit.scenes[0], camera: kit.cameras[0] });
+
+  const rects: ViewRect[] = [{ x: 0, y: 0, w: size.w, h: size.h }];
+  const kit: SingleViewKit = {
+    renderer,
+    scene,
+    camera,
+    scenes: [scene],
+    cameras: [camera],
+    rects,
+    stacked: false,
+    resize(): void {
+      renderer.setPixelRatio(size.dpr);
+      renderer.setSize(size.w, size.h, false);
+      camera.aspect = size.w / Math.max(1, size.h);
+      camera.updateProjectionMatrix();
+      rects[0] = { x: 0, y: 0, w: size.w, h: size.h };
+      orbit.apply();
+    },
+    render(): void {
+      renderer.render(scene, camera);
+    },
+    resetView(): void {
+      orbit.reset();
+    },
+    dispose(): void {
+      orbit.dispose();
+      disposeScene(scene);
+      renderer.dispose();
+    },
+  };
+  kit.resize();
+  return kit;
 }
 
 /* --------------------------------------------------- パネルの単位ラベル */

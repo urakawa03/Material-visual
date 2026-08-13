@@ -155,6 +155,74 @@ function ostwaldRipening(): string {
   );
 }
 
+/**
+ * 11. バンド理論: 許容帯 2 本と、その間の禁制帯(破線)。
+ * 下の帯だけ電子で埋まっている(仕様書 11 §6.1 S1)
+ */
+function bandTheory(): string {
+  const band = (y: number, h: number): string =>
+    `<rect x="34" y="${y}" width="132" height="${h}" fill="var(--mat-band)"/>` +
+    `<line x1="34" y1="${y}" x2="166" y2="${y}" stroke="var(--mat-level)" stroke-width="2"/>` +
+    `<line x1="34" y1="${y + h}" x2="166" y2="${y + h}" stroke="var(--mat-level)" stroke-width="2"/>`;
+  return svg(
+    band(22, 24) +
+      band(78, 26) +
+      // 占有(下の帯だけ電子で埋まる)
+      `<rect x="34" y="78" width="132" height="26" fill="var(--mat-electron)" opacity="0.55"/>` +
+      // 禁制帯(塗りなし + 破線)
+      `<line x1="34" y1="63" x2="166" y2="63" stroke="var(--color-hairline)" stroke-width="2" stroke-dasharray="6 5"/>`,
+  );
+}
+
+/** 12. フェルミ準位: バンドの間に引かれた水位の線と、裾を引く分布 */
+function fermiLevel(): string {
+  return svg(
+    `<rect x="30" y="18" width="140" height="22" fill="var(--mat-band)"/>` +
+      `<rect x="30" y="86" width="140" height="22" fill="var(--mat-band)"/>` +
+      `<rect x="30" y="86" width="140" height="22" fill="var(--mat-electron)" opacity="0.5"/>` +
+      `<line x1="22" y1="63" x2="178" y2="63" stroke="var(--mat-level)" stroke-width="2" stroke-dasharray="7 5"/>` +
+      `<path d="M 40 50 q 40 0 50 13 q 10 13 50 13" fill="none" stroke="var(--mat-electron)" stroke-width="2.5"/>`,
+  );
+}
+
+/** 13. pn接合: 接合で曲がるバンドと、両側のキャリア */
+function pnJunction(): string {
+  return svg(
+    `<path d="M 20 40 h 60 q 20 0 20 26 v 20" fill="none" stroke="var(--mat-level)" stroke-width="2.5"/>` +
+      `<path d="M 100 86 v -20 q 0 -26 20 -26 h 60" fill="none" stroke="var(--mat-level)" stroke-width="2.5" transform="translate(0,0)"/>` +
+      `<line x1="100" y1="12" x2="100" y2="113" stroke="var(--color-hairline)" stroke-width="1.5" stroke-dasharray="5 4"/>` +
+      dots(
+        [
+          [36, 96],
+          [56, 100],
+          [76, 96],
+        ],
+        4,
+        "var(--mat-electron)",
+      ) +
+      dots(
+        [
+          [124, 30],
+          [144, 26],
+          [164, 30],
+        ],
+        4,
+        "var(--mat-hole)",
+      ),
+  );
+}
+
+/** 14. トンネル効果と STM: 障壁を抜けて減衰する波と探針 */
+function tunnelingStm(): string {
+  return svg(
+    `<rect x="88" y="30" width="24" height="70" fill="var(--mat-matrix)" opacity="0.35"/>` +
+      `<path d="M 14 66 q 9 -22 18 0 q 9 22 18 0 q 9 -22 18 0 q 9 22 18 0" fill="none" stroke="var(--mat-electron)" stroke-width="2.5"/>` +
+      `<path d="M 88 66 q 12 -6 24 0" fill="none" stroke="var(--mat-electron)" stroke-width="2.5" opacity="0.6"/>` +
+      `<path d="M 112 66 q 7 -8 14 0 q 7 8 14 0 q 7 -8 14 0 q 7 8 14 0" fill="none" stroke="var(--mat-electron)" stroke-width="2.5" opacity="0.7"/>` +
+      `<path d="M 100 30 l -10 -18 h 20 Z" fill="var(--mat-recip)"/>`,
+  );
+}
+
 const THUMBS: Record<string, () => string> = {
   "reciprocal-lattice": reciprocalLattice,
   "ewald-sphere": ewaldSphere,
@@ -163,6 +231,10 @@ const THUMBS: Record<string, () => string> = {
   "kirkendall-effect": kirkendallEffect,
   "gp-zones": gpZones,
   "ostwald-ripening": ostwaldRipening,
+  "band-theory": bandTheory,
+  "fermi-level": fermiLevel,
+  "pn-junction": pnJunction,
+  "tunneling-stm": tunnelingStm,
 };
 
 /** slug に対応するサムネイル SVG 文字列を返す */

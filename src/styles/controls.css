@@ -283,6 +283,11 @@
   color: var(--mat-sphere-ink);
 }
 
+/* カテゴリ D「電子とバンド」(仕様書 11 §5.0) */
+.ix-readout-electron {
+  color: var(--mat-electron);
+}
+
 /* ---- ステッパ(± ボタン。図4・6・7 の h/k/l 選択 — 仕様書 05 §5.4) ---- */
 .ctl-stepper {
   grid-template-columns: max-content 1fr;

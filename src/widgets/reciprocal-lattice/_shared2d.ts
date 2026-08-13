@@ -348,11 +348,12 @@ export interface Readout {
   /**
    * 読み取り値の項目を追加する。color を指定するとラベルが意味色
    * (文字用 ink トークン)になる(§2.3 の q / g の色分け)。
-   * "sphere" はエヴァルト球の量用(仕様書 04 §6.3)。
+   * "sphere" はエヴァルト球の量用(仕様書 04 §6.3)、
+   * "electron" は電子の量用(仕様書 11 §5.0)。
    */
   item(
     label: string,
-    opts?: { color?: "beam" | "recip" | "sphere" },
+    opts?: { color?: "beam" | "recip" | "sphere" | "electron" },
   ): ReadoutItem;
 }
 
