@@ -102,7 +102,7 @@ export const TOPICS: readonly Topic[] = [
     summary: "ジュラルミンが時効で強くなる、析出のはじまりを見る。",
     render: "2d",
     prerequisites: [{ slug: "kirkendall-effect", recommended: true }],
-    published: false,
+    published: true,
   },
   {
     order: 7,

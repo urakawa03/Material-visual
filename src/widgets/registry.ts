@@ -80,4 +80,14 @@ export const registry: Record<
     import("./cottrell-atmosphere/strain-aging-cycle"),
   "cottrell-atmosphere/dsa-serrations": () =>
     import("./cottrell-atmosphere/dsa-serrations"),
+
+  // 記事「GPゾーン(ジュラルミンの時効)」(仕様書 07)
+  "gp-zones/aging-curve": () => import("./gp-zones/aging-curve"),
+  "gp-zones/phase-diagram": () => import("./gp-zones/phase-diagram"),
+  "gp-zones/quench-supersaturation": () =>
+    import("./gp-zones/quench-supersaturation"),
+  "gp-zones/zone-formation": () => import("./gp-zones/zone-formation"),
+  "gp-zones/coherency-strain": () => import("./gp-zones/coherency-strain"),
+  "gp-zones/cutting-vs-bowing": () => import("./gp-zones/cutting-vs-bowing"),
+  "gp-zones/strength-vs-radius": () => import("./gp-zones/strength-vs-radius"),
 };

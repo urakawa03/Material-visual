@@ -11,6 +11,11 @@ import Figure from "../../components/Figure.astro";
 import M from "../../components/M.astro";
 import OctahedralSite from "../../components/cottrell/OctahedralSite.astro";
 import StretcherStrain from "../../components/cottrell/StretcherStrain.astro";
+import { withBase } from "../../lib/paths";
+
+const frankRead = withBase("/articles/frank-read-source/");
+const gpZones = withBase("/articles/gp-zones/");
+const ostwald = withBase("/articles/ostwald-ripening/");
 ---
 
 <Article
@@ -33,10 +38,12 @@ import StretcherStrain from "../../components/cottrell/StretcherStrain.astro";
   <p>
     最初はまっすぐな弾性直線です。ところが 270 MPa
     あたりで奇妙なことが起きます。応力がカクンと下がるのです。この出っぱりを<strong
-    >上降伏点</strong>(upper yield point)、落ちた先を<strong>下降伏点</strong>(lower
-    yield point)と呼びます。そのあと曲線は、ひずみ 2〜3%
+      >上降伏点</strong
+    >(upper yield point)、落ちた先を<strong>下降伏点</strong>(lower yield
+    point)と呼びます。そのあと曲線は、ひずみ 2〜3%
     ぶんのあいだ細かく波打ちながらほぼ水平に進みます。この平坦部が<strong
-    >降伏伸び</strong>(yield point elongation)です。小さな「歯」と、それに続くプラトー。
+      >降伏伸び</strong
+    >(yield point elongation)です。小さな「歯」と、それに続くプラトー。
     これが今回の主役です。
   </p>
   <p>
@@ -57,12 +64,12 @@ import StretcherStrain from "../../components/cottrell/StretcherStrain.astro";
   <p>
     金属の結晶は原子が規則正しく並んだものですが、現実の結晶には必ず欠陥があります。
     その代表が<strong>刃状転位</strong>(edge
-    dislocation)です。結晶の途中までしか届いていない「余分な原子の半面」が
-    1 枚差し込まれていて、その端の線が転位です。断面図では記号
-    ⊥ で表します。縦棒が余分な半面、横棒がすべり面です。転位がすべり面の上を滑って
-    動くことで金属は塑性変形します —
-    その増殖の仕組みはフランク・リード源の記事(準備中)に譲り、ここでは転位の<em
-    >まわり</em>に注目します。
+    dislocation)です。結晶の途中までしか届いていない「余分な原子の半面」が 1
+    枚差し込まれていて、その端の線が転位です。断面図では記号 ⊥
+    で表します。縦棒が余分な半面、横棒がすべり面です。転位がすべり面の上を滑って
+    動くことで金属は塑性変形します — その増殖の仕組みは <a href={frankRead}
+      >フランク・リード源</a
+    > の記事に譲り、 ここでは転位の<em>まわり</em>に注目します。
   </p>
   <p>
     下の図2で、まず格子のかたちをよく見てください。変位の誇張スライダーを動かすと
@@ -76,7 +83,8 @@ import StretcherStrain from "../../components/cottrell/StretcherStrain.astro";
   />
   <p>
     余分な半面が押し込まれた上側では、原子どうしが詰まっています。これが<strong
-    >圧縮</strong>の領域です。逆に半面が終わった下側では、原子の間隔が間延びしています。
+      >圧縮</strong
+    >の領域です。逆に半面が終わった下側では、原子の間隔が間延びしています。
     こちらは<strong>引張</strong>の領域です。「体積ひずみを表示」を入れると、
     圧縮側が青、引張側が赤で塗られます。この色づかいは記事の最後まで共通です。
   </p>
@@ -88,10 +96,8 @@ import StretcherStrain from "../../components/cottrell/StretcherStrain.astro";
   <p>
     <M tex="r" /> は転位からの距離、<M tex={String.raw`\theta`} />
     はすべり面から測った角度、<M tex="B" /> は材料で決まる定数です。分母が
-    <M tex="r" /> の 1 乗であることに注目してください。原子間の結合の乱れは格子
-    1〜2 個ぶんで消えるのがふつうですが、転位のひずみは <M
-      tex="1/r"
-    /> でしか減衰せず、何十原子も先までじわじわ届きます。この「遠達性」が、
+    <M tex="r" /> の 1 乗であることに注目してください。原子間の結合の乱れは格子 1〜2
+    個ぶんで消えるのがふつうですが、転位のひずみは <M tex="1/r" /> でしか減衰せず、何十原子も先までじわじわ届きます。この「遠達性」が、
     あとで炭素原子を遠くから呼び寄せる伏線になります。
   </p>
 
@@ -99,8 +105,10 @@ import StretcherStrain from "../../components/cottrell/StretcherStrain.astro";
   <p>
     鋼とは、鉄に少量の炭素が溶けた合金です。炭素原子は鉄原子よりずっと小さいので、
     鉄の格子点を置き換えるのではなく、格子のすき間に割り込みます。これを<strong
-    >格子間原子</strong>(interstitial atom)と呼びます。BCC
-    鉄で炭素が入るのは<strong>八面体位置</strong>(octahedral
+      >格子間原子</strong
+    >(interstitial atom)と呼びます。BCC 鉄で炭素が入るのは<strong
+      >八面体位置</strong
+    >(octahedral
     site)というすき間ですが、下の図が示すとおり、このすき間は炭素原子よりかなり
     小さいのです。
   </p>
@@ -113,8 +121,10 @@ import StretcherStrain from "../../components/cottrell/StretcherStrain.astro";
   </figure>
   <p>
     つまり炭素は、完全な格子の中では「どこにいても窮屈」です。ならば、と考えたく
-    なります。<em>転位の下側 — あの間延びした引張側なら、すき間が広がっていて
-    居心地がよいのではないか?</em>
+    なります。<em
+      >転位の下側 — あの間延びした引張側なら、すき間が広がっていて
+      居心地がよいのではないか?</em
+    >
   </p>
   <p>
     仮説は手で確かめましょう。図3のオレンジ色の炭素原子をドラッグして
@@ -128,32 +138,33 @@ import StretcherStrain from "../../components/cottrell/StretcherStrain.astro";
     alt="図2 と同じ転位入り格子の上に、ドラッグできるオレンジ色の炭素原子が 1 個ある。画面上部のメーターが相互作用エネルギー U を −0.5 から +0.5 eV の範囲で表示する。転位の下側に持っていくと U は負(安定)、上側では正(不安定)になる。溶質のタイプを置換型の小さい原子に切り替えると符号が逆になる。"
   />
   <p>
-    予想どおりです。転位の<em>下</em>(引張側)では <M tex="U" /> が負 —
-    つまりエネルギーが下がって安定になり、<em>上</em>(圧縮側)では正 —
+    予想どおりです。転位の<em>下</em>(引張側)では <M tex="U" /> が負 — つまりエネルギーが下がって安定になり、<em
+      >上</em
+    >(圧縮側)では正 —
     不安定になります。ここでの符号の読み方はこの先ずっと使います:
-    <strong><M tex="U" /> が負であるほど、そこは炭素にとって居心地がよい</strong>。
-    測った結果は 1 本の式にまとまります:
+    <strong><M tex="U" /> が負であるほど、そこは炭素にとって居心地がよい</strong
+    >。 測った結果は 1 本の式にまとまります:
   </p>
   <M
     block
     tex={String.raw`U(r,\theta) = A\,\frac{\sin\theta}{r},\qquad A = \msol{U_b}\,\mdef{b}`}
   />
   <p>
-    形は前節の応力場とまったく同じ <M tex={String.raw`\sin\theta / r`} /> です。
-    それもそのはず、この式は「圧縮・引張の場」×「炭素の体積のはみ出し」の掛け算
+    形は前節の応力場とまったく同じ <M tex={String.raw`\sin\theta / r`} /> です。 それもそのはず、この式は「圧縮・引張の場」×「炭素の体積のはみ出し」の掛け算
     だからです。係数 <M tex="A" /> は、転位のすぐ下(<M
       tex={String.raw`r = \mdef{b}`}
     />、<M tex={String.raw`\theta = -\pi/2`} />)での深さが結合エネルギー <M
       tex={String.raw`\msol{U_b}`}
     /> になるように決めてあります。ここで <M tex={String.raw`\mdef{b}`} />
     はバーガースベクトル(転位のずれの単位、約 0.25 nm)、深さの相場は
-    <M tex={String.raw`\msol{U_b} \approx 0.5\ \mathrm{eV}`} /> 程度です。この
-    0.5 eV という数字を覚えておいてください。次節の主役です。
+    <M tex={String.raw`\msol{U_b} \approx 0.5\ \mathrm{eV}`} /> 程度です。この 0.5
+    eV という数字を覚えておいてください。次節の主役です。
   </p>
   <p>
     図3の溶質のタイプを「置換型(小さい原子)」に切り替えてみてください。
-    鉄より小さい原子が格子点を置き換える<strong>置換型固溶体</strong>(substitutional
-    solid solution)では符号が反転し、今度は<em>圧縮側</em>が居心地よくなります。
+    鉄より小さい原子が格子点を置き換える<strong>置換型固溶体</strong
+    >(substitutional solid solution)では符号が反転し、今度は<em>圧縮側</em
+    >が居心地よくなります。
     つまり「転位が溶質を引き寄せる」現象は炭素に限らず、ミスフィットのある溶質
     すべてに起きる一般的な仕組みです。
   </p>
@@ -163,8 +174,7 @@ import StretcherStrain from "../../components/cottrell/StretcherStrain.astro";
     転位の下側には深さ約 0.5 eV の「居心地のよい谷」があると分かりました。
     一方、原子たちは温度に応じた熱運動をしています。その典型エネルギーは
     <M tex={String.raw`k_B T`} /> — 室温でわずか 0.025 eV です。谷の深さと熱エネルギーの
-    比が指数の肩に乗るのがボルツマン分布(Boltzmann distribution)で、
-    平衡状態での炭素の占有率は次のようになります:
+    比が指数の肩に乗るのがボルツマン分布(Boltzmann distribution)で、 平衡状態での炭素の占有率は次のようになります:
   </p>
   <M
     block
@@ -186,9 +196,9 @@ import StretcherStrain from "../../components/cottrell/StretcherStrain.astro";
   />
   <p>
     低温では、転位の直下で占有率がほぼ 1 に達します。谷の底の席が炭素で埋まり、
-    転位が溶質の雲にくるまれるのです。この雲こそ<strong>コットレル雰囲気</strong>(Cottrell
-    atmosphere)です。1949 年にコットレルとビルビーが提唱した、この記事の
-    タイトルの主です。
+    転位が溶質の雲にくるまれるのです。この雲こそ<strong>コットレル雰囲気</strong
+    >(Cottrell atmosphere)です。1949
+    年にコットレルとビルビーが提唱した、この記事の タイトルの主です。
   </p>
   <p>
     ただし図4はあくまで<em>行き先</em>(平衡)の地図です。では雲は、どうやって・
@@ -198,12 +208,11 @@ import StretcherStrain from "../../components/cottrell/StretcherStrain.astro";
   </p>
   <M block tex={String.raw`\Gamma = \nu_0\, e^{-E_m/k_B T}`} />
   <p>
-    <M tex={String.raw`E_m`} /> は炭素の移動の活性化エネルギー(約 0.87
-    eV)、<M tex={String.raw`\nu_0`} /> は試行頻度(約 10¹³ /s)です。これも指数なので、
-    温度で桁ごと変わります。図5は、ランダムウォークする炭素たちが転位に
-    集まっていく様子のシミュレーションです。この記事の中心図版なので、
-    じっくり遊んでください。まず既定の 600 K で雲ができるのを眺め、
-    次に温度を 400 K や 900 K に変えてみてください。
+    <M tex={String.raw`E_m`} /> は炭素の移動の活性化エネルギー(約 0.87 eV)、<M
+      tex={String.raw`\nu_0`}
+    /> は試行頻度(約 10¹³ /s)です。これも指数なので、 温度で桁ごと変わります。図5は、ランダムウォークする炭素たちが転位に
+    集まっていく様子のシミュレーションです。この記事の中心図版なので、 じっくり遊んでください。まず既定の
+    600 K で雲ができるのを眺め、 次に温度を 400 K や 900 K に変えてみてください。
   </p>
   <Figure
     widget="cottrell-atmosphere/atmosphere-kinetics"
@@ -213,8 +222,8 @@ import StretcherStrain from "../../components/cottrell/StretcherStrain.astro";
   />
   <p>
     見どころは「経過」の実時間換算です。画面の中の動きの速さは温度によらず
-    ほぼ一定ですが、それが実時間の何秒ぶんにあたるかは温度で桁違いです。
-    600 K なら雲は数秒でできます。400 K では画面の中では同じように凝縮が進むのに、
+    ほぼ一定ですが、それが実時間の何秒ぶんにあたるかは温度で桁違いです。 600 K
+    なら雲は数秒でできます。400 K では画面の中では同じように凝縮が進むのに、
     実時間ではそれが「時間」や「日」の単位になります。逆に 900 K では拡散は
     速いのに、そもそも雲がほとんどできません — 熱運動が谷を上回るからです
     (図4で見たとおり)。
@@ -224,8 +233,7 @@ import StretcherStrain from "../../components/cottrell/StretcherStrain.astro";
     「濃い雲が、実用的な時間でできる」温度の窓があります。この構図はあとで
     ひずみ時効(§時間が歯を取り戻す)と動的ひずみ時効(§追いかけっこの縞)の
     土台になります。なお、雲の成長の時間則はコットレルとビルビーが導いた
-    <M tex={String.raw`t^{2/3}`} /> 則として知られており、のちほど回復の式に
-    そのまま顔を出します。
+    <M tex={String.raw`t^{2/3}`} /> 則として知られており、のちほど回復の式に そのまま顔を出します。
   </p>
 
   <h2>釘付けと引き離し</h2>
@@ -247,8 +255,8 @@ import StretcherStrain from "../../components/cottrell/StretcherStrain.astro";
   />
   <p>
     応力を上げていくと、転位は数 <M tex={String.raw`\mdef{b}`} /> だけ位置をずらして
-    踏みとどまります。坂の途中では、押す力と引き戻す力がつり合うからです。
-    押す力は単位長さあたり <M tex={String.raw`\mdef{\tau}\,\mdef{b}`} />(応力 ×
+    踏みとどまります。坂の途中では、押す力と引き戻す力がつり合うからです。 押す力は単位長さあたり
+    <M tex={String.raw`\mdef{\tau}\,\mdef{b}`} />(応力 ×
     バーガースベクトル)。束縛力には最大値があるので、引き離しの条件は
   </p>
   <M block tex={String.raw`\mdef{\tau}\,\mdef{b} > F_{\max}`} />
@@ -258,14 +266,16 @@ import StretcherStrain from "../../components/cottrell/StretcherStrain.astro";
     ずっと低い応力で動き続けられます。
   </p>
   <p>
-    これが歯の正体です。<strong>引き離しに必要な高い応力が上降伏点、裸の転位が
-    走り続けるのに必要な低い応力が下降伏点</strong>。図1で見たカクンという落差は、
+    これが歯の正体です。<strong
+      >引き離しに必要な高い応力が上降伏点、裸の転位が
+      走り続けるのに必要な低い応力が下降伏点</strong
+    >。図1で見たカクンという落差は、
     転位が雰囲気から引きちぎられる音だったのです。
   </p>
   <p>
     図6の温度を 700 K 以上に上げてみてください。雰囲気そのものが薄くなる
-    (図4)ので束縛力の最大値が下がり、引き離しの応力と摩擦応力の差 —
-    つまり歯 — が消えていきます。高温の鋼に降伏点現象が出ないのはこのためです。
+    (図4)ので束縛力の最大値が下がり、引き離しの応力と摩擦応力の差 — つまり歯 —
+    が消えていきます。高温の鋼に降伏点現象が出ないのはこのためです。
   </p>
 
   <h2>降伏の波 — リューダース帯</h2>
@@ -292,8 +302,9 @@ import StretcherStrain from "../../components/cottrell/StretcherStrain.astro";
     alt="上に横一列 64 セルの帯状試験片、下に応力ひずみ曲線。再生すると端のセルから降伏が始まり、降伏済み領域(薄い赤+斜線)の前面が赤いマーカーとともに右へ進む。前面が進む間、曲線はほぼ一定応力のプラトーを描き、全セルが降伏すると曲線は上向きに転じる。不均一さスライダーを 8% 以上にすると複数の場所から帯が生まれ、プラトーが波打つ。"
   />
   <p>
-    図1で見た「波打つ平坦部」の正体が、これです。<strong>降伏伸びのプラトーとは、
-    リューダース帯が試験片を掃き終わるまでの区間</strong>なのです。不均一さを
+    図1で見た「波打つ平坦部」の正体が、これです。<strong
+      >降伏伸びのプラトーとは、 リューダース帯が試験片を掃き終わるまでの区間</strong
+    >なのです。不均一さを
     上げると帯が何か所かで同時に生まれ、前面どうしの相互作用でプラトーが
     ギザギザになります。実際の試験でもよく見られる形です。
   </p>
@@ -311,7 +322,8 @@ import StretcherStrain from "../../components/cottrell/StretcherStrain.astro";
     </figcaption>
   </figure>
   <p>
-    対策も原理から素直に出てきます。プレスの直前に<strong>スキンパス圧延</strong>(skin-pass
+    対策も原理から素直に出てきます。プレスの直前に<strong>スキンパス圧延</strong
+    >(skin-pass
     rolling)でごく軽い変形を与え、雰囲気から引き離された「裸の可動転位」を
     材料じゅうに仕込んでおくのです。すると本番のプレスでは引き離しの儀式が
     不要になり、歯も縞も出ません。
@@ -321,8 +333,8 @@ import StretcherStrain from "../../components/cottrell/StretcherStrain.astro";
   <p>
     スキンパス圧延で歯を消した鋼板。ところが倉庫で何か月か寝かせると、
     歯が復活してしまいます。犯人はもうお分かりでしょう。炭素が拡散して、
-    裸の転位にふたたび雲をまとわせるのです。これを<strong>ひずみ時効</strong>(strain
-    aging)と呼びます。回復の度合いは次の式で書けます:
+    裸の転位にふたたび雲をまとわせるのです。これを<strong>ひずみ時効</strong
+    >(strain aging)と呼びます。回復の度合いは次の式で書けます:
   </p>
   <M
     block
@@ -330,10 +342,11 @@ import StretcherStrain from "../../components/cottrell/StretcherStrain.astro";
   />
   <p>
     指数の肩の 2/3 は、§雰囲気が生まれる で予告したコットレル&ビルビーの
-    <M tex={String.raw`t^{2/3}`} /> 則です。時定数 <M tex={String.raw`\tau(T)`} />
-    は拡散で決まるので、これもアレニウス型 — つまり温度で桁ごと変わります。
-    図8で「引張 → 除荷 → 時効 → 再引張」のサイクルを回して、時効の温度と
-    時間をいろいろ変えてみてください。
+    <M tex={String.raw`t^{2/3}`} /> 則です。時定数 <M
+      tex={String.raw`\tau(T)`}
+    />
+    は拡散で決まるので、これもアレニウス型 — つまり温度で桁ごと変わります。 図8で「引張
+    → 除荷 → 時効 → 再引張」のサイクルを回して、時効の温度と 時間をいろいろ変えてみてください。
   </p>
   <Figure
     widget="cottrell-atmosphere/strain-aging-cycle"
@@ -344,9 +357,8 @@ import StretcherStrain from "../../components/cottrell/StretcherStrain.astro";
   <p>
     まず時効をほぼスキップして(時効時間を最小にして)再引張してみてください。
     歯は出ません。<strong>可動転位が裸のままなら、降伏点現象は起きない</strong> —
-    これがスキンパス圧延の効き目そのものです。次に 170 °C・20 分で時効すると、
-    歯がはっきり復活します。同じことを室温(20 °C)でやろうとすると、読み出しが
-    「年」の単位を示すはずです。図5で作った「低温は遅い」の感覚が、そのまま
+    これがスキンパス圧延の効き目そのものです。次に 170 °C・20 分で時効すると、 歯がはっきり復活します。同じことを室温(20
+    °C)でやろうとすると、読み出しが 「年」の単位を示すはずです。図5で作った「低温は遅い」の感覚が、そのまま
     製品の寿命の話になっています。
   </p>
   <p>
@@ -370,9 +382,9 @@ import StretcherStrain from "../../components/cottrell/StretcherStrain.astro";
     転位が動き<em>続けている</em>最中に、溶質がそれを追いかけられる速さだったら
     何が起きるでしょうか。捕まえては引き離され、また捕まえる —
     この追いかけっこが起きる温度・速度の組合せでは、応力ひずみ曲線が
-    のこぎりの歯のようにギザギザになります。<strong>セレーション</strong>(serrated
-    flow)、いわゆるポルテバン=ル・シャトリエ効果(Portevin–Le Chatelier
-    effect)です。
+    のこぎりの歯のようにギザギザになります。<strong>セレーション</strong
+    >(serrated flow)、いわゆるポルテバン=ル・シャトリエ効果(Portevin–Le
+    Chatelier effect)です。
   </p>
   <p>
     鍵になるのは 2 つの時間の比です。転位が障害物の前で待つ平均時間
@@ -380,8 +392,7 @@ import StretcherStrain from "../../components/cottrell/StretcherStrain.astro";
     <M tex={String.raw`\tau(T)`} />(温度が高いほど短い)。<M
       tex={String.raw`t_w`}
     /> と <M tex={String.raw`\tau`} /> が同じくらいのとき — 追いつくか追いつかないかの
-    きわどい条件のとき — だけ、捕獲と引き離しが繰り返されます。図9のマップで
-    十字マーカーを動かし、「窓」を横切ってみてください。
+    きわどい条件のとき — だけ、捕獲と引き離しが繰り返されます。図9のマップで 十字マーカーを動かし、「窓」を横切ってみてください。
   </p>
   <Figure
     widget="cottrell-atmosphere/dsa-serrations"
@@ -390,10 +401,13 @@ import StretcherStrain from "../../components/cottrell/StretcherStrain.astro";
     alt="左に温度とひずみ速度のマップがあり、斜めの帯がセレーションの起きる窓を示す。右にはその条件で描かれる応力ひずみ曲線。マーカーが窓の中にあるときだけ曲線が細かいのこぎり歯状になり、窓の外に出すと滑らかに戻る。温度を上げてもひずみ速度を下げても、同じように窓を横切れる。"
   />
   <p>
-    マップの帯が右下がりなのがポイントです。<strong>温度を上げること(τ
-    を縮める)と、ひずみ速度を下げること(t_w を延ばす)は、窓に対して等価</strong>
-    なのです。実務では、鋼を 200〜300 °C で加工すると強度が上がるのに延性が
-    落ちる<strong>青熱脆性</strong>(blue brittleness)が古くから知られていますが、
+    マップの帯が右下がりなのがポイントです。<strong
+      >温度を上げること(τ を縮める)と、ひずみ速度を下げること(t_w
+      を延ばす)は、窓に対して等価</strong
+    >
+    なのです。実務では、鋼を 200〜300 °C で加工すると強度が上がるのに延性が 落ちる<strong
+      >青熱脆性</strong
+    >(blue brittleness)が古くから知られていますが、
     これはちょうどこの窓の中で変形している現象です。動き続ける転位に溶質が
     追いすがり、絶えず引き止めるぶんだけ変形抵抗が上がり、変形の均一さが
     失われるのです。
@@ -407,9 +421,8 @@ import StretcherStrain from "../../components/cottrell/StretcherStrain.astro";
       引張側(下)は炭素にとって深さ約 0.5 eV の谷になる。
     </li>
     <li>
-      谷の深さと <M tex={String.raw`k_B T`} /> の競争(ボルツマン分布)で、転位は
-      炭素の雲 = コットレル雰囲気にくるまれ、固着される。雲の形成速度は拡散
-      (アレニウス型)が決める。
+      谷の深さと <M tex={String.raw`k_B T`} /> の競争(ボルツマン分布)で、転位は 炭素の雲
+      = コットレル雰囲気にくるまれ、固着される。雲の形成速度は拡散 (アレニウス型)が決める。
     </li>
     <li>
       雲からの引き離しが上降伏点、裸の転位の自由走行が下降伏点 — これが「歯」。
@@ -430,23 +443,24 @@ import StretcherStrain from "../../components/cottrell/StretcherStrain.astro";
     ひとつの現象で登り切る好例です。
   </p>
   <p>
-    転位そのものの増殖はフランク・リード源の記事で扱います。溶質原子が強化に
-    効くもうひとつの形は GP ゾーン(ジュラルミンの時効)の記事で、拡散が組織を
-    変えるさらに先の話はオストワルド成長の記事で続きます(いずれも準備中)。
+    転位そのものの増殖は <a href={frankRead}>フランク・リード源</a> の記事で 扱っています。溶質原子が強化に効くもうひとつの形は
+    <a href={gpZones}>GP ゾーン(ジュラルミンの時効)</a> の記事で、拡散が組織を 変えるさらに先の話は
+    <a href={ostwald}>オストワルド成長</a> の記事で続きます。
   </p>
 
   <h2>もっと知るには</h2>
   <ul>
     <li>
-      A. H. Cottrell and B. A. Bilby, “Dislocation Theory of Yielding and
-      Strain Ageing of Iron,” <em>Proc. Phys. Soc. A</em> <strong>62</strong>
+      A. H. Cottrell and B. A. Bilby, “Dislocation Theory of Yielding and Strain
+      Ageing of Iron,” <em>Proc. Phys. Soc. A</em>
+      <strong>62</strong>
       (1949) 49. — 原論文。雰囲気の形成則(<M tex={String.raw`t^{2/3}`} />
       則)と降伏・時効の理論はここから始まった。
     </li>
     <li>
       D. Hull and D. J. Bacon, <em>Introduction to Dislocations</em>, 5th ed.,
-      Butterworth-Heinemann (2011). — 転位論の標準教科書。溶質–転位相互作用の章に
-      本記事の式の導出がある。
+      Butterworth-Heinemann (2011). —
+      転位論の標準教科書。溶質–転位相互作用の章に 本記事の式の導出がある。
     </li>
     <li>
       加藤雅治『入門転位論』裳華房 (1999). — 日本語の定番。弾性相互作用の導出が
