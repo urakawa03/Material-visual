@@ -1,5 +1,7 @@
 # 記事実装依頼 — カーケンドール効果
 
+> **追記(2026-10-22)— この記事は実装・公開済み**(`src/pages/articles/kirkendall-effect.astro`)。本書は実装を依頼したときの記録として残している。記事に手を入れるときは、本書ではなく個別仕様書 `docs/specs/06_kirkendall_effect_spec.md` と実装を正とする。
+
 ## 0. あなたのタスク
 
 リポジトリ `urakawa03/Material-visual` に、記事「**カーケンドール効果**」(slug: `kirkendall-effect`)を
