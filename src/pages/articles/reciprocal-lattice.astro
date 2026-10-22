@@ -8,6 +8,7 @@
  * タイトル・カテゴリ・前後ナビは topics.ts から解決される。
  */
 import Article from "../../layouts/Article.astro";
+import ArticleRef from "../../components/ArticleRef.astro";
 import Figure from "../../components/Figure.astro";
 import M from "../../components/M.astro";
 ---
@@ -581,7 +582,8 @@ import M from "../../components/M.astro";
   />
   <p>
     この条件がいつ・どの方向で満たされるかを、球と格子点の幾何で見わたす道具が、
-    次の記事の主役「エヴァルト球」です。
+    次の記事の主役「<ArticleRef slug="ewald-sphere">エヴァルト球</ArticleRef
+    >」です。
   </p>
 
   <h2>もっと知るには</h2>

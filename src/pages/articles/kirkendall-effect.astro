@@ -6,6 +6,7 @@
  * 従う。図版の直前後に操作を促す一文を置く(母体仕様 §9.2)。
  */
 import Article from "../../layouts/Article.astro";
+import ArticleRef from "../../components/ArticleRef.astro";
 import Figure from "../../components/Figure.astro";
 import M from "../../components/M.astro";
 import KirkendallS1 from "../../components/figures/KirkendallS1.astro";
@@ -354,10 +355,9 @@ import { withBase } from "../../lib/paths";
   <p>
     では、均されるのではなく<strong>溶質が集まる</strong>とどうなるでしょうか。
     拡散が同じ原子の動きでありながら、組織を作る側に回る話は
-    <a href={withBase("/articles/gp-zones/")}>GPゾーン</a
-    >の記事で扱う予定です(準備中)。集まった粒子のその後 — 大きい粒子だけが
-    生き残る話は<a href={withBase("/articles/ostwald-ripening/")}
-      >オストワルド成長</a
+    <ArticleRef slug="gp-zones">GPゾーン</ArticleRef
+    >の記事で扱います。集まった粒子のその後 — 大きい粒子だけが 生き残る話は<a
+      href={withBase("/articles/ostwald-ripening/")}>オストワルド成長</a
     >の記事に、拡散してきた溶質が転位を捕まえる話は<a
       href={withBase("/articles/cottrell-atmosphere/")}>コットレル雰囲気</a
     >の記事にあります。

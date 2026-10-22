@@ -6,6 +6,7 @@
  * 図版の直前後に操作を促す一文を置く(母体仕様 §9.2)。
  */
 import Article from "../../layouts/Article.astro";
+import ArticleRef from "../../components/ArticleRef.astro";
 import Figure from "../../components/Figure.astro";
 import M from "../../components/M.astro";
 import StaticCoherent from "../../components/figures/gp-zones/StaticCoherent.astro";
@@ -107,7 +108,9 @@ const cottrell = withBase("/articles/cottrell-atmosphere/");
   </p>
   <p class="footnote">
     ※ 空孔が拡散を担うしくみ(原子が隣の空席へ跳び移ること)は、
-    カーケンドール効果の記事(準備中)で正面から扱います。ここでは
+    <ArticleRef
+      slug="kirkendall-effect"
+    />の記事で正面から扱っています。ここでは
     「空孔がないと原子は動けない」という一点だけ押さえておけば十分です。
   </p>
 

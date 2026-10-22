@@ -1,0 +1,42 @@
+---
+/**
+ * ArticleRef.astro — 本文中で他の記事に言及するときのリンク
+ * (docs/specs/90_remaining_work.md §4.1)
+ *
+ * topics.ts の公開状態を見て、公開済みならリンク、準備中なら「(準備中)」を
+ * 添えた文字にする(前提バッジ・前後ナビと同じ方式)。記事を並行して書いて
+ * いても、相手の記事を公開した時点で本文の参照が自動でリンクになる。
+ *
+ *   <ArticleRef slug="gp-zones" />            → 表示は記事タイトル
+ *   <ArticleRef slug="gp-zones">GPゾーン</ArticleRef> → 表示を指定
+ *
+ * 前後の日本語との間に空白が入らないよう、閉じタグの直後で改行しないこと
+ * (`</ArticleRef\n>の記事で` の形にする)。
+ */
+import { getTopic } from "../content/topics";
+import { withBase } from "../lib/paths";
+
+interface Props {
+  slug: string;
+}
+
+const { slug } = Astro.props;
+const topic = getTopic(slug);
+if (!topic) {
+  throw new Error(`ArticleRef: topics.ts に未登録の記事です: ${slug}`);
+}
+const href = withBase(`/articles/${topic.slug}/`);
+---
+
+{
+  topic.published ? (
+    <a href={href}>
+      <slot>{topic.title}</slot>
+    </a>
+  ) : (
+    <span class="article-ref-planned">
+      <slot>{topic.title}</slot>
+      {"(準備中)"}
+    </span>
+  )
+}
