@@ -7,15 +7,17 @@
  */
 
 import { darken, matColor, uiColor } from "../../../core/colors";
+import { font } from "../../../core/plot";
 
-/** 図中ラベルのフォントスタック(tokens.css の --font-sans と同値) */
-export const FONT_SANS =
-  '"Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", "Yu Gothic Medium", Meiryo, sans-serif';
-
-/** `12px …` 形式のフォント指定を返す */
-export function font(sizePx: number, weight = 400): string {
-  return `${weight === 400 ? "" : `${weight} `}${sizePx}px ${FONT_SANS}`;
-}
+export { font };
+/** 文字の書式と軸の目盛りは記事をまたいで共通(src/core/plot.ts) */
+export {
+  FONT_SANS,
+  fmtPow10,
+  fmtSig,
+  linTicks,
+  logTicks,
+} from "../../../core/plot";
 
 /** 描画領域(CSS px) */
 export interface Pane {
@@ -135,59 +137,6 @@ export function vacancy(
   ctx.strokeStyle = edge;
   ctx.stroke();
   ctx.restore();
-}
-
-/** 線形軸の「きれいな」目盛り列(1/2/5 刻み) */
-export function linTicks(min: number, max: number, target = 5): number[] {
-  const span = max - min;
-  if (span <= 0) return [min];
-  const raw = span / target;
-  const mag = 10 ** Math.floor(Math.log10(raw));
-  const norm = raw / mag;
-  const step = (norm < 1.5 ? 1 : norm < 3.5 ? 2 : norm < 7.5 ? 5 : 10) * mag;
-  const out: number[] = [];
-  for (
-    let v = Math.ceil(min / step) * step;
-    v <= max + step * 1e-9;
-    v += step
-  ) {
-    out.push(v);
-  }
-  return out;
-}
-
-/** 対数軸の 10 の冪の目盛り列(min ≤ 0 は空配列) */
-export function logTicks(min: number, max: number): number[] {
-  const out: number[] = [];
-  if (min <= 0 || max <= 0 || max < min) return out;
-  for (
-    let e = Math.ceil(Math.log10(min) - 1e-9);
-    e <= Math.floor(Math.log10(max) + 1e-9);
-    e++
-  ) {
-    out.push(10 ** e);
-  }
-  return out;
-}
-
-/** 有効数字 3 桁程度の読みやすい数値表示 */
-export function fmtSig(v: number): string {
-  if (!Number.isFinite(v)) return "—";
-  if (v === 0) return "0";
-  const abs = Math.abs(v);
-  if (abs >= 100) return String(Math.round(v));
-  return String(Number(v.toPrecision(3)));
-}
-
-/** 10 の冪を「10³」形式で表示する(対数軸ラベル用) */
-export function fmtPow10(v: number): string {
-  const e = Math.round(Math.log10(v));
-  const SUP = "⁰¹²³⁴⁵⁶⁷⁸⁹";
-  const digits = String(Math.abs(e))
-    .split("")
-    .map((d) => SUP[Number(d)])
-    .join("");
-  return `10${e < 0 ? "⁻" : ""}${digits}`;
 }
 
 /** 読み出し行(ラベル + 値の並び)。狭い画面では 2 行に折り返す */
