@@ -24,7 +24,7 @@
    - `ElectronDotOptions` に `kind?: "electron" | "hole"` を追加(既定 `"electron"`)。`"hole"` は `--mat-hole` の塗りで描く。**空席(`empty: true`)とは別物**である — 空席はバンド理論の「電子が入っていない席」、正孔は価電子帯の空席が正の電荷をもつ粒子としてふるまうもの。
    - `drawBandRibbon(ctx, m, xs, eLow, eHigh, count, opts)` を追加。2 本の曲線の間を `--mat-band` で塗り、`--mat-level` で縁取る。バンドが位置で曲がる図(本記事の図7、#13 のほぼ全図)のため。
    - `pow10Ticks(minExp, maxExp, every)` を追加。対数軸を「log₁₀ 値を線形の `PlotMapper` に載せる」方式で描くための目盛り(ラベルは `10¹⁶` のような上付き数字)。`PlotMapper` 自体は線形のまま変えない。
-3. **`reciprocal-lattice/_shared2d.ts` の `createReadout` の色に `"hole"` を追加**し、`src/styles/controls.css` に `.ix-readout-hole { color: var(--mat-hole); }` を足す(既存の `"electron"` と同じ扱い)。**この 2 行は P0 で先に済ませる**(90 §3.4-4。共有ファイルを第 1 波の並行実装で触らないため)。本記事の着手時に `createReadout` の型に `"hole"` があることを確認し、P0 が未了でなければ何もしない。未了の場合に限り本記事のブランチで行う。
+3. **`reciprocal-lattice/_shared2d.ts` の `createReadout` の色に `"hole"` を追加**し、`src/styles/controls.css` に `.ix-readout-hole { color: var(--mat-hole); }` を足す(既存の `"electron"` と同じ扱い)。**この 2 行は P0 で先に済ませる**(90 §3.4-4。共有ファイルを第 1 波の並行実装で触らないため)。本記事の着手時に `createReadout` の型に `"hole"` があるかを確認し、あれば(P0 済み)何もしない。なければ本記事のブランチで行う。
 4. KaTeX マクロ・色トークンは**追加しない**(`\mel` `\mhole` `\msol` と D の 4 トークンで足りる)。
 
 前提: `90_remaining_work.md` §3 の **P0(共通基盤)がマージ済み**であること(`src/core/units.ts` の `KB_EV`、`src/core/anim.ts` の `tween`、`src/core/plot.ts` の目盛り関数を使う)。未了なら本記事のブランチで P0 を先に行うが、他の記事と並行して実装する場合は P0 を単独で先にマージすること(90 §6)。
