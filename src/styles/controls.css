@@ -288,6 +288,10 @@
   color: var(--mat-electron);
 }
 
+.ix-readout-hole {
+  color: var(--mat-hole);
+}
+
 /* ---- ステッパ(± ボタン。図4・6・7 の h/k/l 選択 — 仕様書 05 §5.4) ---- */
 .ctl-stepper {
   grid-template-columns: max-content 1fr;

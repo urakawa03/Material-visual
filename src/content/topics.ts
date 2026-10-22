@@ -45,9 +45,9 @@ export interface Topic {
 
 /**
  * 収録予定テーマ(全 14 本 — 母体仕様書 §1 / docs/prompts/README.md §1)。
- * order は全体マップの通し番号に一致させる。未実装の記事(#3 構造因子・
- * #9 スピノーダル分解・#10 マルテンサイト変態)は、その記事の実装時に
- * 追加するため order に欠番がある。
+ * order は全体マップの通し番号に一致させる。未実装の記事も published: false
+ * で先に登録してあるので、記事の実装時は自分の項目の published を true に
+ * するだけでよい(並行実装で本ファイルが衝突しないように — 90 §3.4)。
  */
 export const TOPICS: readonly Topic[] = [
   {
@@ -69,6 +69,20 @@ export const TOPICS: readonly Topic[] = [
     render: "3d",
     prerequisites: [{ slug: "reciprocal-lattice", recommended: false }],
     published: true,
+  },
+  {
+    order: 3,
+    slug: "structure-factor",
+    title: "構造因子と消滅則",
+    category: "A",
+    summary:
+      "あるはずの反射が消える — 単位胞の中の原子の並びが、回折の明暗を決める。",
+    render: "2d",
+    prerequisites: [
+      { slug: "reciprocal-lattice", recommended: false },
+      { slug: "ewald-sphere", recommended: true },
+    ],
+    published: false,
   },
   {
     order: 4,
@@ -121,6 +135,30 @@ export const TOPICS: readonly Topic[] = [
     published: true,
   },
   {
+    order: 9,
+    slug: "spinodal-decomposition",
+    title: "スピノーダル分解",
+    category: "C",
+    summary: "核をつくらずに、濃度のゆらぎが勝手に育って迷路の組織になる。",
+    render: "2d",
+    prerequisites: [
+      { slug: "kirkendall-effect", recommended: false },
+      { slug: "gp-zones", recommended: true },
+    ],
+    published: false,
+  },
+  {
+    order: 10,
+    slug: "martensite",
+    title: "マルテンサイト変態",
+    category: "C",
+    summary:
+      "時間を与えずに冷やすと、原子を運ばずに格子ごと変わる — 焼入れの正体。",
+    render: "2d",
+    prerequisites: [{ slug: "gp-zones", recommended: true }],
+    published: false,
+  },
+  {
     order: 11,
     slug: "band-theory",
     title: "バンド理論",
@@ -148,7 +186,10 @@ export const TOPICS: readonly Topic[] = [
     category: "D",
     summary: "2 つの半導体を貼り合わせるだけで、電流に向きが生まれる。",
     render: "2d",
-    prerequisites: [{ slug: "fermi-level", recommended: false }],
+    prerequisites: [
+      { slug: "fermi-level", recommended: false },
+      { slug: "band-theory", recommended: true },
+    ],
     published: false,
   },
   {

@@ -100,7 +100,7 @@ export const registry: Record<
   "band-theory/real-band-diagram": () =>
     import("./band-theory/real-band-diagram"),
 
-  // 記事「コットレル雰囲気」(仕様書 04)
+  // 記事「コットレル雰囲気」(仕様書 01)
   "cottrell-atmosphere/yield-tooth": () =>
     import("./cottrell-atmosphere/yield-tooth"),
   "cottrell-atmosphere/edge-dislocation-field": () =>
@@ -129,4 +129,20 @@ export const registry: Record<
   "gp-zones/coherency-strain": () => import("./gp-zones/coherency-strain"),
   "gp-zones/cutting-vs-bowing": () => import("./gp-zones/cutting-vs-bowing"),
   "gp-zones/strength-vs-radius": () => import("./gp-zones/strength-vs-radius"),
+
+  // ---- 未実装の記事の登録場所(docs/specs/90_remaining_work.md §3.4)----
+  // 各記事は自分のアンカーの直下に登録行を足す。アンカーの間の空行は、
+  // 別々のブランチの追記を git が自動でマージできるように残しておくこと。
+
+  // 記事「構造因子と消滅則」(仕様書 08)— 実装時にこの直下へ登録する
+
+  // 記事「スピノーダル分解」(仕様書 09)— 実装時にこの直下へ登録する
+
+  // 記事「マルテンサイト変態」(仕様書 10)— 実装時にこの直下へ登録する
+
+  // 記事「フェルミ準位」(仕様書 12)— 実装時にこの直下へ登録する
+
+  // 記事「pn 接合」(仕様書 13)— 実装時にこの直下へ登録する
+
+  // 記事「トンネル効果と STM」(仕様書 14)— 実装時にこの直下へ登録する
 };
