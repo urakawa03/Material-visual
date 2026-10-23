@@ -34,6 +34,7 @@ import {
 import {
   drawDivider,
   haloText,
+  ownLine,
   parseHex,
   rect,
   resolvePalette,
@@ -487,7 +488,7 @@ export default function stmScan(host: FigureHost): WidgetHandle {
 
   // 状態は文の長さが変わるので、いつも自分の行に置く(走査を始めたときに
   // 読み取りの折り返しが変わって操作部品が動かないように)
-  statusItem.el.style.flexBasis = "100%";
+  ownLine(statusItem.el);
 
   function updateReadouts(): void {
     const ratio = scanner.current / I_SET_NA;

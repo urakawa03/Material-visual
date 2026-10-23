@@ -41,11 +41,13 @@ import {
   fmtFromLog10,
   haloText,
   log10Ticks,
+  ownLine,
   rect,
   resolvePalette,
   setControlEnabled,
   splitTwo,
   tooSmall,
+  wrapInside,
   type Rect,
 } from "./lib/draw";
 import {
@@ -453,7 +455,8 @@ export default function flashMemory(host: FigureHost): WidgetHandle {
   });
   const writeItem = readout.item("書き込みの時間の目安", { color: "beam" });
   // 値の長さが変わっても折り返しが変わらないよう、いつも自分の行に置く
-  writeItem.el.style.flexBasis = "100%";
+  ownLine(writeItem.el);
+  wrapInside(keepItem.el);
 
   function updateReadouts(): void {
     const lnT = logTransmissionApprox(SIO2_BARRIER_EV, d, SIO2_MASS_RATIO);

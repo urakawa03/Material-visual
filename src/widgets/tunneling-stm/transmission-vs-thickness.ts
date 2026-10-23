@@ -29,6 +29,7 @@ import {
   fmtOneOver,
   haloText,
   log10Ticks,
+  ownLine,
   resolvePalette,
   tooSmall,
 } from "./lib/draw";
@@ -247,7 +248,7 @@ export default function transmissionVsThickness(
   const ratioItem = readout.item("2 倍の厚さで");
   // 値の長さが大きく変わるので、いつも自分の行に置く(スライダーの操作中に
   // 読み取りの折り返しが変わって操作部品が動かないように)
-  ratioItem.el.style.flexBasis = "100%";
+  ownLine(ratioItem.el);
 
   function updateReadouts(): void {
     const ln1 = lnT(d);

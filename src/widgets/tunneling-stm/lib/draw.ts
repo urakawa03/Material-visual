@@ -186,6 +186,24 @@ export function log10Ticks(e0: number, e1: number, labelEvery = 1): AxisTick[] {
   return out;
 }
 
+/* ---------------------------------------------------------- 読み取りの配置 */
+
+/**
+ * 読み取りの項目(_shared2d の createReadout の項目の要素)をいつも自分の行に
+ * 置き、狭い画面では項目の中で折り返す。値の長さが変わっても読み取りの行数が
+ * 変わらず(スライダーの操作中に操作部品が上下に動かない)、長い文が狭幅で
+ * 横にはみ出さない。
+ */
+export function ownLine(el: HTMLElement): void {
+  el.style.flexBasis = "100%";
+  el.style.whiteSpace = "normal";
+}
+
+/** 読み取りの項目を、狭い画面では項目の中で折り返せるようにする */
+export function wrapInside(el: HTMLElement): void {
+  el.style.whiteSpace = "normal";
+}
+
 /* ---------------------------------------------------------- 数値の書式 */
 
 /**

@@ -31,8 +31,10 @@ import {
   dimensionLine,
   fmtFromLog10,
   haloText,
+  ownLine,
   resolvePalette,
   tooSmall,
+  wrapInside,
 } from "./lib/draw";
 import {
   evalWave,
@@ -456,7 +458,8 @@ export default function wavefunctionDecay(host: FigureHost): WidgetHandle {
   const tItem = readout.item("透過率 T", { color: "electron" });
   // E > V で上の 2 つの文が長くなっても折り返しが変わらないよう、透過率は
   // いつも自分の行に置く(スライダーの操作中に操作部品が動かないように)
-  tItem.el.style.flexBasis = "100%";
+  ownLine(tItem.el);
+  wrapInside(lenItem.el);
   const kLabel = kItem.el.firstElementChild;
   const lenLabel = lenItem.el.firstElementChild;
 

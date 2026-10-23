@@ -21,6 +21,7 @@ import { font } from "../../core/plot";
 import {
   fmtPercent,
   haloText,
+  ownLine,
   rect,
   resolvePalette,
   setRect,
@@ -445,7 +446,7 @@ export default function classicalVsQuantum(host: FigureHost): WidgetHandle {
   const theoryItem = readout.item("理論値 T(E₀)");
   // 理論値は長さが大きく変わるので、いつも自分の行に置く(スライダーを
   // 動かしたときに読み取りの折り返しが変わって操作部品が動かないように)
-  theoryItem.el.style.flexBasis = "100%";
+  ownLine(theoryItem.el);
 
   function updateReadouts(): void {
     if (phase === "ready") simItem.set("— (発射を押す)");
