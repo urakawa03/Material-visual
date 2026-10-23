@@ -423,7 +423,10 @@ export default function coolingRate(host: FigureHost): WidgetHandle {
             const isM = run.outcome.product === "martensite";
             const x = X(Math.max(run.outcome.startTimeS, T_MIN_S));
             const y = Y(run.outcome.startTempC);
-            const text = isM ? "ここでマルテンサイトに" : "ここでパーライトに";
+            // 狭い幅では「ここで」を省く(M_s のラベルと重なるため)
+            const text =
+              (narrow ? "" : "ここで") +
+              (isM ? "マルテンサイトに" : "パーライトに");
             const toLeft = x > (left + right) / 2;
             ctx.font = font(fs + 1);
             const w = ctx.measureText(text).width + 6;
@@ -446,20 +449,23 @@ export default function coolingRate(host: FigureHost): WidgetHandle {
     ctx.textBaseline = "bottom";
     ctx.fillStyle = pal.text2;
     ctx.fillText("オーステナイト(安定)", left + 6, Y(A1_C) - 4);
-    // C 曲線の名前は、変態の印のラベルと重なるとき(狭い幅の油冷・空冷)は描かない
+    // C 曲線の名前は上の枝(右へゆるく上がる)のすぐ下に、上端をそろえて
+    // 置く。変態の印のラベルと重なるとき(狭い幅の油冷)は描かない
     const cText = "パーライトが始まる(C 曲線)";
     const cX = X(pearliteStartTime(toK(610))) + 8;
-    const cY = Y(610);
+    const cTop = Y(610) + 3;
     ctx.font = font(fs);
     const cW = ctx.measureText(cText).width;
-    const cHalf = (fs + 6) / 2;
+    const cH = fs + 6;
     const cHits =
       event !== null &&
       event.x0 < cX + cW + 3 &&
       event.x1 > cX - 3 &&
-      event.y0 < cY + cHalf &&
-      event.y0 + fs + 7 > cY - cHalf;
-    if (!cHits) plateText(ctx, pal, cText, cX, cY, pal.text2, fs, "left");
+      event.y0 < cTop + cH &&
+      event.y0 + fs + 7 > cTop;
+    if (!cHits) {
+      plateText(ctx, pal, cText, cX, cTop, pal.text2, fs, "left", "top");
+    }
     ctx.fillStyle = pal.text2;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
