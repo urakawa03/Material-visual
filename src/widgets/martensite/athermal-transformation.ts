@@ -297,17 +297,37 @@ export default function athermalTransformation(host: FigureHost): WidgetHandle {
     ctx.lineTo(xr + 10, Y(1));
     ctx.lineTo(xr + 6, Y(1));
     ctx.stroke();
+    // 現在の点(到達温度)と、その値のラベルの位置(ラベルは点の右上、
+    // 右半分では左上)。下の残留オーステナイトの文字がこれを避ける
+    const fM = martensiteFraction(tempC, ms);
+    const px = X(tempC);
+    const py = Y(fM);
+    const valLeftSide = px > (left + right) / 2;
+    const valText = fmtPercent(fM);
+    ctx.font = font(fs + 1);
+    const valW = ctx.measureText(valText).width;
+    const valX0 = valLeftSide ? px - 10 - valW - 3 : px + 10 - 3;
+    const valX1 = valX0 + valW + 6;
+    const valY0 = py - 14 - (fs + 7) / 2;
+
     // 文字は括弧の右、上端の線の下に書く。炭素が少ないと曲線が上端の近くを
     // 長く通るので、曲線が文字の下端より下がるところまで右へずらす
-    // (f は温度について単調減少)。M_s の破線は下地で隠れてよい。グラフの
-    // 右端からはみ出すなら書かない(読み取り値にある)
+    // (f は温度について単調減少)。現在の点とその値のラベルにかかるなら、
+    // さらにその右へ。M_s の破線は下地で隠れてよい。グラフの右端から
+    // はみ出すなら書かない(読み取り値にある)
     const raText = `室温で残るオーステナイト ${fmtPercent(1 - fRoom)}`;
     ctx.font = font(fs);
     const raW = ctx.measureText(raText).width;
     const raTop = Y(1) + 2;
-    const fClear = (bottom - (raTop + fs + 6 + 3)) / (bottom - top);
+    const raBottom = raTop + fs + 6;
+    const fClear = (bottom - (raBottom + 3)) / (bottom - top);
     const tClear = ms + Math.log(1 - fClear) / KM_RATE_PER_K;
-    const raX = Math.max(xr + 14, X(tClear) + 3);
+    let raX = Math.max(xr + 14, X(tClear) + 3);
+    const hitsPoint =
+      py - 8 < raBottom && px + 8 > raX - 3 && px - 8 < raX + raW + 3;
+    const hitsValue =
+      valY0 < raBottom && valX1 > raX - 3 && valX0 < raX + raW + 3;
+    if (hitsPoint || hitsValue) raX = Math.max(raX, valX1, px + 8) + 8;
     if (raX + raW + 3 <= right) {
       plateText(ctx, pal, raText, raX, raTop, pal.text, fs, "left", "top");
     }
@@ -319,9 +339,6 @@ export default function athermalTransformation(host: FigureHost): WidgetHandle {
     ctx.fillText("室温", xr + 3, bottom - 3);
 
     // 現在の点(到達温度)
-    const fM = martensiteFraction(tempC, ms);
-    const px = X(tempC);
-    const py = Y(fM);
     ctx.save();
     ctx.setLineDash([3, 3]);
     ctx.strokeStyle = pal.accent;
@@ -343,12 +360,12 @@ export default function athermalTransformation(host: FigureHost): WidgetHandle {
     plateText(
       ctx,
       pal,
-      fmtPercent(fM),
-      px + (px > (left + right) / 2 ? -10 : 10),
+      valText,
+      px + (valLeftSide ? -10 : 10),
       py - 14,
       pal.accent,
       fs + 1,
-      px > (left + right) / 2 ? "right" : "left",
+      valLeftSide ? "right" : "left",
     );
 
     // 保持時間の小さな目盛り(点は動かない)。横軸の題の下に置く
