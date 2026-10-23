@@ -1,0 +1,362 @@
+---
+/**
+ * StaticThreeSlopes.astro — 静的図 S-2(記事仕様書 13 §6.1・まとめ節)
+ *
+ * 平衡・順バイアス・逆バイアスの 3 つのバンド図を横に並べ、坂の高さ
+ * q(V_bi − V) だけが変わることを寸法線で示す 1 枚絵。形は図版と同じ
+ * lib/junction.ts の空乏層近似(Si、N_A = N_D = 10¹⁶ cm⁻³、300 K)でビルド時に
+ * 計算する。意味パレットのみで描く: 許容帯 --mat-band + バンド端 --mat-level、
+ * 電子 --mat-electron、正孔 --mat-hole、フェルミ準位は太い破線(平衡は
+ * --mat-electron の 1 本、バイアス下は E_Fn・E_Fp の 2 本)。
+ *
+ * 幅の広い画面用と狭い画面用(600px 以下)の 2 枚の SVG を持ち、CSS で
+ * 切り替える(狭い画面で文字が小さくなりすぎないように)。
+ */
+import { SILICON } from "../../../widgets/_shared/semiconductor";
+import {
+  DOPING_INIT,
+  ROOM_T,
+} from "../../../widgets/pn-junction/lib/constants";
+import {
+  depletion,
+  potential,
+  quasiFermiLevels,
+} from "../../../widgets/pn-junction/lib/junction";
+
+interface Props {
+  caption: string;
+  alt: string;
+}
+
+const { caption, alt } = Astro.props;
+
+/** 3 つの状態(電圧 [V]) */
+const STATES = [
+  { title: "平衡", sub: "V = 0", v: 0, note: "正味の電流 0" },
+  { title: "順バイアス", sub: "V = +0.4 V", v: 0.4, note: "よく流れる" },
+  { title: "逆バイアス", sub: "V = −1.0 V", v: -1.0, note: "ほぼ流れない" },
+];
+/** 位置の表示範囲 [μm](−1 V の空乏層が収まる幅) */
+const HALF = 0.75;
+/** 帯の見た目の厚み [eV] */
+const THICK = 0.3;
+/** 縦軸 [eV] */
+const E_HI = SILICON.eg + THICK + 0.06;
+const E_LO = -(
+  depletion(SILICON, DOPING_INIT, DOPING_INIT, -1, ROOM_T).drop +
+  THICK +
+  0.06
+);
+const SAMPLES = 61;
+
+interface Variant {
+  cls: string;
+  width: number;
+  height: number;
+  x0: number;
+  panelW: number;
+  gap: number;
+  plotTop: number;
+  plotBottom: number;
+  dot: number;
+  font: { title: number; sub: number; note: number; label: number };
+  titleY: number;
+  subY: number;
+  noteY: number;
+  note2Y: number;
+  legendY: number;
+}
+
+const VARIANTS: Variant[] = [
+  {
+    cls: "pn-wide",
+    width: 700,
+    height: 344,
+    x0: 18,
+    panelW: 196,
+    gap: 36,
+    plotTop: 62,
+    plotBottom: 262,
+    dot: 4.5,
+    font: { title: 13.5, sub: 12, note: 12.5, label: 12 },
+    titleY: 22,
+    subY: 41,
+    noteY: 287,
+    note2Y: 306,
+    legendY: 334,
+  },
+  {
+    cls: "pn-narrow",
+    width: 380,
+    height: 348,
+    x0: 8,
+    panelW: 112,
+    gap: 14,
+    plotTop: 56,
+    plotBottom: 248,
+    dot: 3.5,
+    font: { title: 12.5, sub: 11, note: 11, label: 10.5 },
+    titleY: 18,
+    subY: 36,
+    noteY: 272,
+    note2Y: 290,
+    legendY: 330,
+  },
+];
+
+interface PanelGeometry {
+  title: string;
+  sub: string;
+  note: string;
+  drop: number;
+  cb: string;
+  vb: string;
+  ecLine: string;
+  evLine: string;
+  /** 平衡なら null(1 本の E_F)、バイアス下は [E_Fp の線, E_Fn の線] */
+  efLines: { eq: string | null; p: string | null; n: string | null };
+  dim: { x: number; y1: number; y2: number; refX1: number; refX2: number };
+  electrons: Array<[number, number]>;
+  holes: Array<[number, number]>;
+}
+
+function geometry(v: Variant, k: number): PanelGeometry {
+  const s = STATES[k];
+  const d = depletion(SILICON, DOPING_INIT, DOPING_INIT, s.v, ROOM_T);
+  const q = quasiFermiLevels(d);
+  const px0 = v.x0 + k * (v.panelW + v.gap);
+  const toX = (x: number) => px0 + ((x + HALF) / (2 * HALF)) * v.panelW;
+  const toY = (e: number) =>
+    v.plotBottom - ((e - E_LO) / (E_HI - E_LO)) * (v.plotBottom - v.plotTop);
+  const f = (n: number) => n.toFixed(1);
+  const xs: number[] = [];
+  for (let i = 0; i < SAMPLES; i++)
+    xs.push(-HALF + (2 * HALF * i) / (SAMPLES - 1));
+  const ec = xs.map((x) => SILICON.eg - potential(d, x));
+  const ev = ec.map((e) => e - SILICON.eg);
+  const line = (es: number[], off = 0) =>
+    xs
+      .map(
+        (x, i) => `${i === 0 ? "M" : "L"}${f(toX(x))} ${f(toY(es[i] + off))}`,
+      )
+      .join(" ");
+  const back = (es: number[], off: number) =>
+    xs
+      .map((x, i) => [x, es[i]] as const)
+      .reverse()
+      .map(([x, e]) => `L${f(toX(x))} ${f(toY(e + off))}`)
+      .join(" ");
+  const cb = `${line(ec)} ${back(ec, THICK)} Z`;
+  const vb = `${line(ev)} ${back(ev, -THICK)} Z`;
+  const hline = (x0: number, x1: number, e: number) =>
+    `M${f(toX(x0))} ${f(toY(e))} L${f(toX(x1))} ${f(toY(e))}`;
+  const efLines =
+    s.v === 0
+      ? { eq: hline(-HALF, HALF, q.eFp), p: null, n: null }
+      : {
+          eq: null,
+          p: hline(-HALF, -d.xp, q.eFp),
+          n: hline(d.xn, HALF, q.eFn),
+        };
+  const ecN = SILICON.eg - d.drop;
+  const dimX = toX(-HALF + 0.3 * (HALF - d.xp));
+  const electrons: Array<[number, number]> = [0.25, 0.45, 0.65, 0.85].map(
+    (t) => [toX(d.xn + t * (HALF - d.xn)), toY(ecN) - v.dot - 1.5],
+  );
+  const holes: Array<[number, number]> = [0.15, 0.35, 0.55, 0.75].map((t) => [
+    toX(-HALF + t * (HALF - d.xp)),
+    toY(0) + v.dot + 1.5,
+  ]);
+  return {
+    title: s.title,
+    sub: s.sub,
+    note: s.note,
+    drop: d.drop,
+    cb,
+    vb,
+    ecLine: line(ec),
+    evLine: line(ev),
+    efLines,
+    dim: {
+      x: dimX,
+      y1: toY(SILICON.eg),
+      y2: toY(ecN),
+      refX1: dimX - 6,
+      refX2: toX(d.xn),
+    },
+    electrons,
+    holes,
+  };
+}
+---
+
+<figure class="static-fig">
+  <div class="static-fig-frame">
+    {
+      VARIANTS.map((v) => (
+        <svg
+          class={v.cls}
+          viewBox={`0 0 ${v.width} ${v.height}`}
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
+        >
+          <defs>
+            <marker
+              id={`${v.cls}-arrow`}
+              viewBox="0 0 10 10"
+              refX="10"
+              refY="5"
+              markerWidth="7"
+              markerHeight="7"
+              orient="auto-start-reverse"
+            >
+              <path d="M0 0 L10 5 L0 10 Z" fill="var(--color-text-2)" />
+            </marker>
+          </defs>
+          {STATES.map((_, k) => {
+            const g = geometry(v, k);
+            const cx = v.x0 + k * (v.panelW + v.gap) + v.panelW / 2;
+            return (
+              <g>
+                <text
+                  x={cx}
+                  y={v.titleY}
+                  text-anchor="middle"
+                  font-size={v.font.title}
+                  font-weight="600"
+                  fill="var(--color-text)"
+                >
+                  {g.title}
+                </text>
+                <text
+                  x={cx}
+                  y={v.subY}
+                  text-anchor="middle"
+                  font-size={v.font.sub}
+                  fill="var(--color-text-2)"
+                >
+                  {g.sub}
+                </text>
+                {/* 伝導帯・価電子帯(曲がった帯) */}
+                <path d={g.cb} fill="var(--mat-band)" />
+                <path d={g.vb} fill="var(--mat-band)" />
+                <path
+                  d={g.ecLine}
+                  fill="none"
+                  stroke="var(--mat-level)"
+                  stroke-width="1.8"
+                />
+                <path
+                  d={g.evLine}
+                  fill="none"
+                  stroke="var(--mat-level)"
+                  stroke-width="1.8"
+                />
+                {/* フェルミ準位(平衡は 1 本、バイアス下は E_Fp・E_Fn の 2 本) */}
+                {g.efLines.eq && (
+                  <path
+                    d={g.efLines.eq}
+                    stroke="var(--mat-electron)"
+                    stroke-width="2.4"
+                    stroke-dasharray="7 4"
+                  />
+                )}
+                {g.efLines.p && (
+                  <path
+                    d={g.efLines.p}
+                    stroke="var(--mat-hole)"
+                    stroke-width="2.2"
+                    stroke-dasharray="6 4"
+                  />
+                )}
+                {g.efLines.n && (
+                  <path
+                    d={g.efLines.n}
+                    stroke="var(--mat-electron)"
+                    stroke-width="2.2"
+                    stroke-dasharray="6 4"
+                  />
+                )}
+                {/* 坂の高さの寸法(n 側の E_c の高さを参照線で左へ延ばす) */}
+                <line
+                  x1={g.dim.refX1}
+                  y1={g.dim.y2}
+                  x2={g.dim.refX2}
+                  y2={g.dim.y2}
+                  stroke="var(--color-text-2)"
+                  stroke-width="1"
+                  stroke-dasharray="3 3"
+                />
+                <line
+                  x1={g.dim.x}
+                  y1={g.dim.y1}
+                  x2={g.dim.x}
+                  y2={g.dim.y2}
+                  stroke="var(--color-text-2)"
+                  stroke-width="1.2"
+                  marker-start={`url(#${v.cls}-arrow)`}
+                  marker-end={`url(#${v.cls}-arrow)`}
+                />
+                {/* キャリア: n 側の電子(伝導帯の底のすぐ上)・p 側の正孔 */}
+                {g.electrons.map(([x, y]) => (
+                  <circle cx={x} cy={y} r={v.dot} fill="var(--mat-electron)" />
+                ))}
+                {g.holes.map(([x, y]) => (
+                  <circle cx={x} cy={y} r={v.dot} fill="var(--mat-hole)" />
+                ))}
+                <text
+                  x={cx}
+                  y={v.noteY}
+                  text-anchor="middle"
+                  font-size={v.font.note}
+                  fill="var(--color-text)"
+                >
+                  {`坂 ${g.drop.toFixed(2)} eV`}
+                </text>
+                <text
+                  x={cx}
+                  y={v.note2Y}
+                  text-anchor="middle"
+                  font-size={v.font.note}
+                  fill="var(--color-text-2)"
+                >
+                  {g.note}
+                </text>
+              </g>
+            );
+          })}
+          <text
+            x={v.width / 2}
+            y={v.legendY}
+            text-anchor="middle"
+            font-size={v.font.label}
+            fill="var(--color-text-2)"
+          >
+            {v.cls === "pn-wide"
+              ? "坂の高さ = q(V_bi − V)。破線はフェルミ準位(電圧をかけると E_Fn と E_Fp に分かれる)"
+              : "坂の高さ = q(V_bi − V)"}
+          </text>
+        </svg>
+      ))
+    }
+  </div>
+  <figcaption>{caption}</figcaption>
+  <p class="sr-only">{alt}</p>
+</figure>
+
+<style>
+  /* 幅の広い画面用と狭い画面用の SVG を切り替える(本文の図版と同じ 600px) */
+  .pn-narrow {
+    display: none;
+  }
+
+  @media (max-width: 600px) {
+    .pn-wide {
+      display: none;
+    }
+
+    .pn-narrow {
+      display: block;
+    }
+  }
+</style>
