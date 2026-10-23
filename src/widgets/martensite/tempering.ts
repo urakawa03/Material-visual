@@ -71,7 +71,7 @@ const EQUIV_DT = 50;
  * ラベルに重ならないものを使う)
  */
 const HV_LABEL_PS = [16800, 19600, 10200];
-const TOUGH_LABEL_PS = [16000, 19000, 8600];
+const TOUGH_LABEL_PS = [16000, 20200, 8600];
 /** 曲線の名前を、現在の P の縦線からこれ以上離す [px](値のラベルの幅を含む) */
 const LABEL_CLEAR_PX = 60;
 
@@ -495,7 +495,9 @@ export default function tempering(host: FigureHost): WidgetHandle {
     ctx.textBaseline = "top";
     ctx.fillText("靭性", X(tgP) + 6, mapScale(ts, toughness(tgP)) + 6);
 
-    // 焼戻し脆性のくぼみのラベル(模式)。現在の P の縦線にかかるときは脇へ
+    // 焼戻し脆性のくぼみのラベル(模式)。現在の P の縦線にかかるときは
+    // 縦線の右へ(くぼみの右は曲線が急に上がるので、文字と重ならない。
+    // 左は曲線がゆるく下りてくるので重なる)
     const pDip = hollomonJaffe(320, 1);
     const dipText = "焼戻し脆性(模式)";
     ctx.font = font(fs - 1);
@@ -506,11 +508,11 @@ export default function tempering(host: FigureHost): WidgetHandle {
       ctx,
       pal,
       dipText,
-      dipNear ? (x >= xDip ? x - 8 : x + 8) : xDip,
+      dipNear ? x + 8 : xDip,
       mapScale(ts, toughness(pDip)) + 18,
       pal.text2,
       fs - 1,
-      dipNear ? (x >= xDip ? "right" : "left") : "center",
+      dipNear ? "left" : "center",
     );
 
     // 現在の P
