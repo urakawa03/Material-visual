@@ -34,7 +34,7 @@ import {
   type ElementId,
 } from "./lib/formfactors";
 import { createChipGroup } from "./lib/choice";
-import { haloText, resolvePalette } from "./lib/draw";
+import { drawRotatedLabel, haloText, resolvePalette } from "./lib/draw";
 
 const SELECTED_INIT: readonly ElementId[] = ["H", "Si", "Cu", "Au"];
 const MAX_SELECTED = 4;
@@ -203,9 +203,13 @@ export default function atomicFormFactor(host: FigureHost): WidgetHandle {
       ctx.lineTo(x1, Math.round(Y(t)) + 0.5);
       ctx.stroke();
     }
-    ctx.textAlign = "left";
-    ctx.textBaseline = "bottom";
-    ctx.fillText("f(電子の数)", panel.x + 8, y0 - 26);
+    drawRotatedLabel(
+      ctx,
+      "f(電子の数)",
+      panel.x + 11,
+      (y0 + y1) / 2,
+      pal.text2,
+    );
 
     // 上の副軸: Cu Kα での 2θ(s = sinθ/λ)
     ctx.strokeStyle = pal.text2;
@@ -299,12 +303,13 @@ export default function atomicFormFactor(host: FigureHost): WidgetHandle {
 
   function drawBars(panel: PanelRect): void {
     if (panel.w < 10) return;
-    const top = panel.y + 40;
-    const colW = (panel.w - 70) / 2;
+    const top = panel.y + 58;
+    const colGap = 28;
     const xLabel = panel.x + 12;
-    const xZ = panel.x + 56; // X 線の列の左端
-    const xB = xZ + colW + 14; // 中性子の列の左端
-    const wB = colW - 14;
+    const xZ = panel.x + 46; // X 線の列の左端
+    const colW = (panel.x + panel.w - 12 - xZ - colGap) / 2;
+    const xB = xZ + colW + colGap; // 中性子の列の左端
+    const wB = colW - 30; // 値の文字を棒の右に置く余白
     const zeroB = xB + ((0 - B_MIN) / (B_MAX - B_MIN)) * wB;
     const n = Math.max(1, ordered.length);
     const rowH = Math.min(46, (panel.y + panel.h - top - 44) / n);
@@ -314,8 +319,8 @@ export default function atomicFormFactor(host: FigureHost): WidgetHandle {
     ctx.fillStyle = pal.text2;
     ctx.textAlign = "left";
     ctx.textBaseline = "bottom";
-    ctx.fillText("X 線 f(0) = Z", xZ, top - 6);
-    ctx.fillText("中性子 b [fm]", xB, top - 6);
+    ctx.fillText("X 線 f(0) = Z", xZ, top - 8);
+    ctx.fillText("中性子 b [fm]", xB, top - 8);
 
     // 中性子の 0 の線と目盛り
     const yEnd = top + rowH * n;
@@ -338,7 +343,7 @@ export default function atomicFormFactor(host: FigureHost): WidgetHandle {
       );
     }
     for (const t of [0, 40, Z_MAX]) {
-      ctx.fillText(String(t), xZ + (t / Z_MAX) * (colW - 6), yEnd + 6);
+      ctx.fillText(String(t), xZ + (t / Z_MAX) * (colW - 24), yEnd + 6);
     }
 
     ordered.forEach((el, i) => {
@@ -354,7 +359,7 @@ export default function atomicFormFactor(host: FigureHost): WidgetHandle {
       const z = ELEMENTS[el].Z;
       ctx.globalAlpha = 0.35;
       ctx.fillStyle = color;
-      ctx.fillRect(xZ, y - bh / 2, Math.max(1, (z / Z_MAX) * (colW - 6)), bh);
+      ctx.fillRect(xZ, y - bh / 2, Math.max(1, (z / Z_MAX) * (colW - 24)), bh);
       ctx.globalAlpha = 1;
       ctx.font = font(11);
       ctx.fillStyle = pal.text2;
@@ -362,7 +367,7 @@ export default function atomicFormFactor(host: FigureHost): WidgetHandle {
       haloText(
         ctx,
         String(z),
-        xZ + Math.max(1, (z / Z_MAX) * (colW - 6)) + 3,
+        xZ + Math.max(1, (z / Z_MAX) * (colW - 24)) + 3,
         y,
         pal.text2,
         pal.bg,
@@ -388,9 +393,9 @@ export default function atomicFormFactor(host: FigureHost): WidgetHandle {
       ctx.textAlign = "left";
       ctx.textBaseline = "top";
       ctx.fillText(
-        `重水素 D は +${DEUTERIUM_B_FM.toFixed(2)} fm`,
-        xB,
-        yEnd + 22,
+        `中性子では、重水素 D の b は +${DEUTERIUM_B_FM.toFixed(2)} fm`,
+        xLabel,
+        yEnd + 24,
       );
     }
   }

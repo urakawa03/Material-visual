@@ -45,7 +45,12 @@ import {
 } from "./lib/structurefactor";
 import { RULES, checkRule, type RuleId } from "./lib/rules";
 import { createChoiceList } from "./lib/choice";
-import { haloText, hollowCircle, resolvePalette } from "./lib/draw";
+import {
+  allowReadoutWrap,
+  haloText,
+  hollowCircle,
+  resolvePalette,
+} from "./lib/draw";
 
 type MaterialId = "fe" | "cu" | "si" | "nacl" | "cscl";
 const MATERIALS: Readonly<Record<MaterialId, CrystalStructure>> = {
@@ -73,8 +78,11 @@ const MAIN_FRACTION = 0.7;
 /** 狭幅で上(格子)に割り当てる高さの割合 */
 const TOP_FRACTION = 0.6;
 const GAP = 14;
-/** 格子の周りの余白(軸の数字を置く) */
-const GRID_PAD = 30;
+/** 格子の周りの余白(上 = パネルの題、左と下 = 軸の数字と名前) */
+const GRID_PAD_TOP = 30;
+const GRID_PAD_BOTTOM = 34;
+const GRID_PAD_LEFT = 30;
+const GRID_PAD_RIGHT = 12;
 /** 最大の円の半径(点の間隔に対する割合) */
 const R_MAX_FRACTION = 0.42;
 /** 原点 000 はひと回り大きく */
@@ -171,7 +179,7 @@ export default function extinctionRules(host: FigureHost): WidgetHandle {
   const f2Item = readout.item("|F|²(000 を 1)", { color: "beam" });
   const latticeItem = readout.item("格子の言葉では");
   const verdictItem = readout.item("照合の結果");
-  verdictItem.el.style.whiteSpace = "normal";
+  allowReadoutWrap(readout.el);
 
   function updateReadout(): void {
     selItem.set(formatHkl(selH, selK, layer));
@@ -211,11 +219,14 @@ export default function extinctionRules(host: FigureHost): WidgetHandle {
       split.first = rect(0, 0, w, th);
       split.second = rect(0, th + GAP, w, h - th - GAP);
     }
+    // 格子全体(点の間隔 2N 個ぶん + 両端の円・輪)と軸の数字が収まるように
     const p = split.first;
-    const side = Math.min(p.w, p.h - 20) - GRID_PAD * 2;
-    spacing = Math.max(8, side / (2 * N));
-    gridCx = p.cx + 6;
-    gridCy = p.cy + 10;
+    const extent = 2 * N + 2 * LATTICE_RING_FRACTION;
+    const availW = p.w - GRID_PAD_LEFT - GRID_PAD_RIGHT;
+    const availH = p.h - GRID_PAD_TOP - GRID_PAD_BOTTOM;
+    spacing = Math.max(8, Math.min(availW, availH) / extent);
+    gridCx = p.x + GRID_PAD_LEFT + availW / 2;
+    gridCy = p.y + GRID_PAD_TOP + availH / 2;
   }
 
   function px(hh: number): number {
@@ -244,12 +255,11 @@ export default function extinctionRules(host: FigureHost): WidgetHandle {
       ctx.fillText(String(kk), px(-N) - rMax - 4, py(kk));
     }
     ctx.font = font(12);
-    ctx.textAlign = "left";
-    ctx.textBaseline = "top";
-    ctx.fillText("h →", px(N) + rMax - 18, py(-N) + rMax + 18);
     ctx.textAlign = "right";
-    ctx.textBaseline = "bottom";
-    ctx.fillText("k ↑", px(-N) - rMax - 2, py(N) - rMax - 4);
+    ctx.textBaseline = "top";
+    ctx.fillText("h →", px(N) + rMax, py(-N) + rMax + 18);
+    ctx.textBaseline = "middle";
+    ctx.fillText("k ↑", px(-N) - rMax - 22, py(N));
 
     // 点(面積 ∝ |F|²、消える点は中抜き)
     ctx.fillStyle = pal.recip;

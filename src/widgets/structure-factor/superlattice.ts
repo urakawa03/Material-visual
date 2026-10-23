@@ -43,6 +43,7 @@ import {
 import type { Radiation } from "./lib/formfactors";
 import {
   PEAK_FWHM_DEG,
+  allowReadoutWrap,
   createPlotArea,
   drawAtom,
   drawHklLabel,
@@ -84,6 +85,12 @@ const MIN_FWHM_PX = 6;
 const LEFT_FRACTION = 0.38;
 const TOP_FRACTION = 0.4;
 const GAP = 14;
+/** 粉末図形のプロットの上端(パネル上端から。題・凡例・倍率の行の下) */
+const PLOT_TOP = 58;
+/** 超格子反射の塗りの濃さの上限(η = 1 でも基本反射と見分けられるように) */
+const SUPER_FILL_MAX = 0.7;
+/** ラベルを 2 段に置くときの上の段の持ち上げ(px) */
+const ROW_LIFT = 26;
 
 /** Fisher–Yates で 0..n−1 の並べ替えを作る(シード固定の乱数) */
 function shuffled(n: number, rand: () => number): Int32Array {
@@ -222,8 +229,7 @@ export default function superlattice(host: FigureHost): WidgetHandle {
     color: "beam",
   });
   const zoomItem = readout.item("縦軸");
-  strongestItem.el.style.whiteSpace = "normal";
-  ratioItem.el.style.whiteSpace = "normal";
+  allowReadoutWrap(readout.el);
 
   /** 超格子 / 基本の |F|² 比(s = 0、η = 1)。仕様書 08 §5.7 の表の値 */
   function ratioAtOrder(r: Radiation): number {
@@ -242,9 +248,9 @@ export default function superlattice(host: FigureHost): WidgetHandle {
 
   function updateReadout(): void {
     let best = -1;
-    lines.forEach((r, i) => {
+    for (let i = 0; i < lines.length; i++) {
       if (!fundamental[i] && (best < 0 || rel[i] > rel[best])) best = i;
-    });
+    }
     if (best < 0 || rel[best] <= 0) {
       strongestItem.set("なし(η = 0 では超格子反射は消えている)");
     } else {
@@ -292,7 +298,8 @@ export default function superlattice(host: FigureHost): WidgetHandle {
   function drawArrangement(panel: PanelRect): void {
     const top = panel.y + 32;
     const bottom = panel.y + panel.h - 30;
-    const side = Math.min(panel.w - 24, bottom - top);
+    // 寸法が一瞬だけ極小になっても半径が負にならないよう下限を置く
+    const side = Math.max(16, Math.min(panel.w - 24, bottom - top));
     const cell = side / GRID;
     const x0 = panel.cx - side / 2;
     const y0 = top + (bottom - top - side) / 2;
@@ -344,9 +351,9 @@ export default function superlattice(host: FigureHost): WidgetHandle {
     setPlotArea(
       plot,
       panel.x + ml,
-      panel.y + 40,
+      panel.y + PLOT_TOP,
       panel.w - ml - mr,
-      panel.h - 40 - 36,
+      panel.h - PLOT_TOP - 36,
       TT_MIN,
       TT_MAX,
       100 / factor,
@@ -376,7 +383,7 @@ export default function superlattice(host: FigureHost): WidgetHandle {
           sigma,
           pal.recip,
           pal.recip,
-          fund ? 1 : eta,
+          fund ? 1 : SUPER_FILL_MAX * eta,
         );
       });
     });
@@ -395,7 +402,10 @@ export default function superlattice(host: FigureHost): WidgetHandle {
       labelWs[nLab] = labelW[i];
       nLab++;
     });
-    const rotated = labelsCollide(labelXs, labelWs, nLab);
+    // 1 段で重なるなら 2 段に互い違いに置き、それでも重なるなら縦書きにする
+    const twoRows = labelsCollide(labelXs, labelWs, nLab);
+    const rotated = twoRows && labelsCollide(labelXs, labelWs, nLab, 4, 2);
+    const sigmaPx = sigma * (plot.w / (plot.xMax - plot.xMin));
     for (let j = 0; j < nLab; j++) {
       const i = labelIdx[j];
       const fund = fundamental[i] === 1;
@@ -410,6 +420,8 @@ export default function superlattice(host: FigureHost): WidgetHandle {
         fund ? pal.text2 : pal.recip,
         pal.bg,
         plot.y,
+        twoRows && j % 2 === 1 ? ROW_LIFT : 0,
+        3 * sigmaPx + 3,
       );
     }
 

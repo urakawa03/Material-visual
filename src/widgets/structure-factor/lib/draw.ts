@@ -230,9 +230,12 @@ export function drawRotatedLabel(
 export const PEAK_FWHM_DEG = 0.15;
 /** 半値幅 → σ */
 const FWHM_TO_SIGMA = 1 / (2 * Math.sqrt(2 * Math.LN2));
-/** 1 本の山を描く範囲(±σ の倍数)と、その中の標本数(奇数 = 中心を含む) */
-const PEAK_HALF_SPAN_SIGMA = 3;
-const PEAK_SAMPLES = 15;
+/**
+ * 1 本の山を描く範囲(±σ の倍数)と、その中の標本数(奇数 = 中心を含む)。
+ * ±4σ の端の値は頂の 0.03% なので、山と山の間の基線は 0 に見える
+ */
+const PEAK_HALF_SPAN_SIGMA = 4;
+const PEAK_SAMPLES = 21;
 
 /** 山の列(2θ と高さ)。容量を先に確保して使い回す */
 export interface PeakList {
@@ -270,7 +273,7 @@ export function peakSigmaDeg(
 
 /**
  * 山の列をガウス形の和として 1 本の折れ線で描く(図1・図6)。標本は各山の
- * ±3σ に置き(中心を含む)、山と山の間は基線を直線でつなぐ。山どうしが
+ * ±4σ に置き(中心を含む)、山と山の間は基線を直線でつなぐ。山どうしが
  * 近くても和として正しく描ける。高さは PlotArea の値(相対強度)。
  */
 export function drawProfile(
@@ -375,24 +378,28 @@ const ROTATED_LABEL_LIFT = 18;
 /**
  * 線の (hkl) ラベルの置き方を決める。横書きで隣と重なるなら、パネル全体を
  * 縦書き(線の右に沿わせる)にする。xs は線の画面 x(昇順)、widths は
- * 横書きのときのラベル幅。
+ * 横書きのときのラベル幅。stride = 2 は「2 段に互い違いに置いたとき、
+ * 同じ段の隣どうしが重なるか」を調べる。
  */
 export function labelsCollide(
   xs: Float64Array,
   widths: Float64Array,
   count: number,
   gap = 4,
+  stride = 1,
 ): boolean {
-  for (let i = 1; i < count; i++) {
-    if (xs[i] - xs[i - 1] < (widths[i] + widths[i - 1]) / 2 + gap) return true;
+  for (let i = stride; i < count; i++) {
+    const j = i - stride;
+    if (xs[i] - xs[j] < (widths[i] + widths[j]) / 2 + gap) return true;
   }
   return false;
 }
 
 /**
  * (hkl) ラベル 1 つを描く。rotated = false なら山の頂の上に横書き
- * (複数の族が重なる環は行を重ねる)、true なら線の右に沿って縦書き。
- * lines は表示する行(例 ["(5 1 1)", "(3 3 3)"])。
+ * (複数の族が重なる環は行を重ねる。lift だけさらに上げる — 2 段の
+ * 互い違い用)、true なら線の右に沿って縦書き(rotatedGap は線からの距離。
+ * 太い山の脇に置くときに広げる)。lines は表示する行(例 ["(5 1 1)", "(3 3 3)"])。
  */
 export function drawHklLabel(
   ctx: CanvasRenderingContext2D,
@@ -404,13 +411,15 @@ export function drawHklLabel(
   color: string,
   halo: string,
   minY: number,
+  lift = 0,
+  rotatedGap = 3,
 ): void {
   ctx.font = font(11);
   if (!rotated) {
     ctx.textAlign = "center";
     ctx.textBaseline = "bottom";
     const lineH = 12;
-    let y = Math.max(topY - 3, minY + lineH * lines.length);
+    let y = Math.max(topY - 3 - lift, minY + lineH * lines.length);
     for (let i = lines.length - 1; i >= 0; i--) {
       haloText(ctx, lines[i], x, y, color, halo);
       y -= lineH;
@@ -419,12 +428,25 @@ export function drawHklLabel(
   }
   // 縦書きは基線の少し上から(基線の上の「欠けた線」の印と重ならないように)
   ctx.save();
-  ctx.translate(x + 3, baseY - ROTATED_LABEL_LIFT);
+  ctx.translate(x + rotatedGap, baseY - ROTATED_LABEL_LIFT);
   ctx.rotate(-Math.PI / 2);
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
   haloText(ctx, lines.join("/"), 0, 0, color, halo);
   ctx.restore();
+}
+
+/* ------------------------------------------------------- 読み取り値 */
+
+/**
+ * 読み取り値の項目(.ix-readout-item は nowrap)の折り返しを許す。この記事の
+ * 読み取り値には長い文(原子数の内訳・照合の結果など)があり、狭い画面で横に
+ * はみ出さないようにするため。項目を作り終えてから行の要素を渡す。
+ */
+export function allowReadoutWrap(row: HTMLElement): void {
+  for (const el of row.querySelectorAll<HTMLElement>(".ix-readout-item")) {
+    el.style.whiteSpace = "normal";
+  }
 }
 
 /* ---------------------------------------------------------- 小物 */

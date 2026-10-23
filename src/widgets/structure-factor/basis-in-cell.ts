@@ -47,7 +47,7 @@ import {
   type CellImage,
   type CrystalStructure,
 } from "./lib/structures";
-import { fracLabel, setControlEnabled } from "./lib/draw";
+import { allowReadoutWrap, fracLabel, setControlEnabled } from "./lib/draw";
 
 type MaterialId = "fe" | "cu" | "si" | "nacl" | "cscl";
 type FeView = "bcc1" | "sc2";
@@ -262,7 +262,7 @@ export default function basisInCell(host: FigureHost): WidgetHandle {
   const latticeItem = readout.item("格子");
   const basisItem = readout.item("基底");
   const selItem = readout.item("選んだ原子");
-  basisItem.el.style.whiteSpace = "normal";
+  allowReadoutWrap(readout.el);
 
   /* ---- 状態 → シーン ---- */
 
@@ -326,7 +326,7 @@ export default function basisInCell(host: FigureHost): WidgetHandle {
         }
       }
     }
-    basisLines = createLineSegments(seg, text2, 0.85);
+    basisLines = createLineSegments(seg, text);
     root.add(basisLines);
     applySplit();
 
@@ -423,12 +423,13 @@ export default function basisInCell(host: FigureHost): WidgetHandle {
     host.requestRender();
   });
 
+  // 選択肢の文は狭い画面でも 1 行に収まる長さにする(格子の名前は読み取り値に出る)
   const viewSeg = host.controls.segmented<FeView>({
     id: "fe-view",
-    label: "体心立方の見方(Fe)",
+    label: "Fe の見方",
     options: [
-      { value: "bcc1", label: "体心立方の格子 + 1 原子" },
-      { value: "sc2", label: "単純立方の格子 + 2 原子" },
+      { value: "bcc1", label: "体心立方 + 1 原子" },
+      { value: "sc2", label: "単純立方 + 2 原子" },
     ],
     value: FE_VIEW_INIT,
   });

@@ -50,6 +50,7 @@ import {
   type PhasorStep,
 } from "./lib/structurefactor";
 import {
+  allowReadoutWrap,
   degLabel,
   drawAtom,
   fracLabel,
@@ -80,7 +81,7 @@ const TOP_FRACTION = 0.46;
 /** パネル間の隙間(px) */
 const GAP = 16;
 /** 投影図の単位胞の周りの余白(px) */
-const CELL_PAD = 34;
+const CELL_PAD = 38;
 /** 原子の半径(px)。セルの一辺に対する割合と上下限 */
 const ATOM_R_FRACTION = 0.045;
 const ATOM_R_MIN = 6;
@@ -94,7 +95,9 @@ const IMAGE_ALPHA = 0.35;
 /** まだ足していない原子の不透明度(1 本ずつ足すとき) */
 const PENDING_ALPHA = 0.3;
 /** 複素平面の余白(px) */
-const PLANE_PAD = 26;
+const PLANE_PAD = 30;
+/** 原子の矢 1 本の長さの上限(パネルの短辺に対する割合) */
+const MAX_ARROW_FRACTION = 0.3;
 /** 矢の太さ: 原子の矢 2px、F の矢 3.5px(母体仕様 §6.5 の 2px を基本に) */
 const F_ARROW_WIDTH = 3.5;
 const F_ARROW_HEAD = 12;
@@ -187,9 +190,25 @@ export default function phasorSum(host: FigureHost): WidgetHandle {
     }
   }
 
+  /** 矢の列と「矢 1 本の長さ」の円を囲む範囲(複素平面の表示範囲を決める) */
+  let boxMinX = -1;
+  let boxMaxX = 1;
+  let boxMinY = -1;
+  let boxMaxY = 1;
+
   function rebuildChain(): void {
     chain = phasorChain(st, h, k, l, 0, "xray");
     shown = chain.length;
+    boxMinX = -fMax;
+    boxMaxX = fMax;
+    boxMinY = -fMax;
+    boxMaxY = fMax;
+    for (const c of chain) {
+      boxMinX = Math.min(boxMinX, c.x1);
+      boxMaxX = Math.max(boxMaxX, c.x1);
+      boxMinY = Math.min(boxMinY, c.y1);
+      boxMaxY = Math.max(boxMaxY, c.y1);
+    }
   }
 
   /* ---- 読み取り値(仕様書 08 §5.3) ---- */
@@ -200,7 +219,7 @@ export default function phasorSum(host: FigureHost): WidgetHandle {
   const f2Item = readout.item("|F|²(全部そろったときを 1)", { color: "beam" });
   const verdictItem = readout.item("この反射は");
   const phaseItem = readout.item("各原子の位相");
-  phaseItem.el.style.whiteSpace = "normal";
+  allowReadoutWrap(readout.el);
 
   function updateReadout(): void {
     const full = chain[chain.length - 1];
@@ -297,15 +316,15 @@ export default function phasorSum(host: FigureHost): WidgetHandle {
     ctx.strokeStyle = pal.ghost;
     ctx.lineWidth = 1;
     ctx.strokeRect(ox + 0.5, oy - side + 0.5, side - 1, side - 1);
-    // 軸の名前(x 右・y 上)
+    // 軸の名前(x 右・y 上)。原子の並ばない ¾ の位置の外側に置く
     ctx.font = font(12);
     ctx.fillStyle = pal.text2;
-    ctx.textAlign = "left";
+    ctx.textAlign = "center";
     ctx.textBaseline = "top";
-    ctx.fillText("x →", ox + side - 26, oy + 6);
-    ctx.textAlign = "right";
-    ctx.textBaseline = "bottom";
-    ctx.fillText("y ↑", ox - 6, oy - side + 14);
+    ctx.fillText("x →", ox + side * 0.875, oy + 6);
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText("y ↑", panel.x + 4, oy - side * 0.875);
 
     // 外周の像(同じ原子 — 薄く)
     ctx.globalAlpha = IMAGE_ALPHA;
@@ -383,10 +402,17 @@ export default function phasorSum(host: FigureHost): WidgetHandle {
   }
 
   function drawPlane(panel: PanelRect): void {
-    const radiusPx = Math.min(panel.w, panel.h) / 2 - PLANE_PAD;
-    planeScale = radiusPx / fSum;
-    planeOx = panel.cx;
-    planeOy = panel.cy;
+    // 矢の列が収まる最大の縮尺。ただし矢 1 本がパネルの短辺の 30% を
+    // 超えないようにする(和が小さい反射で矢が大きくなりすぎないように)
+    const availW = Math.max(10, panel.w - PLANE_PAD * 2);
+    const availH = Math.max(10, panel.h - PLANE_PAD * 2 - 16);
+    planeScale = Math.min(
+      availW / (boxMaxX - boxMinX),
+      availH / (boxMaxY - boxMinY),
+      (MAX_ARROW_FRACTION * Math.min(panel.w, panel.h)) / fMax,
+    );
+    planeOx = panel.cx - ((boxMinX + boxMaxX) / 2) * planeScale;
+    planeOy = panel.cy + 8 + ((boxMinY + boxMaxY) / 2) * planeScale;
     const scale = planeScale;
     const ox = planeOx;
     const oy = planeOy;
@@ -412,7 +438,7 @@ export default function phasorSum(host: FigureHost): WidgetHandle {
     ctx.fillText("実部", panel.x + panel.w - 8, oy - 4);
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
-    ctx.fillText("虚部", ox + 6, panel.y + 8);
+    ctx.fillText("虚部", ox + 6, panel.y + 30);
     ctx.font = font(11);
     ctx.textAlign = "left";
     ctx.textBaseline = "bottom";

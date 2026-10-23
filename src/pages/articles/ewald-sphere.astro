@@ -9,6 +9,7 @@
  * タイトル・カテゴリ・前後ナビは topics.ts から解決される。
  */
 import Article from "../../layouts/Article.astro";
+import ArticleRef from "../../components/ArticleRef.astro";
 import Figure from "../../components/Figure.astro";
 import M from "../../components/M.astro";
 ---
@@ -630,7 +631,9 @@ import M from "../../components/M.astro";
     だけで、「どれくらい強く光るか」には触れていません。原子の種類と単位胞の
     中での並び方が決めるその強度 — 構造因子(structure factor)— を入れると、
     幾何的には許されるのに実際には消える反射が出てきます。前の記事の
-    「現れない点」の正体でもあります。それはまた別の話として、いつか。
+    「現れない点」の正体でもあります。その話は、次の記事「<ArticleRef
+      slug="structure-factor"
+    />」で扱います。
   </p>
 
   <h2>もっと知るには</h2>

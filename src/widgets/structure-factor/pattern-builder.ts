@@ -41,6 +41,7 @@ import {
 } from "./lib/structurefactor";
 import {
   PEAK_FWHM_DEG,
+  allowReadoutWrap,
   createPeakList,
   createPlotArea,
   createProfileBuffer,
@@ -193,8 +194,7 @@ export default function patternBuilder(host: FigureHost): WidgetHandle {
   const selItem = readout.item("選んだ線", { color: "recip" });
   const factorItem = readout.item("因子");
   const topItem = readout.item("強い順(相対強度)");
-  factorItem.el.style.whiteSpace = "normal";
-  topItem.el.style.whiteSpace = "normal";
+  allowReadoutWrap(readout.el);
 
   function updateReadout(): void {
     const r = lines[selected];
