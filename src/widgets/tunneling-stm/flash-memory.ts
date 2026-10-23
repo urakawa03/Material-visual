@@ -212,10 +212,12 @@ export default function flashMemory(host: FigureHost): WidgetHandle {
       pal.text,
       pal.bg,
     );
+    // 浮遊ゲートの名前は中央の少し左。書き込みの矢印(左端の近く)にはかけない
+    const fgHalfW = ctx.measureText("浮遊ゲート").width / 2;
     haloText(
       ctx,
       "浮遊ゲート",
-      (gateX0 + gateX1) / 2 - 22,
+      Math.max((gateX0 + gateX1) / 2 - 22, gateX0 + 20 + fgHalfW),
       yFg + fg * 0.5,
       pal.text,
       pal.bg,

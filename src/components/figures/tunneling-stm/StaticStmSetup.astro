@@ -199,7 +199,7 @@ function sampleAtoms(g: Geometry): number[] {
               />
             ))}
             <text
-              x={g.sample.x0 - 18}
+              x={narrow ? 24 : g.sample.x0 - 18}
               y={g.baseBottom + 18}
               font-size="13"
               fill="var(--color-text-2)"
@@ -410,8 +410,8 @@ function sampleAtoms(g: Geometry): number[] {
               />
             )}
             <text
-              x={narrow ? 22 : g.piezo.x + g.piezo.w + 14}
-              y={narrow ? g.piezo.y + g.piezo.h + 22 : g.piezo.y + 14}
+              x={narrow ? 24 : g.piezo.x + g.piezo.w + 14}
+              y={narrow ? g.baseBottom + 44 : g.piezo.y + 14}
               font-size="12"
               fill="var(--color-text-2)"
             >

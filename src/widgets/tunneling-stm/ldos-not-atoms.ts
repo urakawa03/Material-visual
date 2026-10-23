@@ -365,24 +365,35 @@ export default function ldosNotAtoms(host: FigureHost): WidgetHandle {
       }
     }
 
-    // ラベルと凡例
+    // ラベルと凡例(像の上の 1 行)。像の幅に収まらなければパネルの幅いっぱい
+    // に広げ、それでも足りなければ題を短くする
     ctx.font = font(12);
     ctx.fillStyle = pal.text2;
-    ctx.textAlign = "left";
     ctx.textBaseline = "bottom";
-    ctx.fillText("定電流像(高いところほど濃い)", q.x, q.y - 6);
+    const ly = q.y - 6;
+    const ta = "A 原子";
+    const tb = "B 原子";
+    const wa = ctx.measureText(ta).width;
+    const wb = ctx.measureText(tb).width;
+    const legendW = showAtoms ? wa + wb + 2 * (MARK_R * 2 + 8) + 12 : 0;
+    let title = "定電流像(高いところほど濃い)";
+    let titleX = q.x;
+    let rightX = q.x + q.w;
+    if (ctx.measureText(title).width + 12 + legendW > q.w) {
+      titleX = image.x + 8;
+      rightX = image.x + image.w - 8;
+      if (ctx.measureText(title).width + 12 + legendW > rightX - titleX) {
+        title = "定電流像(濃い = 高い)";
+      }
+    }
+    ctx.textAlign = "left";
+    ctx.fillText(title, titleX, ly);
     if (showAtoms) {
-      const ly = q.y - 6;
       ctx.textAlign = "right";
-      const tb = "B 原子";
-      const ta = "A 原子";
-      const xb = q.x + q.w;
-      ctx.fillText(tb, xb, ly);
-      const wb = ctx.measureText(tb).width;
-      dot(xb - wb - 8, ly - 7, pal.second, pal.secondEdge);
-      const xa = xb - wb - 20;
+      ctx.fillText(tb, rightX, ly);
+      dot(rightX - wb - 8, ly - 7, pal.second, pal.secondEdge);
+      const xa = rightX - wb - 20;
       ctx.fillText(ta, xa, ly);
-      const wa = ctx.measureText(ta).width;
       dot(xa - wa - 8, ly - 7, pal.matrix, pal.matrixEdge);
     }
   }
