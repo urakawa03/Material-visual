@@ -29,6 +29,7 @@ import {
   SPACING_METAL_NM,
   SPACING_SEMI_NM,
   SURFACE_SEED,
+  Z_REF_NM,
 } from "./lib/constants";
 import {
   drawDivider,
@@ -73,16 +74,28 @@ const FEEDBACK_PER_SECOND = 1800;
 /** 1 フレームで進める画素数の上限(1 行) */
 const MAX_PIXELS_PER_FRAME = 64;
 
-/** 横から見た図の表示範囲 [nm] */
-const SIDE_Z_BELOW = 0.32;
 /** 原子の見た目の半径 [nm] */
 const ATOM_R = 0.12;
 /** 探針の三角の高さと幅 [nm] */
 const TIP_H = 0.62;
 const TIP_W = 0.5;
-/** 電流の棒の対数の範囲(log₁₀ nA) */
+/**
+ * 横から見た図の上下の表示範囲 [nm]: 原子の中心より下 0.32 nm、上は
+ * ふつうの高さ(0.6 nm)にいる探針の三角の上端まで
+ */
+const SIDE_Z_BELOW = 0.32;
+const SIDE_Z_ABOVE = Z_REF_NM + TIP_H + 0.08;
+/** 横から見た図の余白 [px](上: 題、下: 横軸・目盛り・軸の名前) */
+const SIDE_PAD_X = 12;
+const SIDE_PAD_TOP = 30;
+const SIDE_PAD_BOTTOM = 44;
+/** 電流の棒の対数の範囲(log₁₀ nA)と寸法 [px] */
 const BAR_LOG_MIN = -2;
 const BAR_LOG_MAX = 2;
+const BAR_W = 14;
+const BAR_GAP = 10;
+/** 棒の列(2 本 + 間 + 左右の余白)の幅 [px] */
+const BAR_COLUMN_W = 2 * BAR_W + BAR_GAP + 30;
 
 const STATUS_TEXT: Record<ScanStatus, string> = {
   idle: "待機中",
@@ -209,10 +222,23 @@ export default function stmScan(host: FigureHost): WidgetHandle {
 
   function drawSide(): void {
     const r = side;
-    const pad = 12;
-    const scale = (r.w - pad * 2) / scanner.size;
-    const baseY = r.y + r.h - 34 - SIDE_Z_BELOW * scale;
-    const X = (x: number): number => r.x + pad + x * scale;
+    // 両端の画素でも探針の三角がはみ出さないよう、横は 3.2 nm + 三角の幅
+    const span = scanner.size + TIP_W;
+    const zSpan = SIDE_Z_BELOW + SIDE_Z_ABOVE;
+    const scaleH = (r.h - SIDE_PAD_TOP - SIDE_PAD_BOTTOM) / zSpan;
+    let plotW = r.w - SIDE_PAD_X * 2;
+    let scale = Math.min(plotW / span, scaleH);
+    // 電流の棒は右上に置く。探針の三角の上端が棒の高さまで届くほど縦が
+    // 窮屈なとき(狭幅)は、棒のための列を右端に空けて残りの幅に収める
+    const barH = Math.min(90, r.h * 0.32);
+    const barsBottom = r.y + SIDE_PAD_TOP + barH + 18;
+    if (r.y + r.h - SIDE_PAD_BOTTOM - zSpan * scale < barsBottom) {
+      plotW -= BAR_COLUMN_W;
+      scale = Math.min(plotW / span, scaleH);
+    }
+    const x0 = r.x + SIDE_PAD_X + (plotW - span * scale) / 2;
+    const baseY = r.y + r.h - SIDE_PAD_BOTTOM - SIDE_Z_BELOW * scale;
+    const X = (x: number): number => x0 + (x + TIP_W / 2) * scale;
     const Z = (z: number): number => baseY - z * scale;
     const s = scanner.surface;
     const lineRow = scanner.done ? N - 1 : scanner.row;
@@ -296,25 +322,25 @@ export default function stmScan(host: FigureHost): WidgetHandle {
     ctx.stroke();
     ctx.restore();
 
-    // 横軸(nm)
-    const axisY = r.y + r.h - 26;
+    // 横軸(nm)。目盛りの数字の下の行に軸の名前
+    const axisY = Math.round(r.y + r.h - SIDE_PAD_BOTTOM + 8) + 0.5;
     ctx.strokeStyle = pal.ghost;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(X(0), axisY);
     ctx.lineTo(X(scanner.size), axisY);
     for (let x = 0; x <= 3; x += 1) {
-      ctx.moveTo(X(x) + 0.5, axisY);
-      ctx.lineTo(X(x) + 0.5, axisY + 4);
+      ctx.moveTo(Math.round(X(x)) + 0.5, axisY);
+      ctx.lineTo(Math.round(X(x)) + 0.5, axisY + 4);
     }
     ctx.stroke();
     ctx.font = font(11);
     ctx.fillStyle = pal.text2;
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
-    for (let x = 0; x <= 3; x += 1) ctx.fillText(String(x), X(x), axisY + 6);
+    for (let x = 0; x <= 3; x += 1) ctx.fillText(String(x), X(x), axisY + 5);
     ctx.textAlign = "right";
-    ctx.fillText("走査の向き x [nm] →", X(scanner.size), axisY + 6);
+    ctx.fillText("走査の向き x [nm] →", X(scanner.size), axisY + 20);
 
     // ラベル
     ctx.font = font(12);
@@ -328,15 +354,14 @@ export default function stmScan(host: FigureHost): WidgetHandle {
       pal.text2,
       pal.bg,
     );
-    drawCurrentBars(r);
+    drawCurrentBars(r, barH);
   }
 
-  /** 設定電流と現在の電流の棒(対数 0.01〜100 nA) */
-  function drawCurrentBars(r: Rect): void {
-    const barW = 14;
-    const barH = Math.min(90, r.h * 0.32);
-    const x0 = r.x + r.w - 2 * barW - 26;
-    const yTop = r.y + 30;
+  /** 設定電流と現在の電流の棒(対数 0.01〜100 nA)。右上の隅に置く */
+  function drawCurrentBars(r: Rect, barH: number): void {
+    const barW = BAR_W;
+    const x0 = r.x + r.w - 2 * BAR_W - BAR_GAP - 16;
+    const yTop = r.y + SIDE_PAD_TOP;
     const yBot = yTop + barH;
     const toY = (lg: number): number => {
       const t =
@@ -346,21 +371,22 @@ export default function stmScan(host: FigureHost): WidgetHandle {
     };
     ctx.strokeStyle = pal.hairline;
     ctx.lineWidth = 1;
+    const x1 = x0 + barW + BAR_GAP;
     ctx.strokeRect(x0 - 0.5, yTop - 0.5, barW + 1, barH + 1);
-    ctx.strokeRect(x0 + barW + 10 - 0.5, yTop - 0.5, barW + 1, barH + 1);
+    ctx.strokeRect(x1 - 0.5, yTop - 0.5, barW + 1, barH + 1);
     const ySet = toY(Math.log10(I_SET_NA));
     const yNow = toY(Math.log10(scanner.current));
     ctx.fillStyle = pal.beam;
     ctx.globalAlpha = 0.55;
     ctx.fillRect(x0, ySet, barW, yBot - ySet);
     ctx.globalAlpha = 1;
-    ctx.fillRect(x0 + barW + 10, yNow, barW, yBot - yNow);
+    ctx.fillRect(x1, yNow, barW, yBot - yNow);
     // 設定値の高さの線(現在の棒にも重ねて比べやすく)
     ctx.strokeStyle = pal.beamInk;
     ctx.setLineDash([3, 2]);
     ctx.beginPath();
     ctx.moveTo(x0 - 3, ySet);
-    ctx.lineTo(x0 + 2 * barW + 13, ySet);
+    ctx.lineTo(x1 + barW + 3, ySet);
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.font = font(11);
@@ -368,9 +394,9 @@ export default function stmScan(host: FigureHost): WidgetHandle {
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
     ctx.fillText("設定", x0 + barW / 2, yBot + 3);
-    ctx.fillText("現在", x0 + barW * 1.5 + 10, yBot + 3);
+    ctx.fillText("現在", x1 + barW / 2, yBot + 3);
     ctx.textBaseline = "bottom";
-    ctx.fillText("電流", x0 + barW + 5, yTop - 3);
+    ctx.fillText("電流", (x0 + x1 + barW) / 2, yTop - 3);
   }
 
   /* ---------------------------------------------------------- 上から見た像 */
@@ -459,17 +485,16 @@ export default function stmScan(host: FigureHost): WidgetHandle {
   const corrItem = readout.item("実際の凹凸", { color: "electron" });
   const statusItem = readout.item("状態");
 
+  // 状態は文の長さが変わるので、いつも自分の行に置く(走査を始めたときに
+  // 読み取りの折り返しが変わって操作部品が動かないように)
+  statusItem.el.style.flexBasis = "100%";
+
   function updateReadouts(): void {
-    if (scanner.scanned === 0) {
-      iItem.set("—");
-      zItem.set(`${scanner.z.toFixed(3)} nm`);
-    } else {
-      const ratio = scanner.current / I_SET_NA;
-      iItem.set(
-        `${fmtSig(scanner.current, 2)} nA(設定の ${fmtSig(ratio, 2)} 倍)`,
-      );
-      zItem.set(`${scanner.z.toFixed(3)} nm`);
-    }
+    const ratio = scanner.current / I_SET_NA;
+    iItem.set(
+      `${fmtSig(scanner.current, 2)} nA(設定の ${fmtSig(ratio, 2)} 倍)`,
+    );
+    zItem.set(`${scanner.z.toFixed(3)} nm`);
     corrItem.set(
       range.valid ? `${fmtSig((range.hi - range.lo) * PM_PER_NM, 2)} pm` : "—",
     );
