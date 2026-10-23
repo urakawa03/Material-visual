@@ -310,6 +310,36 @@ export function drawDimension(
   ctx.restore();
 }
 
+/**
+ * 坂の高さの寸法(縦)。寸法が十分に長ければラベルを線の右の中ほどに、短ければ
+ * (順バイアスで坂が低いとき)帯の縁の線を隠さないよう寸法の下端の下に置く。
+ */
+export function drawBarrierDimension(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  yTop: number,
+  yBottom: number,
+  text: string,
+  colors: BandColors,
+): void {
+  const tall = Math.abs(yBottom - yTop) >= 28;
+  drawDimension(ctx, x, yTop, yBottom, tall ? text : "", colors, "right");
+  if (tall) return;
+  ctx.save();
+  ctx.font = PLOT_FONT;
+  const tw = ctx.measureText(text).width;
+  const y = Math.max(yTop, yBottom) + 14;
+  ctx.fillStyle = colors.bg;
+  ctx.globalAlpha = 0.9;
+  ctx.fillRect(x - 7, y - 9, tw + 6, 18);
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = colors.text;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, x - 4, y);
+  ctx.restore();
+}
+
 /** 水平の寸法線(両端の矢羽根)。ラベルは線の上(above = false で下) */
 export function drawHorizontalDimension(
   ctx: CanvasRenderingContext2D,

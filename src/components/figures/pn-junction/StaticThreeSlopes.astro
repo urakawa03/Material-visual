@@ -159,11 +159,11 @@ function geometry(v: Variant, k: number): PanelGeometry {
           n: hline(d.xn, HALF, q.eFn),
         };
   const ecN = SILICON.eg - d.drop;
-  const dimX = toX(-HALF + 0.3 * (HALF - d.xp));
+  const dimX = toX(-HALF + 0.12 * (HALF - d.xp));
   const electrons: Array<[number, number]> = [0.25, 0.45, 0.65, 0.85].map(
     (t) => [toX(d.xn + t * (HALF - d.xn)), toY(ecN) - v.dot - 1.5],
   );
-  const holes: Array<[number, number]> = [0.15, 0.35, 0.55, 0.75].map((t) => [
+  const holes: Array<[number, number]> = [0.38, 0.55, 0.72, 0.89].map((t) => [
     toX(-HALF + t * (HALF - d.xp)),
     toY(0) + v.dot + 1.5,
   ]);

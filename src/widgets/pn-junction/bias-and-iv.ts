@@ -62,6 +62,7 @@ import {
   curveSamples,
   drawBadge,
   drawBands,
+  drawBarrierDimension,
   drawBoxedLabel,
   drawDimension,
   drawEdgeLine,
@@ -203,6 +204,27 @@ export default function biasAndIv(host: FigureHost): WidgetHandle {
     eBottom.set(bottomFor(d), () => host.requestRender(), 200);
   }
 
+  /** 擬フェルミ準位の凡例(破線の見本 + 名前を 2 行) */
+  function quasiLegend(x: number, y: number): void {
+    const rows: ReadonlyArray<[string, string]> = [
+      [colors.electron, "E_Fn(電子)"],
+      [colors.hole, "E_Fp(正孔)"],
+    ];
+    rows.forEach(([color, text], i) => {
+      const yy = y + i * 15;
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 3]);
+      ctx.beginPath();
+      ctx.moveTo(x, yy);
+      ctx.lineTo(x + 18, yy);
+      ctx.stroke();
+      ctx.restore();
+      drawLabel(ctx, text, x + 23, yy, color, "left");
+    });
+  }
+
   /* ---- バンド図 ---- */
   function drawBandPanel(narrow: boolean): void {
     const R = xRange.value;
@@ -312,26 +334,8 @@ export default function biasAndIv(host: FigureHost): WidgetHandle {
         PLOT_FONT,
       );
     } else {
-      drawLabel(
-        ctx,
-        "E_Fp",
-        band.toPxX(-R) + 4,
-        band.toPxY(q.eFp) + (q.eFp > q.eFn ? -9 : 9),
-        colors.hole,
-        "left",
-        "middle",
-        PLOT_FONT,
-      );
-      drawLabel(
-        ctx,
-        "E_Fn",
-        band.toPxX(R) - 4,
-        band.toPxY(q.eFn) + (q.eFn > q.eFp ? -9 : 9),
-        colors.electron,
-        "right",
-        "middle",
-        PLOT_FONT,
-      );
+      // 2 本は中性領域の奥で合流して重なるので、線の横ではなく左上の凡例で示す
+      quasiLegend(band.rect.x + 8, band.rect.y + 10);
       // 差 qV の寸法: 空乏層の右の端のすぐ外(ラベルが入らなければ空乏層の中)
       const qText =
         bias > 0
@@ -365,14 +369,13 @@ export default function biasAndIv(host: FigureHost): WidgetHandle {
     ctx.lineTo(band.toPxX(d.xn), band.toPxY(ecN));
     ctx.stroke();
     ctx.restore();
-    drawDimension(
+    drawBarrierDimension(
       ctx,
       xRef,
       band.toPxY(SILICON.eg),
       band.toPxY(ecN),
-      narrow ? d.drop.toFixed(2) : `坂 ${d.drop.toFixed(2)} eV`,
+      narrow ? `${d.drop.toFixed(2)} eV` : `坂 ${d.drop.toFixed(2)} eV`,
       colors,
-      "right",
     );
     drawLabel(
       ctx,

@@ -59,8 +59,8 @@ import {
   BandSamples,
   curveSamples,
   drawBands,
+  drawBarrierDimension,
   drawBoxedLabel,
-  drawDimension,
   drawDotsPx,
   drawEdgeLine,
   drawLabel,
@@ -266,26 +266,15 @@ export default function forwardBias(host: FigureHost): WidgetHandle {
       );
     });
 
-    // 坂の高さの寸法(p 側の中性領域の左寄り)。坂が低くても帯の縁の線を
-    // 隠さないよう、ラベルは寸法の下(禁制帯の中)に置く
-    const xDim = band.toPxX(-R + 0.07 * R);
-    drawDimension(
+    // 坂の高さの寸法(p 側の中性領域の左寄り)。坂が低いときは帯の縁の線を
+    // 隠さないよう、ラベルを寸法の下(禁制帯の中)に置く
+    drawBarrierDimension(
       ctx,
-      xDim,
+      band.toPxX(-R + 0.07 * R),
       band.toPxY(SILICON.eg),
       band.toPxY(ecN),
-      "",
-      colors,
-      "right",
-    );
-    drawBoxedLabel(
-      ctx,
       narrow ? barrierLabelShort : barrierLabel,
-      xDim - 4,
-      band.toPxY(ecN) + 14,
       colors,
-      "left",
-      colors.text,
     );
     // 擬フェルミ準位のラベル
     drawLabel(

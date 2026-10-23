@@ -513,6 +513,11 @@ export default function ledSolar(host: FigureHost): WidgetHandle {
   }
 
   /* ---- 波長の目盛り(LED) ---- */
+  /**
+   * 灰色の帯に 300〜1200 nm の目盛り(虹色は使わない — 母体仕様 §2-7)。
+   * 紫外・可視光・赤外の名前は帯の中に書き、可視域(380〜780 nm)の境目に
+   * 縦の刻み。発光波長の印と数値は帯の上に置く(名前と重ならない)。
+   */
   function drawWavelengthScale(
     x0: number,
     x1: number,
@@ -521,18 +526,25 @@ export default function ledSolar(host: FigureHost): WidgetHandle {
   ): void {
     const toX = (nm: number): number =>
       x0 + ((nm - WL_MIN) / (WL_MAX - WL_MIN)) * (x1 - x0);
-    const bandH = 14;
-    // 灰色の帯(虹色は使わない)
+    const bandH = 16;
+    const vx0 = toX(VIS_MIN);
+    const vx1 = toX(VIS_MAX);
     ctx.save();
     ctx.fillStyle = colors.hairline;
     ctx.fillRect(x0, y, x1 - x0, bandH);
     ctx.strokeStyle = colors.text2;
     ctx.lineWidth = 1;
     ctx.beginPath();
+    // 目盛り(帯の下)と、可視域の境目(帯を横切る刻み)
     for (let nm = 400; nm <= WL_MAX; nm += 200) {
       const px = Math.round(toX(nm)) + 0.5;
       ctx.moveTo(px, y + bandH);
       ctx.lineTo(px, y + bandH + 4);
+    }
+    for (const px of [vx0, vx1]) {
+      const p = Math.round(px) + 0.5;
+      ctx.moveTo(p, y - 3);
+      ctx.lineTo(p, y + bandH + 3);
     }
     ctx.stroke();
     ctx.restore();
@@ -546,30 +558,20 @@ export default function ledSolar(host: FigureHost): WidgetHandle {
         nm === WL_MAX ? "right" : "center",
       );
     }
-    // 可視域の括弧
-    const vx0 = toX(VIS_MIN);
-    const vx1 = toX(VIS_MAX);
-    const by = y - 6;
-    ctx.save();
-    ctx.strokeStyle = colors.text2;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(vx0, by + 4);
-    ctx.lineTo(vx0, by);
-    ctx.lineTo(vx1, by);
-    ctx.lineTo(vx1, by + 4);
-    ctx.stroke();
-    ctx.restore();
+    const ym = y + bandH / 2;
     drawLabel(
       ctx,
       narrow ? "可視光" : "可視光(380〜780 nm)",
       (vx0 + vx1) / 2,
-      by - 8,
+      ym,
       colors.text2,
       "center",
     );
-    drawLabel(ctx, "赤外", (vx1 + x1) / 2, by - 8, colors.text2, "center");
-    // 発光波長の印
+    drawLabel(ctx, "赤外", (vx1 + x1) / 2, ym, colors.text2, "center");
+    if (vx0 - x0 >= 28) {
+      drawLabel(ctx, "紫外", (x0 + vx0) / 2, ym, colors.text2, "center");
+    }
+    // 発光波長の印(帯を横切る線と、帯の上の三角)
     const lam = emissionWavelengthNm(material.eg);
     const lx = toX(clamp(lam, WL_MIN, WL_MAX));
     ctx.save();
@@ -589,9 +591,9 @@ export default function ledSolar(host: FigureHost): WidgetHandle {
     ctx.restore();
     drawBoxedLabel(
       ctx,
-      `${Math.round(lam)} nm`,
+      `発光 ${Math.round(lam)} nm`,
       lx + (lam > 1000 ? -10 : 10),
-      y - 22,
+      y - 12,
       colors,
       lam > 1000 ? "right" : "left",
       colors.beamInk,

@@ -27,6 +27,7 @@ import { createReadout } from "../reciprocal-lattice/_shared2d";
 import {
   createPlotMapper,
   PLOT_FONT,
+  PLOT_FONT_SMALL,
   setPlotRange,
   withPlotClip,
   type PlotMapper,
@@ -83,6 +84,15 @@ export default function depletionLayer(host: FigureHost): WidgetHandle {
 
   const xs = new Float64Array(MAX_SAMPLES);
   const ys = new Float64Array(MAX_SAMPLES);
+
+  /** 図中の文字の幅 [px] */
+  function textWidth(text: string, font: string): number {
+    ctx.save();
+    ctx.font = font;
+    const w = ctx.measureText(text).width;
+    ctx.restore();
+    return w;
+  }
 
   function recompute(): void {
     d = depletion(SILICON, nA, nD, 0, ROOM_T);
@@ -172,15 +182,15 @@ export default function depletionLayer(host: FigureHost): WidgetHandle {
     const note2 = `N_A x_p = N_D x_n = ${fmtSci(sheet, 2)} cm⁻²`;
     const nx = mRho.rect.x + 8;
     const ny = mRho.rect.y + 12;
-    drawLabel(ctx, note1, nx, ny, colors.text2, "left");
-    drawLabel(ctx, note2, nx, ny + 15, colors.text2, "left");
+    drawBoxedLabel(ctx, note1, nx, ny, colors, "left");
+    drawBoxedLabel(ctx, note2, nx, ny + 16, colors, "left");
     if (!narrow && big / Math.min(nA, nD) >= 300) {
-      drawLabel(
+      drawBoxedLabel(
         ctx,
         "(極端に細い・低い矩形は、見えるよう最小の太さで描いた)",
         nx,
-        ny + 30,
-        colors.text2,
+        ny + 32,
+        colors,
         "left",
       );
     }
@@ -232,18 +242,21 @@ export default function depletionLayer(host: FigureHost): WidgetHandle {
       "left",
       colors.text,
     );
+    const areaText = "三角形の面積 = V_bi";
+    const areaW = textWidth(areaText, PLOT_FONT_SMALL);
     const areaX = Math.max(mField.toPxX(d.xn) + 10, tipX + 10);
-    drawLabel(
+    const fits = areaX + areaW < mField.rect.x + mField.rect.w - 4;
+    drawBoxedLabel(
       ctx,
-      "三角形の面積 = V_bi",
-      Math.min(areaX, mField.rect.x + mField.rect.w - 4),
+      areaText,
+      fits ? areaX : mField.rect.x + mField.rect.w - 4,
       mField.toPxY(-d.eMax * 0.45),
-      colors.text2,
-      areaX > mField.rect.x + mField.rect.w - 120 ? "right" : "left",
+      colors,
+      fits ? "left" : "right",
     );
   }
 
-  function drawPotential(narrow: boolean): void {
+  function drawPotential(): void {
     const ticks = [0, 0.5, 1].map((v) => ({
       value: v,
       label: v === 0 ? "0" : v.toFixed(1),
@@ -281,11 +294,18 @@ export default function depletionLayer(host: FigureHost): WidgetHandle {
       ctx.stroke();
       ctx.restore();
     });
-    // V_bi の寸法(電場の三角形と同じ淡い帯 + 寸法線)。n 側の中性領域に置く
-    const xDim = Math.min(
-      mPsi.rect.x + mPsi.rect.w - (narrow ? 70 : 96),
-      (mPsi.toPxX(d.xn) + mPsi.rect.x + mPsi.rect.w) / 2,
-    );
+    // V_bi の寸法(電場の三角形と同じ淡い帯 + 寸法線)。n 側の中性領域に置き、
+    // ラベルが右端からはみ出すなら寸法を左へ寄せる(それも無理なら線の左に)
+    const vText = `V_bi = ${d.vbi.toFixed(3)} V`;
+    const vW = textWidth(vText, PLOT_FONT);
+    const plotRight = mPsi.rect.x + mPsi.rect.w;
+    const xnPx = mPsi.toPxX(d.xn);
+    let xDim = Math.min((xnPx + plotRight) / 2, plotRight - vW - 16);
+    let vSide: "left" | "right" = "right";
+    if (xDim < xnPx + 8) {
+      xDim = Math.min(plotRight - 10, xnPx + 14);
+      vSide = "left";
+    }
     const y0 = mPsi.toPxY(0);
     const y1 = mPsi.toPxY(d.vbi);
     ctx.save();
@@ -293,15 +313,7 @@ export default function depletionLayer(host: FigureHost): WidgetHandle {
     ctx.globalAlpha = PALE_ALPHA;
     ctx.fillRect(xDim - 5, y1, 10, y0 - y1);
     ctx.restore();
-    drawDimension(
-      ctx,
-      xDim,
-      y0,
-      y1,
-      `V_bi = ${d.vbi.toFixed(3)} V`,
-      colors,
-      "right",
-    );
+    drawDimension(ctx, xDim, y0, y1, vText, colors, vSide);
   }
 
   function draw(): void {
@@ -327,21 +339,22 @@ export default function depletionLayer(host: FigureHost): WidgetHandle {
     setPlotRange(mField, left, y2, pw, panelH, -R, R, -1.18 * d.eMax, fTop);
     setPlotRange(mPsi, left, y3, pw, panelH, -R, R, PSI_MIN, PSI_MAX);
 
-    drawRho(narrow);
-    // 左右の向き(電荷のパネルの下の隅 — 矩形のない中性領域)
-    const pnY = mRho.rect.y + mRho.rect.h - 9;
-    drawLabel(ctx, "p 型", left + 8, pnY, colors.hole, "left");
-    drawLabel(ctx, "n 型", left + pw - 6, pnY, colors.electron, "right");
-    drawField(narrow);
-    drawPotential(narrow);
-
-    // 空乏層の両端(3 段を貫く縦の破線)
+    // 空乏層の両端(3 段を貫く縦の破線)。中身とラベルを上に重ねるため先に描く
     const edgeTop = mRho.rect.y;
     const edgeBottom = mPsi.rect.y + mPsi.rect.h;
     for (const x of [-d.xp, d.xn]) {
       if (Math.abs(x) > R) continue;
       drawEdgeLine(ctx, mRho, x, colors.text2, edgeTop, edgeBottom);
     }
+
+    drawRho(narrow);
+    // 左右の向き(電荷のパネルの下の隅 — 矩形のない中性領域)
+    const pnY = mRho.rect.y + mRho.rect.h - 9;
+    drawLabel(ctx, "p 型", left + 8, pnY, colors.hole, "left");
+    drawLabel(ctx, "n 型", left + pw - 6, pnY, colors.electron, "right");
+    drawField(narrow);
+    drawPotential();
+
     drawLabel(
       ctx,
       "−x_p",
