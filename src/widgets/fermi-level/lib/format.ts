@@ -59,29 +59,34 @@ export function japaneseNumber(
   return { num: String(r), unit: "" };
 }
 
+/** 万・億・兆で書くのはこの値まで(1 万兆 = 10¹⁶ 以上は「× 10ⁿ」で書く) */
+const JAPANESE_LIMIT = 1e16;
+
 /** 「Si 原子の 500 万分の 1」のような不純物の割合(ratio = 原子密度 / 不純物密度) */
 export function formatOneIn(ratio: number, prefix = "Si 原子の "): string {
   if (!Number.isFinite(ratio) || ratio <= 0) return "—";
+  if (ratio >= JAPANESE_LIMIT) return `${prefix}${fmtSci(ratio, 2)} 分の 1`;
   const { num, unit } = japaneseNumber(ratio, 2);
   return unit ? `${prefix}${num} ${unit}分の 1` : `${prefix}${num} 分の 1`;
 }
 
 /**
  * 「約 70 万倍」のような倍率(有効数字 1 桁 — 移動度を一定とした目安の値なので
- * 桁だけを伝える。仕様書 12 §5.5)
+ * 桁だけを伝える。仕様書 12 §5.5)。低温で真性の導電率が事実上 0 になると
+ * 倍率は天文学的になるので、10¹⁶ 以上は「約 6 × 10⁵² 倍」と書く。
  */
 export function formatTimesRough(ratio: number): string {
   if (!Number.isFinite(ratio) || ratio <= 0) return "—";
+  if (ratio >= JAPANESE_LIMIT) return `約 ${fmtSci(ratio, 1)} 倍`;
   const { num, unit } = japaneseNumber(ratio, 1);
   return unit ? `約 ${num} ${unit}倍` : `約 ${num} 倍`;
 }
 
-/** 0〜1 の割合を「99.6 %」の形に(有効数字 3 桁程度) */
+/** 0〜1 の割合を「99.6 %」の形に(1% 以上は小数 1 桁、それ未満は有効数字 2 桁) */
 export function formatPercent(fraction: number): string {
   if (!Number.isFinite(fraction)) return "—";
   const pct = fraction * 100;
   if (pct >= 99.95 && pct < 100) return "> 99.9 %";
-  if (pct >= 10) return `${pct.toFixed(1)} %`;
   if (pct >= 1) return `${pct.toFixed(1)} %`;
   return `${pct.toPrecision(2)} %`;
 }

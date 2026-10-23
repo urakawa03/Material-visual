@@ -151,7 +151,7 @@ export default function equilibration(host: FigureHost): WidgetHandle {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
 
-    const marginLeft = 44;
+    const marginLeft = 30;
     const marginRight = 12;
     const marginTop = 30;
     const marginBottom = 12;
@@ -166,7 +166,18 @@ export default function equilibration(host: FigureHost): WidgetHandle {
       eMin,
       eMax,
     );
-    drawPlotFrame(ctx, m, { colors, yLabel: "電子のエネルギー" });
+    // 目盛りのない縦軸なので、軸の名前は軸のすぐ左に自前で置く
+    // (drawPlotFrame の軸名は目盛りの数字のぶん左へ離して置かれる)
+    drawPlotFrame(ctx, m, { colors });
+    ctx.save();
+    ctx.translate(marginLeft - 12, marginTop + m.rect.h / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.font = PLOT_FONT;
+    ctx.fillStyle = colors.text2;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("電子のエネルギー", 0, 0);
+    ctx.restore();
 
     const pGap = phase(progress, 0, PHASE_GAP_END);
     const pShift = smoothstep(PHASE_SHIFT_START, 1, progress);
@@ -209,8 +220,9 @@ export default function equilibration(host: FigureHost): WidgetHandle {
 
       // E_F(左は固定、右はバンドといっしょに動く)
       drawFermiLine(ctx, m, aX0, aX1, eFA, colors);
+      // 右の E_F のラベルは線の右端に別に置く(空文字でラベルなし)
       const eFBNow = eFB + shift;
-      drawFermiLine(ctx, m, bX0, bX1, eFBNow, colors, undefined);
+      drawFermiLine(ctx, m, bX0, bX1, eFBNow, colors, "");
 
       // 電子の流れ(E_F の高い側から低い側へ)。現れて消える
       if (

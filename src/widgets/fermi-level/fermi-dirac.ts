@@ -200,10 +200,7 @@ export default function fermiDiracFigure(host: FigureHost): WidgetHandle {
     );
 
     // 個数の表示
-    const countText =
-      kT > 0
-        ? `${count >= 100 ? Math.round(count) : count.toFixed(0)} 個分`
-        : "—";
+    const countText = kT > 0 ? `${Math.round(count)} 個分` : "—";
     drawLabel(
       ctx,
       "E_g は k_BT の",
@@ -268,11 +265,12 @@ export default function fermiDiracFigure(host: FigureHost): WidgetHandle {
           colors,
           measure: false,
         });
+        // 帯の名前は帯の奥(端から離れた側)に置き、伝導帯の底の目印と離す
         drawLabel(
           ctx,
           "伝導帯",
           main.toPxX(F_MAX) - 8,
-          main.toPxY(HALF_GAP) - 10,
+          main.rect.y + 10,
           colors.text2,
           "right",
         );
@@ -280,7 +278,7 @@ export default function fermiDiracFigure(host: FigureHost): WidgetHandle {
           ctx,
           "価電子帯",
           main.toPxX(0) + 8,
-          main.toPxY(-HALF_GAP) + 12,
+          main.rect.y + main.rect.h - 10,
           colors.text2,
           "left",
         );
@@ -363,26 +361,29 @@ export default function fermiDiracFigure(host: FigureHost): WidgetHandle {
         ctx.lineTo(fx + 12, fy);
         ctx.stroke();
         ctx.restore();
-        drawLabel(
-          ctx,
-          narrow
-            ? "ここから上: 差 5% 以下"
-            : "ここから上は f とほぼ同じ(差 5% 以下)",
-          fx + 16,
-          fy,
-          colors.text2,
-          "left",
-        );
+        // 文字は E_F の線や裾の幅のラベルと重ならないだけの余地があるときだけ
+        // (狭い画面と低温では目印の線だけにする。意味は本文で説明している)
+        if (!narrow && main.toPxY(0) - fy >= 18) {
+          drawLabel(
+            ctx,
+            "ここから上は f とほぼ同じ(差 5% 以下)",
+            fx + 16,
+            fy,
+            colors.text2,
+            "left",
+          );
+        }
       }
+      // 凡例はギャップの下側の左(E < E_F では曲線は右端に寄っていて空いている)
       drawLabel(
         ctx,
         narrow
           ? "破線 = ボルツマン近似"
           : "破線 = ボルツマン近似 e^−(E−E_F)/k_BT",
-        main.toPxX(F_MAX) - 6,
-        main.rect.y + 12,
+        main.toPxX(0) + 8,
+        main.toPxY(-0.42),
         colors.text2,
-        "right",
+        "left",
       );
     }
 

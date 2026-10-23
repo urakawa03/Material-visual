@@ -38,6 +38,7 @@ import {
 import {
   AUX_BORN,
   AUX_JITTER,
+  AVERAGE_STEPS,
   fitInterceptFixedSlope,
   fitLogSlope,
   GENREC_DT,
@@ -46,6 +47,7 @@ import {
   MAX_CARRIERS,
 } from "./lib/genrec";
 import {
+  drawBoxedLabel,
   drawFermiLine,
   drawLabel,
   drawSplitDivider,
@@ -75,6 +77,8 @@ const LOG_MAX = 2;
 const X_PAD = 0.4;
 /** 記録できる点の上限 */
 const MAX_POINTS = 40;
+/** 記録を受け付けるのに必要な平均のステップ数(1 秒分) */
+const MIN_RECORD_STEPS = 60;
 /** 理論直線の傾き(自然対数で −1/2) */
 const THEORY_SLOPE = -0.5;
 /** 理論直線を重ねるのに必要な点の数 */
@@ -269,12 +273,12 @@ export default function intrinsicCarriers(host: FigureHost): WidgetHandle {
       colors.text2,
       "right",
     );
-    drawLabel(
+    drawBoxedLabel(
       ctx,
       "価電子帯(満席)",
       band.rect.x + band.rect.w - 6,
-      band.toPxY(E_MIN) - 10,
-      colors.text2,
+      band.toPxY(E_MIN) - 11,
+      colors,
       "right",
     );
   }
@@ -353,24 +357,46 @@ export default function intrinsicCarriers(host: FigureHost): WidgetHandle {
         ctx.restore();
       }
     });
-    // 見出しと理論直線の凡例
-    drawLabel(
-      ctx,
-      narrow ? "測定(○ = いまの平均)" : "測定(● 記録した点 / ○ いまの平均)",
-      graph.rect.x + 6,
-      graph.rect.y + 10,
-      colors.text2,
-      "left",
-    );
-    if (Number.isFinite(fitIntercept)) {
+    // 凡例(プロットの上の余白に置く。狭幅では 1 行にまとめる)
+    const legendX = graph.rect.x;
+    if (narrow) {
       drawLabel(
         ctx,
-        narrow ? "— 傾き −1/2" : "— 傾き −1/2 の直線(切片だけ合わせた)",
-        graph.rect.x + 6,
-        graph.rect.y + 26,
-        colors.accent,
+        "● 記録した点 ○ いまの平均",
+        legendX,
+        graph.rect.y - 10,
+        colors.text2,
         "left",
       );
+      if (Number.isFinite(fitIntercept)) {
+        drawLabel(
+          ctx,
+          "— 傾き −1/2",
+          graph.rect.x + graph.rect.w,
+          graph.rect.y - 10,
+          colors.accent,
+          "right",
+        );
+      }
+    } else {
+      drawLabel(
+        ctx,
+        "● 記録した点 ○ いまの平均",
+        legendX,
+        graph.rect.y - 28,
+        colors.text2,
+        "left",
+      );
+      if (Number.isFinite(fitIntercept)) {
+        drawLabel(
+          ctx,
+          "— 傾き −1/2 の直線(切片だけ合わせた)",
+          legendX,
+          graph.rect.y - 12,
+          colors.accent,
+          "left",
+        );
+      }
     }
   }
 
@@ -379,9 +405,11 @@ export default function intrinsicCarriers(host: FigureHost): WidgetHandle {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
     const narrow = w < NARROW_WIDTH_PX;
-    const layout = splitByFraction(host.size, 0.62, 0.58);
+    const layout = splitByFraction(host.size, 0.62, 0.55);
     const a = layout.first;
     const b = layout.second;
+    // 測定グラフの上の余白(凡例 2 行、狭幅では 1 行)
+    const legendTop = narrow ? 22 : 40;
 
     setPlotRange(
       band,
@@ -397,9 +425,9 @@ export default function intrinsicCarriers(host: FigureHost): WidgetHandle {
     setPlotRange(
       graph,
       b.x + 54,
-      b.y + 8,
+      b.y + legendTop,
       b.w - 54 - 10,
-      b.h - 8 - 44,
+      b.h - legendTop - 44,
       RATIO_MIN - X_PAD,
       RATIO_MAX + X_PAD,
       LOG_MIN,
@@ -414,6 +442,7 @@ export default function intrinsicCarriers(host: FigureHost): WidgetHandle {
   /* ---- 読み取り値(値が変わったときだけ文字列を作る) ---- */
   let shownCount = -1;
   let shownAvg = -1;
+  let shownSeconds = -1;
   let recordEnabled = true;
   function updateReadouts(): void {
     const c = sim.count;
@@ -422,12 +451,22 @@ export default function intrinsicCarriers(host: FigureHost): WidgetHandle {
       countItem.set(`${c} 個`);
     }
     const avg = sim.average;
+    const steps = sim.averageSteps;
+    // 条件を変えてから 15 秒たつまでは、何秒分の平均かを添える
+    const seconds = steps >= AVERAGE_STEPS ? -1 : Math.floor(steps * GENREC_DT);
     const avgKey = Number.isFinite(avg) ? Math.round(avg * 10) : -2;
-    if (avgKey !== shownAvg) {
+    if (avgKey !== shownAvg || seconds !== shownSeconds) {
       shownAvg = avgKey;
-      averageItem.set(Number.isFinite(avg) ? `${avg.toFixed(1)} 個` : "—");
+      shownSeconds = seconds;
+      averageItem.set(
+        !Number.isFinite(avg)
+          ? "—(再生すると測り始めます)"
+          : seconds >= 0
+            ? `${avg.toFixed(1)} 個(まだ ${seconds} 秒分)`
+            : `${avg.toFixed(1)} 個`,
+      );
     }
-    const canRecord = avg > 0;
+    const canRecord = avg > 0 && steps >= MIN_RECORD_STEPS;
     if (canRecord !== recordEnabled) {
       recordEnabled = canRecord;
       recordBtn.el.disabled = !canRecord;
@@ -468,7 +507,11 @@ export default function intrinsicCarriers(host: FigureHost): WidgetHandle {
         : SI_NOTE;
   }
   ratioSlider.onChange((v) => {
-    sim.ratio = v;
+    if (v !== sim.ratio) {
+      sim.ratio = v;
+      // 前の条件の値が平均に混ざったまま記録されないよう、平均を取り直す
+      sim.restartAverage();
+    }
     updateNote();
   });
 

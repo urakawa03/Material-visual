@@ -49,6 +49,12 @@ describe("万・億・兆の書式", () => {
     expect(formatTimesRough(2.4e9)).toBe("約 20 億倍");
   });
 
+  it("1 万兆(10¹⁶)以上は「× 10ⁿ」で書く(低温で真性の導電率が事実上 0 のとき)", () => {
+    expect(formatTimesRough(6.2e52)).toBe("約 6 × 10⁵² 倍");
+    expect(formatTimesRough(3e15)).toBe("約 3000 兆倍");
+    expect(formatOneIn(2e17)).toBe("Si 原子の 2 × 10¹⁷ 分の 1");
+  });
+
   it("japaneseNumber は桁の区切りを選ぶ", () => {
     expect(japaneseNumber(42000, 2)).toEqual({ num: "4.2", unit: "万" });
     expect(japaneseNumber(3.3e12, 2)).toEqual({ num: "3.3", unit: "兆" });

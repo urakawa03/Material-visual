@@ -119,16 +119,45 @@ export function drawLabel(
 }
 
 /**
- * 角の丸い小さな札(縮退の注意など)。右上の角を (xRight, yTop) に置く。
- * 返り値は札の高さ(px)。
+ * 背景色の下地の上に置く小さな文字(粒子や線の上でも読めるように)。
+ * x は align に応じた基準点、y は文字の中央。
+ */
+export function drawBoxedLabel(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  colors: BandColors,
+  align: "left" | "right" | "center" = "left",
+  color: string = colors.text2,
+): void {
+  ctx.save();
+  ctx.font = PLOT_FONT_SMALL;
+  const tw = ctx.measureText(text).width;
+  const x0 = align === "left" ? x : align === "right" ? x - tw : x - tw / 2;
+  ctx.fillStyle = colors.bg;
+  ctx.globalAlpha = 0.9;
+  ctx.fillRect(x0 - 3, y - 8, tw + 6, 16);
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = color;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, x0, y);
+  ctx.restore();
+}
+
+/**
+ * 角の丸い小さな札(縮退の注意など)。anchor が "right" なら右上の角を、
+ * "left" なら左上の角を (x, yTop) に置く。返り値は札の高さ(px)。
  */
 export function drawBadge(
   ctx: CanvasRenderingContext2D,
   lines: readonly string[],
-  xRight: number,
+  x: number,
   yTop: number,
   colors: BandColors,
   maxWidth: number,
+  anchor: "left" | "right" = "right",
 ): number {
   ctx.save();
   ctx.font = PLOT_FONT_SMALL;
@@ -138,19 +167,19 @@ export function drawBadge(
   const lineH = 15;
   const bw = Math.min(maxWidth, tw + pad * 2);
   const bh = lines.length * lineH + pad * 2 - 3;
-  const x = xRight - bw;
+  const left = anchor === "right" ? x - bw : x;
   ctx.fillStyle = colors.bg;
   ctx.strokeStyle = colors.hairline;
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.roundRect(x, yTop, bw, bh, 5);
+  ctx.roundRect(left, yTop, bw, bh, 5);
   ctx.fill();
   ctx.stroke();
   ctx.fillStyle = colors.text;
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
   for (let i = 0; i < lines.length; i++) {
-    ctx.fillText(lines[i], x + pad, yTop + pad + i * lineH, bw - pad * 2);
+    ctx.fillText(lines[i], left + pad, yTop + pad + i * lineH, bw - pad * 2);
   }
   ctx.restore();
   return bh;

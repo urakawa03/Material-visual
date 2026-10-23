@@ -86,10 +86,12 @@ const LOG_MAX = 20;
 /** バンド図の縦軸 [eV] */
 const E_MIN = -0.25;
 const E_MAX = 1.37;
-/** ドーパントの目印の数と並べる範囲(横軸 0〜1 の中) */
+/** ドーパントの目印の数と並べる範囲(横軸 0〜1 の中。右端は帯の名前に空ける) */
 const MARKERS = 8;
-const MARKER_X0 = 0.14;
-const MARKER_X1 = 0.86;
+const MARKER_X0 = 0.12;
+const MARKER_X1 = 0.76;
+/** 縮退の札の上端の高さ [eV](E_i とドーパント準位の間) */
+const BADGE_TOP_E = 0.98;
 /** 離れた電子・正孔をバンド端から離して置く距離 [eV] */
 const FREE_OFFSET = 0.09;
 /** 凍結の終わり(多数キャリアがドーピングのこの割合に届く温度) */
@@ -299,11 +301,12 @@ export default function dopingShift(host: FigureHost): WidgetHandle {
       colors.level,
       "left",
     );
+    // 帯の名前はバンド端のすぐ内側の右端(目印と離れた所)に置く
     drawLabel(
       ctx,
       "伝導帯",
       band.rect.x + band.rect.w - 6,
-      band.toPxY(E_MAX) + 12,
+      band.toPxY(SILICON.eg) - 11,
       colors.text2,
       "right",
     );
@@ -311,23 +314,28 @@ export default function dopingShift(host: FigureHost): WidgetHandle {
       ctx,
       "価電子帯",
       band.rect.x + band.rect.w - 6,
-      band.toPxY(E_MIN) - 10,
+      band.toPxY(0) + 12,
       colors.text2,
       "right",
     );
     if (state.degenerate) {
+      // 縮退の札はギャップの左上(E_i とドーパント準位の間。どちらの型でも空いている)
       drawBadge(
         ctx,
         narrow
-          ? ["縮退 — ボルツマン近似は使えない", "(F₁/₂ で計算)"]
+          ? [
+              "縮退 — ボルツマン近似は使えない",
+              "(フェルミ・ディラック積分で計算)",
+            ]
           : [
               "縮退 — ボルツマン近似は使えない",
               "(この図はフェルミ・ディラック積分で計算)",
             ],
-        band.rect.x + band.rect.w - 4,
-        band.rect.y + 22,
+        band.rect.x + 6,
+        band.toPxY(BADGE_TOP_E),
         colors,
-        band.rect.w - 8,
+        band.rect.w - 12,
+        "left",
       );
     }
   }
@@ -417,11 +425,13 @@ export default function dopingShift(host: FigureHost): WidgetHandle {
     );
     if (dopant !== "none") {
       const lc = Math.log10(conc);
+      // 線がグラフの上端に近いときは、ラベルを線の下に置く(枠の外に出さない)
+      const below = lc > LOG_MAX - 0.8;
       drawLabel(
         ctx,
         dopant === "P" ? "N_D" : "N_A",
         graph.rect.x + 4,
-        graph.toPxY(lc) - 8,
+        graph.toPxY(lc) + (below ? 9 : -8),
         colors.solute,
         "left",
       );
@@ -535,9 +545,10 @@ export default function dopingShift(host: FigureHost): WidgetHandle {
     id: "dopant",
     label: "ドーパント",
     options: [
+      // 狭い画面でも 1 行に収まるよう、元素は記号で書く(本文はリン P・ホウ素 B)
       { value: "none", label: "なし" },
-      { value: "P", label: "リン P(n 型)" },
-      { value: "B", label: "ホウ素 B(p 型)" },
+      { value: "P", label: "P(n 型)" },
+      { value: "B", label: "B(p 型)" },
     ],
     value: DOPANT_INIT,
   });

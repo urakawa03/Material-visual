@@ -57,10 +57,13 @@ describe("T7: 生成と再結合のつり合い(指数の「2」)", () => {
     }
   });
 
-  it("理論 √(G₀/r_eff)·e^{−x/2} と比例定数まで 10% 以内(よく混ざった極限)", () => {
+  // 60000 ステップ 1 本の時間平均には揺らぎがある(シードを変えて測ると
+  // x = 8 で標準偏差 約 5%)。生まれたばかりの対どうしの再結合で比例定数が
+  // 数 % 下がることも合わせ、比例定数の確認は 15% の幅で行う
+  it("理論 √(G₀/r_eff)·e^{−x/2} と比例定数まで 15% 以内(よく混ざった極限)", () => {
     for (let i = 0; i < xs.length; i++) {
       const theory = Math.sqrt(G0 / R_EFF) * Math.exp(-xs[i] / 2);
-      expect(Math.abs(means[i] / theory - 1)).toBeLessThan(0.1);
+      expect(Math.abs(means[i] / theory - 1)).toBeLessThan(0.15);
     }
   });
 });
@@ -107,6 +110,21 @@ describe("GenRecSim の再現性と記録", () => {
     const tail = counts.slice(-AVERAGE_STEPS);
     const mean = tail.reduce((p, q) => p + q, 0) / AVERAGE_STEPS;
     expect(sim.average).toBeCloseTo(mean, 9);
+  });
+
+  it("restartAverage は平均だけを取り直し、シミュレーションの状態は変えない", () => {
+    const sim = new GenRecSim(5, 5, 1000);
+    const count = sim.count;
+    const time = sim.time;
+    expect(sim.averageSteps).toBe(900);
+    sim.restartAverage();
+    expect(sim.averageSteps).toBe(0);
+    expect(Number.isNaN(sim.average)).toBe(true);
+    expect(sim.count).toBe(count);
+    expect(sim.time).toBe(time);
+    sim.step();
+    expect(sim.averageSteps).toBe(1);
+    expect(sim.average).toBe(sim.count);
   });
 
   it("位置は常に結晶の中(0〜1)", () => {

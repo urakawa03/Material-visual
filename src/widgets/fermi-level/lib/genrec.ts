@@ -125,10 +125,7 @@ export class GenRecSim {
     this.recombined = 0;
     this.effectCount = 0;
     this.effectHead = 0;
-    this.history.fill(0);
-    this.historyHead = 0;
-    this.historyCount = 0;
-    this.historySum = 0;
+    this.restartAverage();
     for (let i = 0; i < warmupSteps; i++) this.step();
   }
 
@@ -140,6 +137,22 @@ export class GenRecSim {
   /** 直近 AVERAGE_STEPS ステップ(15 秒)の時間平均。記録がなければ NaN */
   get average(): number {
     return this.historyCount > 0 ? this.historySum / this.historyCount : NaN;
+  }
+
+  /** 時間平均に入っているステップ数(0〜AVERAGE_STEPS) */
+  get averageSteps(): number {
+    return this.historyCount;
+  }
+
+  /**
+   * 時間平均を取り直す(条件を変えた直後に呼ぶ)。前の条件の値が平均に
+   * 混ざったまま記録されるのを防ぐ。シミュレーションの状態は変えない。
+   */
+  restartAverage(): void {
+    this.history.fill(0);
+    this.historyHead = 0;
+    this.historyCount = 0;
+    this.historySum = 0;
   }
 
   /** 正規乱数(ボックス=ミュラー。生成時の初速に使う) */
@@ -156,21 +169,21 @@ export class GenRecSim {
     const h = this.holes;
     const speed = GENREC_THERMAL.speed;
 
-    // 1. 生成: 同じ位置に電子と正孔の対が生まれる(初速は定常の熱分布から)
+    // 1. 生成: 同じ位置に電子と正孔の対が生まれる(初速は定常の熱分布から)。
+    //    描画の縦位置のばらつきも対で共有する(跳ぶ電子が正孔の位置から出発する)
     const births = poisson(G0 * Math.exp(-this.ratio) * GENREC_DT, rand);
     for (let b = 0; b < births; b++) {
       const x = rand();
       const ve = speed * this.normal();
       const vh = speed * this.normal();
-      const je = rand();
-      const jh = rand();
+      const jitter = rand();
       if (e.count >= e.capacity || h.count >= h.capacity) continue;
       const ie = e.add(x, ve);
       e.aux[AUX_BORN][ie] = this.time;
-      e.aux[AUX_JITTER][ie] = je;
+      e.aux[AUX_JITTER][ie] = jitter;
       const ih = h.add(x, vh);
       h.aux[AUX_BORN][ih] = this.time;
-      h.aux[AUX_JITTER][ih] = jh;
+      h.aux[AUX_JITTER][ih] = jitter;
       this.generated++;
     }
 

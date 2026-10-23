@@ -245,11 +245,8 @@ export default function dosTimesF(host: FigureHost): WidgetHandle {
     /* ---- 1. 席の数 g(E) ---- */
     withPlotClip(ctx, gPanel, () => {
       drawBands(gPanel);
-      drawGapMarks(ctx, gPanel, 0, 1, EV, EC, {
-        colors,
-        measure: true,
-        label: narrow ? undefined : "E_g",
-      });
+      // ギャップの寸法線(文字は付けない — 中央を E_F の線が横切ることがあるため)
+      drawGapMarks(ctx, gPanel, 0, 1, EV, EC, { colors, measure: true });
       // g の最大(表示範囲の上端・下端)で横幅を規格化する(上下の大きさの比は正しい)
       const gScale =
         Math.max(
@@ -304,21 +301,23 @@ export default function dosTimesF(host: FigureHost): WidgetHandle {
         dash: [6, 4],
       });
     });
+    // E_F より上では f が左端(0)、1 − f が右端(1)に寄るので、f の名前は
+    // 左上に、1 − f の名前は左下(E_F より下では 1 − f が左端に寄る)に置く
     drawLabel(
       ctx,
       "f",
-      fPanel.toPxX(0.94),
-      fPanel.toPxY(-0.24),
+      fPanel.toPxX(0) + 8,
+      fPanel.toPxY(E_MAX) + 12,
       colors.electron,
-      "right",
+      "left",
     );
     drawLabel(
       ctx,
       "1 − f",
-      fPanel.toPxX(0.94),
-      fPanel.toPxY(1.38),
+      fPanel.toPxX(0) + 8,
+      fPanel.toPxY(E_MIN) - 12,
       colors.hole,
-      "right",
+      "left",
     );
 
     /* ---- 3. その積 ---- */
@@ -327,21 +326,22 @@ export default function dosTimesF(host: FigureHost): WidgetHandle {
       fillPeak(prodPanel, peakE, peakN, peakCount, colors.electron);
       fillPeak(prodPanel, peakHoleE, peakP, peakCount, colors.hole);
     });
+    // 山の名前は帯の奥の右端に置く(縮退して山が太っても重ならないように)
     drawLabel(
       ctx,
       "電子",
-      prodPanel.toPxX(0.6),
-      prodPanel.toPxY(EC + 0.24),
+      prodPanel.toPxX(1) - 6,
+      prodPanel.toPxY(E_MAX) + 12,
       colors.electron,
-      "left",
+      "right",
     );
     drawLabel(
       ctx,
       "正孔",
-      prodPanel.toPxX(0.6),
-      prodPanel.toPxY(EV - 0.24),
+      prodPanel.toPxX(1) - 6,
+      prodPanel.toPxY(E_MIN) - 12,
       colors.hole,
-      "left",
+      "right",
     );
 
     /* ---- 3 パネルを貫く E_F ---- */
