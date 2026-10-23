@@ -226,16 +226,19 @@ export default function flashMemory(host: FigureHost): WidgetHandle {
       pal.text,
       pal.bg,
     );
-    // トンネル酸化膜(壁)の名前は膜の中に書く(幅が足りなければ短く)
+    // トンネル酸化膜(壁)の名前は膜の中、電子の出入りの矢印を避けた幅に書く
+    // (幅が足りなければ短く)
+    const nameX0 = writing ? gateX0 + 20 : gateX0 + 4;
+    const nameX1 = writing ? gateX1 - 4 : gateX1 - 18;
     const longName = `トンネル酸化膜 ${d.toFixed(1)} nm`;
     const oxName =
-      ctx.measureText(longName).width < gateX1 - gateX0 - 4
+      ctx.measureText(longName).width < nameX1 - nameX0
         ? longName
         : `酸化膜 ${d.toFixed(1)} nm`;
     haloText(
       ctx,
       oxName,
-      (gateX0 + gateX1) / 2,
+      (nameX0 + nameX1) / 2,
       yOx + oxide / 2,
       pal.text2,
       pal.bg,
@@ -449,6 +452,8 @@ export default function flashMemory(host: FigureHost): WidgetHandle {
     color: "electron",
   });
   const writeItem = readout.item("書き込みの時間の目安", { color: "beam" });
+  // 値の長さが変わっても折り返しが変わらないよう、いつも自分の行に置く
+  writeItem.el.style.flexBasis = "100%";
 
   function updateReadouts(): void {
     const lnT = logTransmissionApprox(SIO2_BARRIER_EV, d, SIO2_MASS_RATIO);

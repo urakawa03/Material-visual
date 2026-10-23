@@ -344,6 +344,8 @@ export default function distanceSensitivity(host: FigureHost): WidgetHandle {
   const stepItem = readout.item("0.1 nm 近づけると");
   const atomItem = readout.item("原子 1 個分(0.15 nm)で");
   const fracItem = readout.item("先端の原子 1 個が運ぶ割合", { color: "beam" });
+  // 電流の値の長さが変わっても折り返しが変わらないよう、いつも自分の行に置く
+  fracItem.el.style.flexBasis = "100%";
 
   function updateReadouts(): void {
     const lg = log10Current(gap);

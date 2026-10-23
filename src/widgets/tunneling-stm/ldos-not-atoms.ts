@@ -412,6 +412,9 @@ export default function ldosNotAtoms(host: FigureHost): WidgetHandle {
   const readout = createReadout(host);
   const seenItem = readout.item("見えている状態");
   const windowItem = readout.item("窓に入っている状態");
+  // バイアスの符号で上の文の長さが変わっても折り返しが変わらないよう、
+  // いつも自分の行に置く(スライダーの操作中に操作部品が動かないように)
+  windowItem.el.style.flexBasis = "100%";
 
   function updateReadouts(): void {
     seenItem.set(

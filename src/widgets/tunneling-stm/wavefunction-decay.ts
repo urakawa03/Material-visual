@@ -454,6 +454,9 @@ export default function wavefunctionDecay(host: FigureHost): WidgetHandle {
   const kItem = readout.item("κ");
   const lenItem = readout.item("減衰長 1/κ");
   const tItem = readout.item("透過率 T", { color: "electron" });
+  // E > V で上の 2 つの文が長くなっても折り返しが変わらないよう、透過率は
+  // いつも自分の行に置く(スライダーの操作中に操作部品が動かないように)
+  tItem.el.style.flexBasis = "100%";
   const kLabel = kItem.el.firstElementChild;
   const lenLabel = lenItem.el.firstElementChild;
 
