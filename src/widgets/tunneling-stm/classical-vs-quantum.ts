@@ -275,13 +275,16 @@ export default function classicalVsQuantum(host: FigureHost): WidgetHandle {
     ctx.textAlign = "right";
     ctx.textBaseline = "bottom";
     haloText(ctx, eLabel, r.x + r.w - 2, yE - 3, pal.level, pal.bg);
+    // 坂の高さのラベルは山の中に書く(玉は面の上を転がるので重ならない)。
+    // E の破線と重なる高さは避ける
+    const labelU = Math.abs(eOverV - 0.3) < 0.12 ? 0.62 : 0.3;
     ctx.textAlign = "center";
-    ctx.textBaseline = "bottom";
+    ctx.textBaseline = "middle";
     haloText(
       ctx,
-      `高さ V = ${BARRIER_V} eV`,
+      `V = ${BARRIER_V} eV`,
       px(BARRIER_START + width / 2),
-      uy(BARRIER_V) - 4,
+      uy(BARRIER_V * labelU),
       pal.text2,
       pal.bg,
     );

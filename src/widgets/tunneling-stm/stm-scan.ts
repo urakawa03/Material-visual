@@ -379,7 +379,7 @@ export default function stmScan(host: FigureHost): WidgetHandle {
     if (dirtyImage) paintImage();
     const q = square;
     ctx.save();
-    ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = true;
     if (offCtx) ctx.drawImage(off, q.x, q.y, q.w, q.h);
     ctx.restore();
     ctx.strokeStyle = pal.hairline;

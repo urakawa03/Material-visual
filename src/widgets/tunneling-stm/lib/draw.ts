@@ -221,7 +221,8 @@ export function fmtOneOver(ratio: number): string {
   if (!(ratio > 0) || !Number.isFinite(ratio)) return "—";
   const inv = 1 / ratio;
   if (inv < 1.05) return "ほぼ同じ";
-  if (inv < 1e5) return `${fmtSig(inv, 2)} 分の 1`;
+  // 有効数字 2 桁(3630 →「3600 分の 1」)
+  if (inv < 1e5) return `${Number(inv.toPrecision(2))} 分の 1`;
   return `${fmtSci(inv, 2)} 分の 1`;
 }
 

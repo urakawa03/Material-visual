@@ -134,8 +134,8 @@ export default function flashMemory(host: FigureHost): WidgetHandle {
     const top = r.y + 26;
     const bottom = r.y + r.h - 10;
     const H = bottom - top;
-    // 層の厚さ(px)。酸化膜は d に比例させて誇張する
-    const oxide = 4 + (d / D_MAX) * H * 0.16;
+    // 層の厚さ(px)。酸化膜は d とともに厚くなるように誇張して描く(中に名前を書ける太さは保つ)
+    const oxide = 14 + (d / D_MAX) * H * 0.14;
     const si = H * 0.2;
     const fg = H * 0.24;
     const ipd = H * 0.05;
@@ -179,16 +179,18 @@ export default function flashMemory(host: FigureHost): WidgetHandle {
     ctx.fill();
 
     // 電子の出入り(保持: 抜け出す / 書き込み: チャネルから入る)
-    const mx = (gateX0 + gateX1) / 2;
+    // (矢印は膜の名前と重ならないよう、ゲートの端の近くに置く)
     if (writing) {
-      drawArrow(ctx, mx, ySi + si * 0.45, mx, yFg + fg * 0.2, {
+      const ax = gateX0 + 12;
+      drawArrow(ctx, ax, ySi + si * 0.45, ax, yFg + fg * 0.2, {
         color: pal.beam,
         width: 3,
         head: 9,
       });
     } else {
+      const ax = gateX1 - 10;
       ctx.setLineDash([3, 3]);
-      drawArrow(ctx, mx + 18, yFg + fg * 0.8, mx + 18, ySi + si * 0.6, {
+      drawArrow(ctx, ax, yFg + fg * 0.8, ax, ySi + si * 0.6, {
         color: pal.beam,
         width: 1,
         head: 6,
@@ -224,24 +226,23 @@ export default function flashMemory(host: FigureHost): WidgetHandle {
       pal.text,
       pal.bg,
     );
-    ctx.textAlign = "left";
-    ctx.textBaseline = "top";
+    // トンネル酸化膜(壁)の名前は膜の中に書く(幅が足りなければ短く)
+    const longName = `トンネル酸化膜 ${d.toFixed(1)} nm`;
+    const oxName =
+      ctx.measureText(longName).width < gateX1 - gateX0 - 4
+        ? longName
+        : `酸化膜 ${d.toFixed(1)} nm`;
     haloText(
       ctx,
-      `トンネル酸化膜 ${d.toFixed(1)} nm`,
-      cx0,
-      r.y + 6,
+      oxName,
+      (gateX0 + gateX1) / 2,
+      yOx + oxide / 2,
       pal.text2,
       pal.bg,
     );
-
-    // 酸化膜の位置を示す引き出し線
-    ctx.strokeStyle = pal.text2;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(cx0 + 4, r.y + 20);
-    ctx.lineTo(gateX0 + 6, yOx + oxide / 2);
-    ctx.stroke();
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    haloText(ctx, "セルの断面(模式)", cx0, r.y + 6, pal.text2, pal.bg);
 
     drawBarrierShape(r.x + cellW + 6, top, r.x + r.w - 10, bottom);
   }

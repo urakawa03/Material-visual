@@ -5,8 +5,10 @@
  * 下段: 矩形障壁の定常解(lib/tunneling.ts の solveBarrier / evalWave)。
  *   確率密度 |ψ|² を塗りで主に描き、「波の形も表示」で Re ψ を細線で重ねる
  *   (ψ そのものは観測量ではない — 波の形を見るための補助)。
- *   壁の中に、減っていく成分の包絡線 |α|²e^{−2κx}(|ψ|² は ψ の 2 乗なので
+ *   壁の中に、入口の高さから e^{−2κx} で減っていく線(|ψ|² は ψ の 2 乗なので
  *   ψ ∝ e^{−κx} の 2 倍の速さで減る)を破線で重ね、減衰長 1/κ の寸法線を付ける。
+ *   厚い壁では曲線がこの破線に重なり、薄い壁では減りきる前に反対側に届くので
+ *   曲線が破線より上に残る。
  *   壁の右側は小さすぎて見えないことが多いので、10 の冪の倍率で拡大して
  *   描き、倍率を必ず書く(黙って拡大しない)。読み取りの T は倍率に関係しない。
  *
@@ -33,7 +35,6 @@ import {
   tooSmall,
 } from "./lib/draw";
 import {
-  decayingAmplitude,
   evalWave,
   insideWavenumber,
   kappa,
@@ -206,12 +207,15 @@ export default function wavefunctionDecay(host: FigureHost): WidgetHandle {
       pal.level,
       pal.bg,
     );
+    // 壁のラベル: E の線が壁の上端の近くを通るときは、壁の中の下のほうに書く
+    const nearTop = E > V - 1.2 && E < V + 1.4;
     ctx.textAlign = "center";
+    ctx.textBaseline = nearTop ? "middle" : "bottom";
     haloText(
       ctx,
       `壁 V = ${V.toFixed(1)} eV`,
       (wx0 + wx1) / 2,
-      wy - 3,
+      nearTop ? m.toPxY(Math.min(V, E) * 0.45) : wy - 3,
       pal.text2,
       pal.bg,
     );
@@ -298,10 +302,12 @@ export default function wavefunctionDecay(host: FigureHost): WidgetHandle {
         ctx.globalAlpha = 1;
       }
 
-      // 壁の中の包絡線 |α|² e^{−2κx}(E < V のとき)
+      // 壁の中の減り方 |ψ(0)|² e^{−2κx}(E < V のとき)。厚い壁では曲線に
+      // 重なり、薄い壁では曲線が破線より上に残る(減りきる前に反対側に届く)
       if (sol.q > 0) {
         const k = sol.root;
-        const a2 = decayingAmplitude(sol) ** 2;
+        evalWave(sol, 0, psi);
+        const a2 = psi.re * psi.re + psi.im * psi.im;
         ctx.beginPath();
         const n = 60;
         for (let i = 0; i <= n; i++) {
@@ -354,25 +360,33 @@ export default function wavefunctionDecay(host: FigureHost): WidgetHandle {
       pal.bg,
     );
 
-    // 減衰長 1/κ の寸法線(壁の中)
+    // 減衰長 1/κ の寸法線(壁の中の、曲線より上の空いた高さに)
     if (sol.q > 0) {
       const len = 1 / sol.root;
-      const yDim = m.toPxY(Math.min(DENSITY_AXIS_MAX * 0.78, 3.4));
+      const yDim = m.toPxY(2.6);
       const xa = wx0;
       const xb = m.toPxX(Math.min(len, d + SIDE_NM));
-      dimensionLine(
+      dimensionLine(ctx, xa, xb, yDim, "", pal.text2, pal.bg);
+      ctx.font = font(11);
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      haloText(
         ctx,
-        xa,
-        xb,
+        `減衰長 1/κ = ${fmtSig(len * PM_PER_NM, 2)} pm`,
+        xb + 6,
         yDim,
-        `1/κ = ${fmtSig(len * PM_PER_NM, 2)} pm`,
         pal.text2,
         pal.bg,
       );
-      ctx.font = font(11);
-      ctx.textAlign = "left";
       ctx.textBaseline = "top";
-      haloText(ctx, "破線: e^(−2κx)", xa + 2, yDim + 6, pal.level, pal.bg);
+      haloText(
+        ctx,
+        "破線: e^(−2κx) の減り方",
+        xa + 2,
+        yDim + 12,
+        pal.level,
+        pal.bg,
+      );
     } else {
       ctx.font = font(12);
       ctx.textAlign = "center";
@@ -413,7 +427,7 @@ export default function wavefunctionDecay(host: FigureHost): WidgetHandle {
   function xTicks(): AxisTick[] {
     tickBuf.length = 0;
     for (let x = -2; x <= d + SIDE_NM + 1e-9; x += 1) {
-      tickBuf.push({ value: x, label: x === 0 ? "0" : String(x) });
+      tickBuf.push({ value: x, label: x < 0 ? `−${-x}` : String(x) });
     }
     return tickBuf;
   }

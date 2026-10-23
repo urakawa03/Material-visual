@@ -41,28 +41,28 @@ interface Geometry {
 
 const GEOMETRY: Record<Layout, Geometry> = {
   wide: {
-    viewBox: "0 0 720 300",
-    piezo: { x: 140, y: 26, w: 100, h: 66 },
-    tip: { x: 190, top: 92, apex: 190, w: 46 },
-    sample: { x0: 84, x1: 300, y: 214, r: 10, step: 24 },
-    baseBottom: 250,
+    viewBox: "0 0 720 322",
+    piezo: { x: 140, y: 24, w: 100, h: 62 },
+    tip: { x: 190, top: 86, apex: 172, w: 46 },
+    sample: { x0: 84, x1: 300, y: 222, r: 10, step: 24 },
+    baseBottom: 258,
     wireX: 372,
     meterY: 150,
-    biasY: 214,
-    fb: { x: 432, y: 112, w: 196, h: 76 },
-    img: { x: 610, y: 214, cell: 14 },
+    biasY: 222,
+    fb: { x: 440, y: 110, w: 196, h: 80 },
+    img: { x: 612, y: 214, cell: 14 },
   },
   narrow: {
-    viewBox: "0 0 360 560",
+    viewBox: "0 0 360 572",
     piezo: { x: 56, y: 22, w: 104, h: 64 },
-    tip: { x: 108, top: 86, apex: 178, w: 44 },
-    sample: { x0: 24, x1: 200, y: 202, r: 10, step: 24 },
-    baseBottom: 236,
+    tip: { x: 108, top: 86, apex: 166, w: 44 },
+    sample: { x0: 24, x1: 200, y: 214, r: 10, step: 24 },
+    baseBottom: 248,
     wireX: 276,
     meterY: 148,
-    biasY: 204,
-    fb: { x: 34, y: 300, w: 292, h: 78 },
-    img: { x: 128, y: 438, cell: 20 },
+    biasY: 214,
+    fb: { x: 34, y: 312, w: 292, h: 78 },
+    img: { x: 128, y: 450, cell: 20 },
   },
 };
 
@@ -260,9 +260,9 @@ function sampleAtoms(g: Geometry): number[] {
               I
             </text>
             <text
-              x={g.wireX + (narrow ? -22 : 22)}
+              x={g.wireX - 22}
               y={g.meterY + 5}
-              text-anchor={narrow ? "end" : "start"}
+              text-anchor="end"
               font-size="12"
               fill="var(--color-text-2)"
             >
@@ -285,15 +285,35 @@ function sampleAtoms(g: Geometry): number[] {
               stroke="var(--color-text-2)"
               stroke-width="3"
             />
-            <text
-              x={g.wireX + (narrow ? -22 : 22)}
-              y={g.biasY + 5}
-              text-anchor={narrow ? "end" : "start"}
-              font-size="12"
-              fill="var(--color-text-2)"
-            >
-              バイアス(約 0.5 V)
-            </text>
+            {narrow ? (
+              <g>
+                <text
+                  x={g.wireX + 20}
+                  y={g.biasY - 2}
+                  font-size="12"
+                  fill="var(--color-text-2)"
+                >
+                  バイアス
+                </text>
+                <text
+                  x={g.wireX + 20}
+                  y={g.biasY + 14}
+                  font-size="12"
+                  fill="var(--color-text-2)"
+                >
+                  約 0.5 V
+                </text>
+              </g>
+            ) : (
+              <text
+                x={g.wireX + 22}
+                y={g.biasY + 5}
+                font-size="12"
+                fill="var(--color-text-2)"
+              >
+                バイアス(約 0.5 V)
+              </text>
+            )}
 
             {/* フィードバック回路 */}
             <rect

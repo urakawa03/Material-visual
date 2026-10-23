@@ -120,12 +120,16 @@ export default function distanceSensitivity(host: FigureHost): WidgetHandle {
   function drawSchematic(r: Rect, stacked: boolean): void {
     const scale = Math.min(
       (r.h - 16) / (VIEW_Z_MAX - VIEW_Z_MIN),
-      (r.w - 20) / 2.6,
+      (r.w - 20) / 2.9,
     );
-    const cx = r.x + r.w * (stacked ? 0.5 : 0.56);
+    const cx = r.x + r.w * (stacked ? 0.52 : 0.56);
     const zy = (z: number): number => r.y + r.h - 8 - (z - VIEW_Z_MIN) * scale;
     const xx = (x: number): number => cx + x * scale;
     const rPx = ATOM_R * scale;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(r.x, r.y, r.w, r.h);
+    ctx.clip();
 
     // 試料の原子(2 列。上の列の中心が z = 0)
     ctx.lineWidth = 1.5;
@@ -192,7 +196,7 @@ export default function distanceSensitivity(host: FigureHost): WidgetHandle {
     }
 
     // すき間の目盛り(0.1 nm ごと)
-    const rulerX = xx(-0.95);
+    const rulerX = xx(-0.72);
     const yTop = zy(gap);
     const yBot = zy(0);
     ctx.strokeStyle = pal.text2;
@@ -250,21 +254,20 @@ export default function distanceSensitivity(host: FigureHost): WidgetHandle {
       pal.beamInk,
       pal.bg,
     );
-    ctx.textBaseline = "bottom";
+    // 1 段奥の原子の説明(その段の右の原子のすぐ右に 2 行で)
+    ctx.font = font(11);
     ctx.textAlign = "left";
-    haloText(
-      ctx,
-      "1 段奥の原子(0.25 nm 遠い)",
-      xx(TIP_SPACING * 0.5 + 0.2),
-      zy(gap + LAYER_DZ) - rPx,
-      pal.text2,
-      pal.bg,
-    );
+    ctx.textBaseline = "middle";
+    const lx = xx(TIP_SPACING * 0.5) + rPx + 6;
+    const ly = zy(gap + LAYER_DZ);
+    haloText(ctx, "← 1 段奥の原子", lx, ly - 7, pal.text2, pal.bg);
+    haloText(ctx, "(0.25 nm 遠い)", lx + 12, ly + 8, pal.text2, pal.bg);
+    ctx.font = font(12);
     ctx.textBaseline = "top";
-    ctx.textAlign = "left";
     haloText(ctx, "探針", r.x + 8, r.y + 8, pal.text2, pal.bg);
     ctx.textBaseline = "bottom";
     haloText(ctx, "試料", r.x + 8, r.y + r.h - 6, pal.text2, pal.bg);
+    ctx.restore();
   }
 
   /* ---------------------------------------------------- 右: 対数グラフ */

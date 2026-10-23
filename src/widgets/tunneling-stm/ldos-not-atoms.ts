@@ -55,7 +55,7 @@ const BIAS_SKIP = 0.3;
 const E_LOW = -4;
 const E_HIGH = 4;
 /** 状態の山の横幅の最大(エネルギーの図の試料の領域に対する割合) */
-const PEAK_WIDTH_FRACTION = 0.62;
+const PEAK_WIDTH_FRACTION = 0.42;
 /** 原子の印の半径(px) */
 const MARK_R = 3.2;
 
@@ -243,7 +243,8 @@ export default function ldosNotAtoms(host: FigureHost): WidgetHandle {
     haloText(ctx, "E_F", sampleX1, ey(efSample) - 2, pal.level, pal.bg);
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    const lx = sampleX0 + peakW * 0.55 + 6;
+    // 山の先端(いちばん横に張り出したところ)のすぐ右に書く
+    const lx = sampleX0 + peakW + 5;
     haloText(
       ctx,
       "A の詰まった状態",
@@ -326,7 +327,7 @@ export default function ldosNotAtoms(host: FigureHost): WidgetHandle {
   function drawImagePanel(): void {
     const q = square;
     ctx.save();
-    ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = true;
     if (offCtx) ctx.drawImage(off, q.x, q.y, q.w, q.h);
     ctx.restore();
     ctx.strokeStyle = pal.hairline;
