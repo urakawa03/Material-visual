@@ -82,7 +82,7 @@ export const TOPICS: readonly Topic[] = [
       { slug: "reciprocal-lattice", recommended: false },
       { slug: "ewald-sphere", recommended: true },
     ],
-    published: false,
+    published: true,
   },
   {
     order: 4,

@@ -135,6 +135,19 @@ export const registry: Record<
   // 別々のブランチの追記を git が自動でマージできるように残しておくこと。
 
   // 記事「構造因子と消滅則」(仕様書 08)— 実装時にこの直下へ登録する
+  "structure-factor/missing-reflections": () =>
+    import("./structure-factor/missing-reflections"),
+  "structure-factor/basis-in-cell": () =>
+    import("./structure-factor/basis-in-cell"),
+  "structure-factor/phasor-sum": () => import("./structure-factor/phasor-sum"),
+  "structure-factor/extinction-rules": () =>
+    import("./structure-factor/extinction-rules"),
+  "structure-factor/atomic-form-factor": () =>
+    import("./structure-factor/atomic-form-factor"),
+  "structure-factor/pattern-builder": () =>
+    import("./structure-factor/pattern-builder"),
+  "structure-factor/superlattice": () =>
+    import("./structure-factor/superlattice"),
 
   // 記事「スピノーダル分解」(仕様書 09)— 実装時にこの直下へ登録する
 

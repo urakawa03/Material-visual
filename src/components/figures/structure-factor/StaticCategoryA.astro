@@ -1,0 +1,279 @@
+---
+/**
+ * StaticCategoryA.astro — 静的図 S-2(記事仕様書 08 §6.1)
+ *
+ * カテゴリ A「回折と結晶の幾何」の一周を 3 コマで示す流れ図:
+ * ① 逆格子の点の地図(記事「逆格子空間」)→ ② 点を横切るエヴァルト球
+ * (記事「エヴァルト球」)→ ③ 点に明るさが付いた地図(本記事)。
+ * 広い画面では横に 3 コマ、狭い画面では縦に 3 コマ並べる(文字を小さく
+ * しすぎないため、SVG を 2 枚用意して CSS で切り替える)。
+ * 色はすべて意味パレットの CSS 変数(直書きしない)。
+ */
+
+interface Props {
+  caption: string;
+  alt: string;
+}
+
+const { caption, alt } = Astro.props;
+
+/** 1 コマの中の逆格子点(コマの左上を原点とする座標) */
+const SP = 34;
+const COLS = [-2, -1, 0, 1, 2];
+const ROWS = [2, 1, 0, -1];
+/** コマの中の原点 000 の位置 */
+const OX = 90;
+const OY = 92;
+
+interface Pt {
+  x: number;
+  y: number;
+  h: number;
+  k: number;
+}
+const points: Pt[] = ROWS.flatMap((k) =>
+  COLS.map((h) => ({ x: OX + h * SP, y: OY - k * SP, h, k })),
+);
+
+/** ③ の明るさ: 体心立方の (hk0) 層(h + k が奇数は消える)。外側ほど弱く */
+function brightness(p: Pt): number {
+  if ((((p.h + p.k) % 2) + 2) % 2 === 1) return 0;
+  return Math.exp(-0.16 * (p.h * p.h + p.k * p.k));
+}
+
+/** ② のエヴァルト球: 中心 C = (OX − R, OY)、原点と (−1, 2) の点を通る */
+const R = 85;
+const CX = OX - R;
+const LIT = { x: OX - SP, y: OY - 2 * SP };
+
+/** コマの寸法と、横並び(wide)・縦並び(narrow)の配置 */
+const PANEL_W = 180;
+const PANEL_H = 150;
+const wide = [
+  { x: 20, y: 14 },
+  { x: 260, y: 14 },
+  { x: 500, y: 14 },
+];
+const narrow = [
+  { x: 6, y: 8 },
+  { x: 6, y: 236 },
+  { x: 6, y: 464 },
+];
+const titles = [
+  { title: "① 逆格子空間", sub: ["回折が起こりうる", "場所の地図"] },
+  { title: "② エヴァルト球", sub: ["どれが光りうるかを", "決める探照灯"] },
+  { title: "③ 構造因子と消滅則", sub: ["それぞれが", "どれくらい明るいか"] },
+];
+---
+
+<figure class="static-fig">
+  <div class="static-fig-frame">
+    {
+      (["wide", "narrow"] as const).map((layout) => {
+        const pos = layout === "wide" ? wide : narrow;
+        return (
+          <svg
+            class={`sfa-${layout}`}
+            viewBox={layout === "wide" ? "0 0 700 236" : "0 0 360 622"}
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            <defs>
+              <clipPath id={`sfa-clip-${layout}`}>
+                <rect x="0" y="0" width={PANEL_W} height={PANEL_H} rx="8" />
+              </clipPath>
+              <marker
+                id={`sfa-head-${layout}`}
+                viewBox="0 0 10 10"
+                refX="8"
+                refY="5"
+                markerWidth="7"
+                markerHeight="7"
+                orient="auto-start-reverse"
+              >
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--color-text-2)" />
+              </marker>
+              <marker
+                id={`sfa-beam-${layout}`}
+                viewBox="0 0 10 10"
+                refX="8"
+                refY="5"
+                markerWidth="6"
+                markerHeight="6"
+                orient="auto-start-reverse"
+              >
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--mat-beam)" />
+              </marker>
+            </defs>
+
+            {pos.map((p, i) => (
+              <g transform={`translate(${p.x} ${p.y})`}>
+                <rect
+                  x="0"
+                  y="0"
+                  width={PANEL_W}
+                  height={PANEL_H}
+                  rx="8"
+                  fill="none"
+                  stroke="var(--color-hairline)"
+                  stroke-width="1.5"
+                />
+                <g clip-path={`url(#sfa-clip-${layout})`}>
+                  {i === 1 && (
+                    <g>
+                      <circle
+                        cx={CX}
+                        cy={OY}
+                        r={R}
+                        fill="var(--mat-sphere-fill)"
+                        stroke="var(--mat-sphere-line)"
+                        stroke-width="2"
+                      />
+                      <line
+                        x1={CX}
+                        y1={OY}
+                        x2={OX - 7}
+                        y2={OY}
+                        stroke="var(--mat-beam)"
+                        stroke-width="2"
+                        marker-end={`url(#sfa-beam-${layout})`}
+                      />
+                      <line
+                        x1={CX}
+                        y1={OY}
+                        x2={LIT.x - 5}
+                        y2={LIT.y + 6}
+                        stroke="var(--mat-beam)"
+                        stroke-width="2"
+                        marker-end={`url(#sfa-beam-${layout})`}
+                      />
+                    </g>
+                  )}
+                  {points.map((pt) => {
+                    const origin = pt.h === 0 && pt.k === 0;
+                    if (i === 2) {
+                      const b = brightness(pt);
+                      return b === 0 ? (
+                        <circle
+                          cx={pt.x}
+                          cy={pt.y}
+                          r="3"
+                          fill="none"
+                          stroke="var(--mat-recip)"
+                          stroke-width="1.5"
+                        />
+                      ) : (
+                        <circle
+                          cx={pt.x}
+                          cy={pt.y}
+                          r={(origin ? 8 : 7.5 * Math.sqrt(b)).toFixed(2)}
+                          fill="var(--mat-recip)"
+                        />
+                      );
+                    }
+                    const lit = i === 1 && pt.x === LIT.x && pt.y === LIT.y;
+                    return (
+                      <circle
+                        cx={pt.x}
+                        cy={pt.y}
+                        r={origin ? 6 : lit ? 7 : 4}
+                        fill={lit ? "var(--mat-beam)" : "var(--mat-recip)"}
+                      />
+                    );
+                  })}
+                </g>
+                {layout === "wide" ? (
+                  <g>
+                    <text
+                      x={PANEL_W / 2}
+                      y={PANEL_H + 26}
+                      text-anchor="middle"
+                      font-size="15"
+                      font-weight="600"
+                      fill="var(--color-text)"
+                    >
+                      {titles[i].title}
+                    </text>
+                    <text
+                      x={PANEL_W / 2}
+                      y={PANEL_H + 48}
+                      text-anchor="middle"
+                      font-size="13.5"
+                      fill="var(--color-text-2)"
+                    >
+                      {titles[i].sub.join("")}
+                    </text>
+                  </g>
+                ) : (
+                  <g>
+                    <text
+                      x={PANEL_W + 16}
+                      y="52"
+                      font-size="15"
+                      font-weight="600"
+                      fill="var(--color-text)"
+                    >
+                      {titles[i].title}
+                    </text>
+                    {titles[i].sub.map((line, j) => (
+                      <text
+                        x={PANEL_W + 16}
+                        y={80 + j * 22}
+                        font-size="14"
+                        fill="var(--color-text-2)"
+                      >
+                        {line}
+                      </text>
+                    ))}
+                  </g>
+                )}
+              </g>
+            ))}
+
+            {layout === "wide"
+              ? [0, 1].map((i) => (
+                  <line
+                    x1={wide[i].x + PANEL_W + 12}
+                    y1={wide[i].y + PANEL_H / 2}
+                    x2={wide[i + 1].x - 12}
+                    y2={wide[i].y + PANEL_H / 2}
+                    stroke="var(--color-text-2)"
+                    stroke-width="2"
+                    marker-end={`url(#sfa-head-${layout})`}
+                  />
+                ))
+              : [0, 1].map((i) => (
+                  <line
+                    x1={narrow[i].x + PANEL_W / 2}
+                    y1={narrow[i].y + PANEL_H + 14}
+                    x2={narrow[i].x + PANEL_W / 2}
+                    y2={narrow[i + 1].y - 14}
+                    stroke="var(--color-text-2)"
+                    stroke-width="2"
+                    marker-end={`url(#sfa-head-${layout})`}
+                  />
+                ))}
+          </svg>
+        );
+      })
+    }
+  </div>
+  <figcaption>{caption}</figcaption>
+  <p class="sr-only">{alt}</p>
+</figure>
+
+<style>
+  .sfa-narrow {
+    display: none;
+  }
+
+  @media (max-width: 600px) {
+    .sfa-wide {
+      display: none;
+    }
+
+    .sfa-narrow {
+      display: block;
+    }
+  }
+</style>
