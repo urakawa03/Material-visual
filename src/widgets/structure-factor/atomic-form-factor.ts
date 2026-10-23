@@ -34,7 +34,12 @@ import {
   type ElementId,
 } from "./lib/formfactors";
 import { createChipGroup } from "./lib/choice";
-import { drawRotatedLabel, haloText, resolvePalette } from "./lib/draw";
+import {
+  drawRotatedLabel,
+  haloText,
+  resolvePalette,
+  tooSmall,
+} from "./lib/draw";
 
 const SELECTED_INIT: readonly ElementId[] = ["H", "Si", "Cu", "Au"];
 const MAX_SELECTED = 4;
@@ -404,6 +409,7 @@ export default function atomicFormFactor(host: FigureHost): WidgetHandle {
     const { w, h, dpr } = host.size;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
+    if (tooSmall(host.size)) return;
     drawCurves(split.first);
     drawPanelLabel(ctx, split.first, "X 線の原子散乱因子 f(s)");
     if (showNeutron) {

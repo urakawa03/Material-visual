@@ -57,6 +57,7 @@ import {
   haloText,
   hollowCircle,
   resolvePalette,
+  tooSmall,
 } from "./lib/draw";
 
 type MaterialId = "fe" | "cu" | "si" | "nacl" | "cscl";
@@ -77,11 +78,15 @@ const L_INIT = 1;
 /** 左パネルの幅の割合(広幅 — 仕様書 08 §5.3: 45%) */
 const LEFT_FRACTION = 0.45;
 /** 狭幅で上パネルに割り当てる高さの割合 */
-const TOP_FRACTION = 0.46;
+const TOP_FRACTION = 0.52;
 /** パネル間の隙間(px) */
 const GAP = 16;
-/** 投影図の単位胞の周りの余白(px) */
-const CELL_PAD = 38;
+/** 投影図の単位胞の周りの余白(px)。左右と、上(パネルの題)・下(高さ z と注記) */
+const CELL_PAD_X = 38;
+const CELL_PAD_TOP = 28;
+const CELL_PAD_BOTTOM = 42;
+/** 注記を短くする投影図パネルの幅(px) */
+const NARROW_PANEL_W = 420;
 /** 原子の半径(px)。セルの一辺に対する割合と上下限 */
 const ATOM_R_FRACTION = 0.045;
 const ATOM_R_MIN = 6;
@@ -276,9 +281,10 @@ export default function phasorSum(host: FigureHost): WidgetHandle {
       split.second = rect(0, th + GAP, w, hh - th - GAP);
     }
     const p = split.first;
-    cellSide = Math.max(10, Math.min(p.w, p.h) - CELL_PAD * 2);
+    const availH = p.h - CELL_PAD_TOP - CELL_PAD_BOTTOM;
+    cellSide = Math.max(10, Math.min(p.w - CELL_PAD_X * 2, availH));
     cellX = p.cx - cellSide / 2;
-    cellY = p.cy + cellSide / 2;
+    cellY = p.y + CELL_PAD_TOP + availH / 2 + cellSide / 2;
     stripeMapper = makeMapper(
       rect(cellX - cellSide, cellY - cellSide, cellSide * 2, cellSide * 2),
       cellSide,
@@ -384,7 +390,9 @@ export default function phasorSum(host: FigureHost): WidgetHandle {
     const note =
       l === 0
         ? "数字は原子の高さ z"
-        : "数字は高さ z。縞は z = 0 の面(高い原子ほど lz だけ位相が進む)";
+        : panel.w < NARROW_PANEL_W
+          ? "数字は高さ z。縞は z = 0 の面"
+          : "数字は高さ z。縞は z = 0 の面(高い原子ほど lz だけ位相が進む)";
     ctx.fillText(note, panel.x + 10, panel.y + panel.h - 6);
   }
 
@@ -508,6 +516,7 @@ export default function phasorSum(host: FigureHost): WidgetHandle {
     const { w, h: hh, dpr } = host.size;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, hh);
+    if (tooSmall(host.size)) return;
     drawPanelDivider(ctx, host.size, split);
     drawProjection(split.first);
     drawPanelLabel(ctx, split.first, "単位胞を真上から見た図");

@@ -50,6 +50,7 @@ import {
   haloText,
   hollowCircle,
   resolvePalette,
+  tooSmall,
 } from "./lib/draw";
 
 type MaterialId = "fe" | "cu" | "si" | "nacl" | "cscl";
@@ -76,7 +77,7 @@ const ROWS_FOR_RULES = 3;
 /** 広幅の主領域の割合(右 30% が表) */
 const MAIN_FRACTION = 0.7;
 /** 狭幅で上(格子)に割り当てる高さの割合 */
-const TOP_FRACTION = 0.6;
+const TOP_FRACTION = 0.64;
 const GAP = 14;
 /** 格子の周りの余白(上 = パネルの題、左と下 = 軸の数字と名前) */
 const GRID_PAD_TOP = 30;
@@ -403,6 +404,7 @@ export default function extinctionRules(host: FigureHost): WidgetHandle {
     const { w, h, dpr } = host.size;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
+    if (tooSmall(host.size)) return;
     drawPanelDivider(ctx, host.size, split);
     drawGrid();
     drawPanelLabel(

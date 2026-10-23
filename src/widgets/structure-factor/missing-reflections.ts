@@ -42,6 +42,7 @@ import {
   plotY,
   resolvePalette,
   setPlotArea,
+  tooSmall,
   type PeakList,
   type PlotArea,
 } from "./lib/draw";
@@ -327,6 +328,7 @@ export default function missingReflections(host: FigureHost): WidgetHandle {
     const { w, h, dpr } = host.size;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
+    if (tooSmall(host.size)) return;
     const narrow = w < NARROW_W;
     const shown = shownBySelection[selection];
     const showSi = selection === "all" || selection === "si";

@@ -59,6 +59,7 @@ import {
   plotY,
   resolvePalette,
   setPlotArea,
+  tooSmall,
   withPlotClip,
 } from "./lib/draw";
 
@@ -83,7 +84,7 @@ const SEED: Readonly<Record<AlloyId, number>> = {
 /** 山の画面上の最小半値幅(px)。中抜きと塗りの違いが見える幅にする */
 const MIN_FWHM_PX = 6;
 const LEFT_FRACTION = 0.38;
-const TOP_FRACTION = 0.4;
+const TOP_FRACTION = 0.44;
 const GAP = 14;
 /** 粉末図形のプロットの上端(パネル上端から。題・凡例・倍率の行の下) */
 const PLOT_TOP = 58;
@@ -393,10 +394,13 @@ export default function superlattice(host: FigureHost): WidgetHandle {
       hollowCircle(ctx, plotX(plot, r.twoTheta), base - 6, 3.5, pal.recip);
     });
 
-    // (hkl) ラベル: 超格子反射すべてと、基準にする最強の基本反射
+    // (hkl) ラベル: 超格子反射すべてと、基準にする最強の基本反射(拡大して
+    // 枠からはみ出しているときは、塗りの山 = 基本反射と凡例で分かるので付けない)
     let nLab = 0;
     lines.forEach((r, i) => {
-      if (fundamental[i] && i !== strongestFund) return;
+      if (fundamental[i] && (i !== strongestFund || rel[i] > plot.yMax)) {
+        return;
+      }
       labelIdx[nLab] = i;
       labelXs[nLab] = plotX(plot, r.twoTheta);
       labelWs[nLab] = labelW[i];
@@ -453,6 +457,7 @@ export default function superlattice(host: FigureHost): WidgetHandle {
     const { w, h, dpr } = host.size;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
+    if (tooSmall(host.size)) return;
     drawPanelDivider(ctx, host.size, split);
     drawArrangement(split.first);
     drawPanelLabel(ctx, split.first, "原子の並び(模式図)");

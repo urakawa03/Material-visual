@@ -426,7 +426,7 @@ export default function basisInCell(host: FigureHost): WidgetHandle {
   // 選択肢の文は狭い画面でも 1 行に収まる長さにする(格子の名前は読み取り値に出る)
   const viewSeg = host.controls.segmented<FeView>({
     id: "fe-view",
-    label: "Fe の見方",
+    label: "見方",
     options: [
       { value: "bcc1", label: "体心立方 + 1 原子" },
       { value: "sc2", label: "単純立方 + 2 原子" },
