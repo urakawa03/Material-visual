@@ -19,16 +19,16 @@ docs/prompts/<ファイル名> を読んで、その通りに実装してくだ�
 |---|---|---|---|---|---|---|---|
 | 1 | A. 回折と結晶の幾何 | 逆格子空間 | `reciprocal-lattice` | — | **公開済** | `05_reciprocal-lattice.md` | — |
 | 2 | A | エヴァルト球 | `ewald-sphere` | 逆格子空間 | **公開済** | `04_ewald_sphere_spec.md` | `04_ewald_sphere_prompt.md`(記録) |
-| 3 | A | 構造因子と消滅則 | `structure-factor` | 逆格子空間 / エヴァルト球(推奨) | 仕様書あり・未実装 | `08_structure_factor_spec.md` | `08_structure_factor_prompt.md` |
+| 3 | A | 構造因子と消滅則 | `structure-factor` | 逆格子空間 / エヴァルト球(推奨) | **公開済** | `08_structure_factor_spec.md` | `08_structure_factor_prompt.md`(記録) |
 | 4 | B. 転位と材料の強さ | フランク・リード源 | `frank-read-source` | — | **公開済** | `02_frank_read_source_spec.md` | — |
 | 5 | B | コットレル雰囲気 | `cottrell-atmosphere` | フランク・リード源(推奨) | **公開済** | `01_cottrell_atmosphere_spec.md` | — |
 | 6 | C. 拡散と組織の変化 | カーケンドール効果 | `kirkendall-effect` | — | **公開済** | `06_kirkendall_effect_spec.md` | `06_kirkendall_effect_prompt.md`(記録) |
 | 7 | C | GPゾーン | `gp-zones` | カーケンドール効果(推奨) | **公開済** | `07_gp_zones_spec.md` | `07_gp_zones_prompt.md`(記録) |
 | 8 | C | オストワルド成長 | `ostwald-ripening` | GPゾーン(推奨) | **公開済** | `03_ostwald_ripening.md` | — |
-| 9 | C | スピノーダル分解 | `spinodal-decomposition` | カーケンドール効果 / GPゾーン(推奨) | 仕様書あり・未実装 | `09_spinodal_decomposition_spec.md` | `09_spinodal_decomposition_prompt.md` |
+| 9 | C | スピノーダル分解 | `spinodal-decomposition` | カーケンドール効果 / GPゾーン(推奨) | **公開済** | `09_spinodal_decomposition_spec.md` | `09_spinodal_decomposition_prompt.md`(記録) |
 | 10 | C | マルテンサイト変態 | `martensite` | GPゾーン(推奨) | 仕様書あり・未実装 | `10_martensite_spec.md` | `10_martensite_prompt.md` |
 | 11 | D. 電子とバンド | バンド理論 | `band-theory` | 逆格子空間 | **公開済** | `11_band_theory_spec.md` | `11_band_theory_prompt.md`(記録) |
-| 12 | D | フェルミ準位 | `fermi-level` | バンド理論 | 仕様書あり・未実装 | `12_fermi_level_spec.md` | `12_fermi_level_prompt.md` |
+| 12 | D | フェルミ準位 | `fermi-level` | バンド理論 | **公開済** | `12_fermi_level_spec.md` | `12_fermi_level_prompt.md`(記録) |
 | 13 | D | pn接合 | `pn-junction` | フェルミ準位 / バンド理論(推奨) | 仕様書あり・未実装 | `13_pn_junction_spec.md` | `13_pn_junction_prompt.md` |
 | 14 | D | トンネル効果とSTM | `tunneling-stm` | バンド理論(推奨) | 仕様書あり・未実装 | `14_tunneling_stm_spec.md` | `14_tunneling_stm_prompt.md` |
 
