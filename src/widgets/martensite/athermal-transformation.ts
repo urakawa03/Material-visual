@@ -83,7 +83,7 @@ export default function athermalTransformation(host: FigureHost): WidgetHandle {
   const rMf = readout.item("Mf");
   const rFm = readout.item("マルテンサイト量");
   const rRa = readout.item("残留オーステナイト(室温)");
-  const rDiff = readout.item("拡散変態の量(右)");
+  const rDiff = readout.item("拡散変態の量(比較)");
 
   function updateReadouts(): void {
     const ms = msCelsius(carbon);
@@ -403,7 +403,7 @@ export default function athermalTransformation(host: FigureHost): WidgetHandle {
     ctx.textBaseline = "bottom";
     ctx.fillStyle = pal.text2;
     ctx.fillText(
-      `保持時間 ${formatDuration(holdS)} — 何秒保っても左の点は動かない`,
+      `保持時間 ${formatDuration(holdS)} — 何秒保っても上の点は動かない`,
       left,
       sy - 10,
     );
