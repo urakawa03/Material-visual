@@ -13,6 +13,7 @@ import { matColor, uiColor } from "../../../core/colors";
 import {
   bandColors,
   drawLevelLine,
+  PLOT_FONT,
   PLOT_FONT_SMALL,
   type BandColors,
   type PlotMapper,
@@ -48,7 +49,7 @@ export const FERMI_LINE_WIDTH = 2.2;
 /** E_i・ドナー準位などの細い準位線の線幅(§2.3) */
 export const THIN_LEVEL_WIDTH = 1.2;
 
-/** フェルミ準位の線(太い破線・電子の色・ラベルは左端) */
+/** フェルミ準位の線(太い破線・電子の色・ラベルは左端。label に "" でラベルなし) */
 export function drawFermiLine(
   ctx: CanvasRenderingContext2D,
   m: PlotMapper,
@@ -67,9 +68,54 @@ export function drawFermiLine(
   });
 }
 
+/** 準位線のラベルの文字が占める高さの目安 [px](12px の字 + 線からの隙間) */
+const LEVEL_LABEL_CLEARANCE = 18;
+
 /**
- * 細い準位線(E_i・ドナー / アクセプタ準位など)。ラベルは右端の外側に置く
- * (E_F のラベルが左端に来るので、重ならないよう反対側にする)。
+ * 高さ e の線の上(左端)に置いたラベルを、高さ otherE の線が横切るか。
+ * otherE の線がすぐ上(ラベルの字の高さの範囲)を通るときに true。
+ * 2 本がほぼ重なっている(0.5px 未満)ときは、線の上に置けば両方の上に
+ * なるので false。
+ */
+export function labelCrossedBy(
+  m: PlotMapper,
+  e: number,
+  otherE: number,
+): boolean {
+  const gap = m.toPxY(e) - m.toPxY(otherE);
+  return gap > 0.5 && gap < LEVEL_LABEL_CLEARANCE;
+}
+
+/**
+ * 準位線のラベルを線の左端に置く(drawLevelLine のラベルと同じ字の大きさ)。
+ * below が true なら線の下に置く(近くを通る別の線や曲線が、線の上の文字に
+ * かかるとき)。
+ */
+export function drawLevelLabel(
+  ctx: CanvasRenderingContext2D,
+  m: PlotMapper,
+  x0: number,
+  e: number,
+  text: string,
+  color: string,
+  below = false,
+): void {
+  drawLabel(
+    ctx,
+    text,
+    m.toPxX(x0) + 4,
+    m.toPxY(e) + (below ? 3 : -3),
+    color,
+    "left",
+    below ? "top" : "bottom",
+    PLOT_FONT,
+  );
+}
+
+/**
+ * 細い準位線(E_i・ドナー / アクセプタ準位など)。ラベルは呼び出し側が
+ * 右端の外側に drawBoxedLabel で置く(E_F のラベルが左端に来るので反対側に
+ * し、E_F の太い破線を描いた後に下地付きで重ねて、線が重なっても読めるように)。
  */
 export function drawThinLevel(
   ctx: CanvasRenderingContext2D,
@@ -79,7 +125,6 @@ export function drawThinLevel(
   e: number,
   colors: BandColors,
   color: string,
-  label?: string,
 ): void {
   drawLevelLine(ctx, m, x0, x1, e, {
     colors,
@@ -87,15 +132,6 @@ export function drawThinLevel(
     width: THIN_LEVEL_WIDTH,
     dashed: true,
   });
-  if (label) {
-    ctx.save();
-    ctx.font = PLOT_FONT_SMALL;
-    ctx.fillStyle = color;
-    ctx.textAlign = "left";
-    ctx.textBaseline = "middle";
-    ctx.fillText(label, m.toPxX(x1) + 4, m.toPxY(e));
-    ctx.restore();
-  }
 }
 
 /** 図中の小さな文字(既定 11px・`--color-text-2`) */

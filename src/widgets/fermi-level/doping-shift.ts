@@ -6,7 +6,8 @@
  * その上にドーパントの目印を 8 個。イオン化したもの = 輪 +「+」(ドナー)/
  * 「−」(アクセプタ)、イオン化していないもの = 輪の中に電子(正孔)の丸。
  * イオン化した割合に比例して目印を切り替え、離れた電子(正孔)は目印の真上の
- * 伝導帯(真下の価電子帯)に置く。E_F の太い破線。縮退のときは右上に札。
+ * 伝導帯(真下の価電子帯)に置く。E_F の太い破線。縮退のときはギャップの
+ * 左上に札。
  * 右(幅 42%、狭幅では下): n–T グラフ。多数キャリア密度の温度変化(対数)と
  * n_i(T) の破線、凍結・外因性・真性の 3 領域、現在の温度の縦線。
  *
@@ -29,6 +30,7 @@ import {
   drawCurve,
   drawElectronDots,
   drawPlotFrame,
+  PLOT_FONT_SMALL,
   pow10Ticks,
   setPlotRange,
   withPlotClip,
@@ -50,11 +52,14 @@ import {
 } from "../_shared/semiconductor";
 import {
   drawBadge,
+  drawBoxedLabel,
   drawFermiLine,
   drawLabel,
+  drawLevelLabel,
   drawSplitDivider,
   drawThinLevel,
   fermiColors,
+  labelCrossedBy,
   setControlEnabled,
   snapLog,
   splitByFraction,
@@ -90,6 +95,8 @@ const E_MAX = 1.37;
 const MARKERS = 8;
 const MARKER_X0 = 0.12;
 const MARKER_X1 = 0.76;
+/** ドーパント準位の破線の右端(この右にラベル) */
+const DOPANT_LINE_X1 = MARKER_X1 + 0.06;
 /** 縮退の札の上端の高さ [eV](E_i とドーパント準位の間) */
 const BADGE_TOP_E = 0.98;
 /** 離れた電子・正孔をバンド端から離して置く距離 [eV] */
@@ -227,16 +234,15 @@ export default function dopingShift(host: FigureHost): WidgetHandle {
     const r = narrow ? 6.5 : 8;
     const py = band.toPxY(level);
 
-    // ドーパント準位の短い破線
+    // ドーパント準位の短い破線(ラベルは E_F の線の後に drawBandPanel で)
     drawThinLevel(
       ctx,
       band,
       MARKER_X0 - 0.06,
-      MARKER_X1 + 0.06,
+      DOPANT_LINE_X1,
       level,
       colors,
       colors.solute,
-      donor ? "E_D" : "E_A",
     );
 
     let nFree = 0;
@@ -291,16 +297,41 @@ export default function dopingShift(host: FigureHost): WidgetHandle {
       drawBandBox(ctx, band, 0, 1, E_MIN - 1, 0, { colors });
       drawThinLevel(ctx, band, 0.02, 0.84, state.eI, colors, colors.level);
       drawMarkers(narrow);
-      drawFermiLine(ctx, band, 0, 1, state.eF, colors);
+      drawFermiLine(ctx, band, 0, 1, state.eF, colors, "");
+      // E_F のラベルは、E_i の線が文字を横切るときだけ線の下に置く
+      drawLevelLabel(
+        ctx,
+        band,
+        0,
+        state.eF,
+        "E_F",
+        colors.electron,
+        labelCrossedBy(band, state.eF, state.eI),
+      );
     });
-    drawLabel(
+    // E_i・ドーパント準位のラベルは、E_F の破線と重なっても読めるよう
+    // 下地付きにする(ドーパントなし・高温・高濃度で重なる)
+    drawBoxedLabel(
       ctx,
       "E_i",
-      band.toPxX(0.84) + 4,
+      band.toPxX(0.84) + 6,
       band.toPxY(state.eI),
-      colors.level,
+      colors,
       "left",
+      colors.level,
     );
+    if (dopant !== "none") {
+      const donor = dopant === "P";
+      drawBoxedLabel(
+        ctx,
+        donor ? "E_D" : "E_A",
+        band.toPxX(DOPANT_LINE_X1) + 6,
+        band.toPxY(donor ? donorLevel(SILICON) : acceptorLevel(SILICON)),
+        colors,
+        "left",
+        colors.solute,
+      );
+    }
     // 帯の名前はバンド端のすぐ内側の右端(目印と離れた所)に置く
     drawLabel(
       ctx,
@@ -414,14 +445,31 @@ export default function dopingShift(host: FigureHost): WidgetHandle {
       ctx.restore();
     });
 
-    // ラベル: n_i・N_D と 3 領域
+    // ラベル: n_i・N_D と 3 領域。
+    // n_i(T) は曲線の右端の下に置く。曲線は右上がりなので、文字の左端での
+    // 曲線の高さより下に置けば文字にかからない(ドーパントなしでは多数キャリアの
+    // 実線も同じ所を通る)
+    ctx.save();
+    ctx.font = PLOT_FONT_SMALL;
+    const niLabelW = ctx.measureText("n_i(T)").width;
+    ctx.restore();
+    const niRight = graph.toPxX(T_MAX) - 4;
+    const tLeft = Math.max(T_MIN, graph.toValX(niRight - niLabelW));
+    const iLeft = Math.min(
+      CURVE_POINTS - 1,
+      Math.floor((tLeft - T_MIN) / T_STEP),
+    );
     drawLabel(
       ctx,
       "n_i(T)",
-      graph.toPxX(T_MAX) - 4,
-      graph.toPxY(niLog[CURVE_POINTS - 1]) + 12,
+      niRight,
+      Math.max(
+        graph.toPxY(niLog[iLeft]),
+        graph.toPxY(niLog[CURVE_POINTS - 1]) + 6,
+      ) + 4,
       colors.text2,
       "right",
+      "top",
     );
     if (dopant !== "none") {
       const lc = Math.log10(conc);

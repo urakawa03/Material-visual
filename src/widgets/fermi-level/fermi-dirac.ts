@@ -32,7 +32,13 @@ import {
 } from "../_shared/banddiagram";
 import { fermiDirac, SILICON, thermalEnergy } from "../_shared/semiconductor";
 import { fmtSci } from "../../core/plot";
-import { drawFermiLine, drawLabel, fermiColors } from "./lib/draw";
+import {
+  drawBoxedLabel,
+  drawFermiLine,
+  drawLabel,
+  drawLevelLabel,
+  fermiColors,
+} from "./lib/draw";
 
 /** 縦軸 E − E_F の表示範囲 [eV](±) */
 const E_HALF = 0.7;
@@ -324,7 +330,10 @@ export default function fermiDiracFigure(host: FigureHost): WidgetHandle {
         });
       }
 
-      drawFermiLine(ctx, main, 0, F_MAX, 0, colors);
+      drawFermiLine(ctx, main, 0, F_MAX, 0, colors, "");
+      // ラベルは線の下の左端に置く: E > E_F では曲線が左端の近くを通って
+      // 線の上の文字にかかるが、E < E_F では f > 1/2 なので左側は空いている
+      drawLevelLabel(ctx, main, 0, 0, "E_F", colors.electron, true);
     });
 
     // 裾の幅の寸法線(f = 0.9 と f = 0.1 の高さを結ぶ)
@@ -364,12 +373,12 @@ export default function fermiDiracFigure(host: FigureHost): WidgetHandle {
         // 文字は E_F の線や裾の幅のラベルと重ならないだけの余地があるときだけ
         // (狭い画面と低温では目印の線だけにする。意味は本文で説明している)
         if (!narrow && main.toPxY(0) - fy >= 18) {
-          drawLabel(
+          drawBoxedLabel(
             ctx,
             "ここから上は f とほぼ同じ(差 5% 以下)",
             fx + 16,
             fy,
-            colors.text2,
+            colors,
             "left",
           );
         }

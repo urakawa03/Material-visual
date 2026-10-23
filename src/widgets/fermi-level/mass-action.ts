@@ -41,11 +41,14 @@ import {
   SILICON,
 } from "../_shared/semiconductor";
 import {
+  drawBoxedLabel,
   drawFermiLine,
   drawLabel,
+  drawLevelLabel,
   drawSplitDivider,
   drawThinLevel,
   fermiColors,
+  labelCrossedBy,
   splitByFraction,
 } from "./lib/draw";
 import {
@@ -151,6 +154,11 @@ export default function massAction(host: FigureHost): WidgetHandle {
     ctx.restore();
   }
 
+  /** 準位線のラベル(左端)。E_i の線が文字を横切るときだけ線の下に置く */
+  function levelLabel(text: string, e: number, color: string): void {
+    drawLevelLabel(ctx, band, 0, e, text, color, labelCrossedBy(band, e, s.eI));
+  }
+
   function drawBandPanel(): void {
     drawPlotFrame(ctx, band, { colors, yTicks: BAND_TICKS });
     withPlotClip(ctx, band, () => {
@@ -163,26 +171,29 @@ export default function massAction(host: FigureHost): WidgetHandle {
           color: colors.electron,
           width: 2,
           dashed: true,
-          label: "E_Fn",
         });
         drawLevelLine(ctx, band, 0, 1, s.eFp, {
           colors,
           color: colors.hole,
           width: 2,
           dashed: true,
-          label: "E_Fp",
         });
+        levelLabel("E_Fn", s.eFn, colors.electron);
+        levelLabel("E_Fp", s.eFp, colors.hole);
       } else {
-        drawFermiLine(ctx, band, 0, 1, s.eF, colors);
+        drawFermiLine(ctx, band, 0, 1, s.eF, colors, "");
+        levelLabel("E_F", s.eF, colors.electron);
       }
     });
-    drawLabel(
+    // E_F(や擬フェルミ準位)の破線と重なっても読めるよう、下地付きにする
+    drawBoxedLabel(
       ctx,
       "E_i",
-      band.toPxX(0.78) + 4,
+      band.toPxX(0.78) + 6,
       band.toPxY(s.eI),
-      colors.level,
+      colors,
       "left",
+      colors.level,
     );
     if (light) {
       const yTop = band.rect.y - LIGHT_BAND_PX + 2;
@@ -300,13 +311,16 @@ export default function massAction(host: FigureHost): WidgetHandle {
       colors.level,
       "left",
     );
+    // √(np) のラベルは、棒の頂点を結ぶ破線にかからない側に置く
+    // (破線が右上がり = 正孔が多いときは菱形の左上、そうでなければ右上)
+    const rising = lp > ln;
     drawLabel(
       ctx,
       "√(np)",
-      bars.toPxX(0.5) + 10,
+      bars.toPxX(0.5) + (rising ? -10 : 10),
       bars.toPxY(0.5 * (ln + lp)) - 12,
       colors.text2,
-      "left",
+      rising ? "right" : "left",
     );
     const yLab = bars.rect.y + bars.rect.h + 14;
     drawLabel(
