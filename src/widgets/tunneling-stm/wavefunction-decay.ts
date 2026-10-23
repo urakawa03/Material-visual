@@ -197,36 +197,38 @@ export default function wavefunctionDecay(host: FigureHost): WidgetHandle {
     ctx.lineTo(m.rect.x + m.rect.w, ey);
     ctx.stroke();
     ctx.setLineDash([]);
-    // ラベル
+    // E の線のラベル(左端から。壁にかかるほど狭ければ短く)
     ctx.font = font(12);
     ctx.textAlign = "left";
     ctx.textBaseline = "bottom";
-    haloText(
-      ctx,
-      `電子のエネルギー E = ${E.toFixed(1)} eV`,
-      m.rect.x + 4,
-      ey - 3,
-      pal.level,
-      pal.bg,
-    );
+    const eX = m.rect.x + 4;
+    const longE = `電子のエネルギー E = ${E.toFixed(1)} eV`;
+    const eText =
+      eX + ctx.measureText(longE).width < wx0 - 6
+        ? longE
+        : `E = ${E.toFixed(1)} eV`;
+    const eRight = eX + ctx.measureText(eText).width;
+    haloText(ctx, eText, eX, ey - 3, pal.level, pal.bg);
     // 壁のラベル: ふつうは壁の上。E の線が壁の上端のすぐ近くを通るときは、
-    // 壁が文字より大きければ壁の中ほどに、小さければ E の線の上に書く
+    // 壁が文字より大きければ壁の中ほどに、小さければ E の線の上に書く。
+    // E のラベルと同じ高さで横に重なるときは、壁の右に寄せる
     const wallLabel = `壁 V = ${V.toFixed(1)} eV`;
     const labelW = ctx.measureText(wallLabel).width;
     const cx = (wx0 + wx1) / 2;
     const lineH = 16;
     const nearTop = ey > wy - lineH - 2 && ey < wy + 4;
     const below = Math.max(wy, ey);
-    ctx.textAlign = "center";
-    if (!nearTop) {
-      ctx.textBaseline = "bottom";
-      haloText(ctx, wallLabel, cx, wy - 3, pal.text2, pal.bg);
-    } else if (wx1 - wx0 >= labelW + 8 && base - below >= lineH + 12) {
+    if (nearTop && wx1 - wx0 >= labelW + 8 && base - below >= lineH + 12) {
+      ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       haloText(ctx, wallLabel, cx, (below + base) / 2, pal.text2, pal.bg);
     } else {
+      const yb = nearTop ? Math.min(wy, ey) - 3 : wy - 3;
+      const sameRow = Math.abs(yb - (ey - 3)) < lineH;
+      const clash = sameRow && cx - labelW / 2 < eRight + 8;
+      ctx.textAlign = clash ? "left" : "center";
       ctx.textBaseline = "bottom";
-      haloText(ctx, wallLabel, cx, Math.min(wy, ey) - 3, pal.text2, pal.bg);
+      haloText(ctx, wallLabel, clash ? wx1 + 6 : cx, yb, pal.text2, pal.bg);
     }
     // 縦軸の名前
     ctx.save();
