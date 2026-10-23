@@ -400,33 +400,66 @@ export default function coolingRate(host: FigureHost): WidgetHandle {
       fs,
       "right",
     );
-    subLabel(
-      ctx,
-      "(M",
-      "f",
-      ` ≈ ${fmtCelsius(Math.round(mf / 10) * 10)} は軸より下)`,
-      msLabelX,
-      Y(ms) + fs + 5,
-      pal.text2,
-      fs - 1,
-      "right",
-    );
+    // M_f の注記は広い幅だけ(狭い幅では冷やし方の名前の行と重なる)
+    if (!narrow) {
+      subLabel(
+        ctx,
+        "(M",
+        "f",
+        ` ≈ ${fmtCelsius(Math.round(mf / 10) * 10)} は軸より下)`,
+        msLabelX,
+        Y(ms) + fs + 5,
+        pal.text2,
+        fs - 1,
+        "right",
+      );
+    }
+
+    // 変態の印のラベルの位置(C 曲線の名前がこれを避ける)
+    const run = runs.get(selected);
+    const event =
+      run && sweep > 0 && eventShown(run)
+        ? (() => {
+            const isM = run.outcome.product === "martensite";
+            const x = X(Math.max(run.outcome.startTimeS, T_MIN_S));
+            const y = Y(run.outcome.startTempC);
+            const text = isM ? "ここでマルテンサイトに" : "ここでパーライトに";
+            const toLeft = x > (left + right) / 2;
+            ctx.font = font(fs + 1);
+            const w = ctx.measureText(text).width + 6;
+            const x0 = toLeft ? x - 10 - w + 3 : x + 10 - 3;
+            return {
+              x,
+              y,
+              text,
+              toLeft,
+              x0,
+              x1: x0 + w,
+              y0: y - 14 - (fs + 7) / 2,
+            };
+          })()
+        : null;
+
     // 領域の名前と C 曲線の名前
     ctx.font = font(fs);
     ctx.textAlign = "left";
     ctx.textBaseline = "bottom";
     ctx.fillStyle = pal.text2;
     ctx.fillText("オーステナイト(安定)", left + 6, Y(A1_C) - 4);
-    plateText(
-      ctx,
-      pal,
-      "パーライトが始まる(C 曲線)",
-      X(pearliteStartTime(toK(610))) + 8,
-      Y(610),
-      pal.text2,
-      fs,
-      "left",
-    );
+    // C 曲線の名前は、変態の印のラベルと重なるとき(狭い幅の油冷・空冷)は描かない
+    const cText = "パーライトが始まる(C 曲線)";
+    const cX = X(pearliteStartTime(toK(610))) + 8;
+    const cY = Y(610);
+    ctx.font = font(fs);
+    const cW = ctx.measureText(cText).width;
+    const cHalf = (fs + 6) / 2;
+    const cHits =
+      event !== null &&
+      event.x0 < cX + cW + 3 &&
+      event.x1 > cX - 3 &&
+      event.y0 < cY + cHalf &&
+      event.y0 + fs + 7 > cY - cHalf;
+    if (!cHits) plateText(ctx, pal, cText, cX, cY, pal.text2, fs, "left");
     ctx.fillStyle = pal.text2;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -441,11 +474,8 @@ export default function coolingRate(host: FigureHost): WidgetHandle {
     );
 
     // 変態の印
-    const run = runs.get(selected);
-    if (run && sweep > 0 && eventShown(run)) {
-      const isM = run.outcome.product === "martensite";
-      const x = X(Math.max(run.outcome.startTimeS, T_MIN_S));
-      const y = Y(run.outcome.startTempC);
+    if (event) {
+      const { x, y, text, toLeft } = event;
       ctx.beginPath();
       ctx.arc(x, y, 5.5, 0, TAU2);
       ctx.fillStyle = pal.bg;
@@ -457,8 +487,6 @@ export default function coolingRate(host: FigureHost): WidgetHandle {
       ctx.arc(x, y, 2.2, 0, TAU2);
       ctx.fillStyle = pal.accent;
       ctx.fill();
-      const text = isM ? "ここでマルテンサイトに" : "ここでパーライトに";
-      const toLeft = x > (left + right) / 2;
       plateText(
         ctx,
         pal,
@@ -534,12 +562,14 @@ export default function coolingRate(host: FigureHost): WidgetHandle {
     ctx.textBaseline = "top";
     const run = runs.get(selected);
     const shown = run && sweep > 0 && eventShown(run);
+    // 狭い幅では右隣の棒グラフの題と並ぶので、短い題にする
+    const head = narrow ? "組織" : "できた組織";
     let title = "できた組織";
     if (shown && run) {
       title =
         run.outcome.product === "martensite"
-          ? "できた組織: マルテンサイト(針状)"
-          : `できた組織: パーライト(${Math.round(run.outcome.startTempC)} ℃ で)`;
+          ? `${head}: マルテンサイト${narrow ? "" : "(針状)"}`
+          : `${head}: パーライト(${Math.round(run.outcome.startTempC)} ℃${narrow ? "" : " で"})`;
     }
     ctx.fillText(title, p.x, p.y);
     const size = Math.min(p.w, p.h - fs - 8);
@@ -713,7 +743,13 @@ export default function coolingRate(host: FigureHost): WidgetHandle {
     ctx.fillStyle = pal.text2;
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
-    ctx.fillText("硬さの目安 [HV](冷やすたびに記録)", p.x, p.y);
+    ctx.fillText(
+      narrow
+        ? "硬さ [HV](冷やすたびに記録)"
+        : "硬さの目安 [HV](冷やすたびに記録)",
+      p.x,
+      p.y,
+    );
     drawAxes(ctx, pal, xs, ys, {
       xTicks: [],
       yTicks: [0, 200, 400, 600, 800],
