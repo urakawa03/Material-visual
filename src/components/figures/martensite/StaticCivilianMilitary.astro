@@ -7,6 +7,8 @@
  *   炭化物(--mat-precip)になる。隣の相手は入れ替わる。時間がかかる。
  * - 右: 無拡散変態。格子全体が号令で一斉にせん断され、どの原子も隣との
  *   関係(結合の線)を保つ。炭素はその場に閉じ込められたまま運ばれる。
+ * 2 コマは別々の SVG で、広い幅では左右に、狭い幅(560 px 以下)では上下に
+ * 並べる(1 枚の SVG を縮めると、スマートフォンで文字が小さくなりすぎる)。
  * 色は CSS 変数(§6.2)。原子の縁取り(約 20% 暗い同系色 — §6.5)だけは
  * darken() でビルド時に確定する(コットレル雰囲気の静的図と同じ方法)。
  */
@@ -130,220 +132,241 @@ const arrows = [0, 2, 4].map((i) => ({
 ---
 
 <figure class="static-fig">
-  <svg
-    viewBox="0 0 640 300"
-    xmlns="http://www.w3.org/2000/svg"
-    aria-hidden="true"
-  >
-    <defs>
-      <marker
-        id="mart-s2-arrow"
-        viewBox="0 0 10 10"
-        refX="9"
-        refY="5"
-        markerWidth="7"
-        markerHeight="7"
-        orient="auto-start-reverse"
-      >
-        <path d="M 0 0 L 10 5 L 0 10 Z" fill="var(--color-accent)"></path>
-      </marker>
-    </defs>
+  <!-- 2 枚のパネル。広い幅では左右に、狭い幅では上下に並べる -->
+  <div class="s2-panels">
+    <svg
+      viewBox="0 0 280 300"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <!-- 左(狭い幅では上): 拡散変態(民間人型) -->
+      <g>
+        <text
+          x="140"
+          y="26"
+          text-anchor="middle"
+          font-size="14"
+          font-weight="600"
+          fill="var(--color-text)">拡散変態(民間人型)</text
+        >
+        <text
+          x="140"
+          y="45"
+          text-anchor="middle"
+          font-size="12"
+          fill="var(--color-text-2)">一人ひとりが勝手に歩いて並び替わる</text
+        >
+        {
+          leftFeShown.map((p) => (
+            <circle
+              cx={p.x}
+              cy={p.y}
+              r={R_FE}
+              fill="var(--mat-matrix)"
+              stroke={FE_EDGE}
+              stroke-width="1.5"
+            />
+          ))
+        }
+        {
+          walkPaths.map((d) => (
+            <path
+              d={d}
+              fill="none"
+              stroke="var(--mat-solute)"
+              stroke-width="2"
+              stroke-dasharray="4 3"
+              opacity="0.85"
+            />
+          ))
+        }
+        {
+          walkStarts.map((p) => (
+            <circle
+              cx={p.x}
+              cy={p.y}
+              r={R_C}
+              fill="none"
+              stroke={C_EDGE}
+              stroke-width="1.2"
+              stroke-dasharray="2 2"
+            />
+          ))
+        }
+        <!-- 集まってできた炭化物 -->
+        <ellipse
+          cx={carbide.x}
+          cy={carbide.y}
+          rx="19"
+          ry="13"
+          fill="var(--mat-precip)"
+          opacity="0.85"
+          stroke={PPT_EDGE}
+          stroke-width="1.5"></ellipse>
+        <text
+          x={carbide.x}
+          y={carbide.y + 34}
+          text-anchor="middle"
+          font-size="11.5"
+          fill="var(--color-text-2)">炭化物</text
+        >
+        <text
+          x="140"
+          y="248"
+          text-anchor="middle"
+          font-size="12.5"
+          fill="var(--color-text)">炭素は長い距離を歩いて集まる</text
+        >
+        <text
+          x="140"
+          y="268"
+          text-anchor="middle"
+          font-size="12"
+          fill="var(--color-text-2)">隣の相手は入れ替わる。時間がかかる</text
+        >
+      </g>
+    </svg>
+    <svg
+      viewBox="350 0 280 300"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <defs>
+        <marker
+          id="mart-s2-arrow"
+          viewBox="0 0 10 10"
+          refX="9"
+          refY="5"
+          markerWidth="7"
+          markerHeight="7"
+          orient="auto-start-reverse"
+        >
+          <path d="M 0 0 L 10 5 L 0 10 Z" fill="var(--color-accent)"></path>
+        </marker>
+      </defs>
 
-    <!-- 左: 拡散変態(民間人型) -->
-    <g>
-      <text
-        x="140"
-        y="26"
-        text-anchor="middle"
-        font-size="14"
-        font-weight="600"
-        fill="var(--color-text)">拡散変態(民間人型)</text
-      >
-      <text
-        x="140"
-        y="45"
-        text-anchor="middle"
-        font-size="12"
-        fill="var(--color-text-2)">一人ひとりが勝手に歩いて並び替わる</text
-      >
-      {
-        leftFeShown.map((p) => (
-          <circle
-            cx={p.x}
-            cy={p.y}
-            r={R_FE}
-            fill="var(--mat-matrix)"
-            stroke={FE_EDGE}
-            stroke-width="1.5"
-          />
-        ))
-      }
-      {
-        walkPaths.map((d) => (
-          <path
-            d={d}
-            fill="none"
-            stroke="var(--mat-solute)"
-            stroke-width="2"
-            stroke-dasharray="4 3"
-            opacity="0.85"
-          />
-        ))
-      }
-      {
-        walkStarts.map((p) => (
-          <circle
-            cx={p.x}
-            cy={p.y}
-            r={R_C}
-            fill="none"
-            stroke={C_EDGE}
-            stroke-width="1.2"
-            stroke-dasharray="2 2"
-          />
-        ))
-      }
-      <!-- 集まってできた炭化物 -->
-      <ellipse
-        cx={carbide.x}
-        cy={carbide.y}
-        rx="19"
-        ry="13"
-        fill="var(--mat-precip)"
-        opacity="0.85"
-        stroke={PPT_EDGE}
-        stroke-width="1.5"></ellipse>
-      <text
-        x={carbide.x}
-        y={carbide.y + 34}
-        text-anchor="middle"
-        font-size="11.5"
-        fill="var(--color-text-2)">炭化物</text
-      >
-      <text
-        x="140"
-        y="248"
-        text-anchor="middle"
-        font-size="12.5"
-        fill="var(--color-text)">炭素は長い距離を歩いて集まる</text
-      >
-      <text
-        x="140"
-        y="268"
-        text-anchor="middle"
-        font-size="12"
-        fill="var(--color-text-2)">隣の相手は入れ替わる。時間がかかる</text
-      >
-    </g>
-
-    <line
-      x1="320"
-      y1="18"
-      x2="320"
-      y2="280"
-      stroke="var(--color-hairline)"
-      stroke-width="1"></line>
-
-    <!-- 右: 無拡散変態(軍隊型) -->
-    <g>
-      <text
-        x="500"
-        y="26"
-        text-anchor="middle"
-        font-size="14"
-        font-weight="600"
-        fill="var(--color-text)">無拡散変態(軍隊型)</text
-      >
-      <text
-        x="500"
-        y="45"
-        text-anchor="middle"
-        font-size="12"
-        fill="var(--color-text-2)">号令で隊列ごと一斉に向きを変える</text
-      >
-      <!-- 変形前の位置(破線の輪郭) -->
-      {
-        rightRef.map((p) => (
-          <circle
-            cx={p.x}
-            cy={p.y}
-            r={R_FE}
-            fill="none"
-            stroke="var(--mat-matrix)"
-            stroke-width="1"
-            stroke-dasharray="2.5 2.5"
-            opacity="0.8"
-          />
-        ))
-      }
-      <!-- 結合(同じ相手どうしのまま) -->
-      {
-        bonds.map(([a, b]) => (
-          <line
-            x1={r1(rightNew[a].x)}
-            y1={rightNew[a].y}
-            x2={r1(rightNew[b].x)}
-            y2={rightNew[b].y}
-            stroke="var(--color-text-2)"
-            stroke-width="1.2"
-            opacity="0.7"
-          />
-        ))
-      }
-      {
-        rightNew.map((p) => (
-          <circle
-            cx={r1(p.x)}
-            cy={p.y}
-            r={R_FE}
-            fill="var(--mat-matrix)"
-            stroke={FE_EDGE}
-            stroke-width="1.5"
-          />
-        ))
-      }
-      {
-        rightCarbon.map((p) => (
-          <circle
-            cx={r1(p.x)}
-            cy={p.y}
-            r={R_C}
-            fill="var(--mat-solute)"
-            stroke={C_EDGE}
-            stroke-width="1.2"
-          />
-        ))
-      }
-      {
-        arrows.map((a) => (
-          <line
-            x1={r1(a.from.x)}
-            y1={a.from.y}
-            x2={r1(a.to.x)}
-            y2={a.to.y}
-            stroke="var(--color-accent)"
-            stroke-width="2"
-            marker-end="url(#mart-s2-arrow)"
-          />
-        ))
-      }
-      <text
-        x="500"
-        y="248"
-        text-anchor="middle"
-        font-size="12.5"
-        fill="var(--color-text)">全員が隣との関係を保ったまま動く</text
-      >
-      <text
-        x="500"
-        y="268"
-        text-anchor="middle"
-        font-size="12"
-        fill="var(--color-text-2)"
-        >炭素はその場に閉じ込められる。一瞬で進む</text
-      >
-    </g>
-  </svg>
+      <!-- 右(狭い幅では下): 無拡散変態(軍隊型) -->
+      <g>
+        <text
+          x="500"
+          y="26"
+          text-anchor="middle"
+          font-size="14"
+          font-weight="600"
+          fill="var(--color-text)">無拡散変態(軍隊型)</text
+        >
+        <text
+          x="500"
+          y="45"
+          text-anchor="middle"
+          font-size="12"
+          fill="var(--color-text-2)">号令で隊列ごと一斉に向きを変える</text
+        >
+        <!-- 変形前の位置(破線の輪郭) -->
+        {
+          rightRef.map((p) => (
+            <circle
+              cx={p.x}
+              cy={p.y}
+              r={R_FE}
+              fill="none"
+              stroke="var(--mat-matrix)"
+              stroke-width="1"
+              stroke-dasharray="2.5 2.5"
+              opacity="0.8"
+            />
+          ))
+        }
+        <!-- 結合(同じ相手どうしのまま) -->
+        {
+          bonds.map(([a, b]) => (
+            <line
+              x1={r1(rightNew[a].x)}
+              y1={rightNew[a].y}
+              x2={r1(rightNew[b].x)}
+              y2={rightNew[b].y}
+              stroke="var(--color-text-2)"
+              stroke-width="1.2"
+              opacity="0.7"
+            />
+          ))
+        }
+        {
+          rightNew.map((p) => (
+            <circle
+              cx={r1(p.x)}
+              cy={p.y}
+              r={R_FE}
+              fill="var(--mat-matrix)"
+              stroke={FE_EDGE}
+              stroke-width="1.5"
+            />
+          ))
+        }
+        {
+          rightCarbon.map((p) => (
+            <circle
+              cx={r1(p.x)}
+              cy={p.y}
+              r={R_C}
+              fill="var(--mat-solute)"
+              stroke={C_EDGE}
+              stroke-width="1.2"
+            />
+          ))
+        }
+        {
+          arrows.map((a) => (
+            <line
+              x1={r1(a.from.x)}
+              y1={a.from.y}
+              x2={r1(a.to.x)}
+              y2={a.to.y}
+              stroke="var(--color-accent)"
+              stroke-width="2"
+              marker-end="url(#mart-s2-arrow)"
+            />
+          ))
+        }
+        <text
+          x="500"
+          y="248"
+          text-anchor="middle"
+          font-size="12.5"
+          fill="var(--color-text)">全員が隣との関係を保ったまま動く</text
+        >
+        <text
+          x="500"
+          y="268"
+          text-anchor="middle"
+          font-size="12"
+          fill="var(--color-text-2)"
+          >炭素はその場に閉じ込められる。一瞬で進む</text
+        >
+      </g>
+    </svg>
+  </div>
   <figcaption>{caption}</figcaption>
   <p class="sr-only">{alt}</p>
 </figure>
+
+<style>
+  /* 2 枚のパネル: 広い幅では左右に(間に細い仕切り線)、狭い幅では上下に */
+  .s2-panels {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 378px));
+    justify-content: center;
+  }
+  .s2-panels svg + svg {
+    border-left: 1px solid var(--color-hairline);
+  }
+  @media (max-width: 560px) {
+    .s2-panels {
+      grid-template-columns: minmax(0, 420px);
+    }
+    .s2-panels svg + svg {
+      border-left: none;
+      border-top: 1px solid var(--color-hairline);
+    }
+  }
+</style>
