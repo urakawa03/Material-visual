@@ -462,7 +462,8 @@ export default function ledSolar(host: FigureHost): WidgetHandle {
         colors.text,
       );
     } else {
-      // 擬フェルミ準位のラベル(差は動作点の電圧 qV)
+      // 擬フェルミ準位のラベル(差は動作点の電圧 qV)。E_Fn は n 側の E_c のすぐ
+      // 下を通るので、線の下(禁制帯の空いた所)に置く
       const q = quasiFermiLevels(d);
       drawLabel(
         ctx,
@@ -476,7 +477,7 @@ export default function ledSolar(host: FigureHost): WidgetHandle {
         ctx,
         "E_Fn",
         band.rect.x + band.rect.w - 4,
-        band.toPxY(q.eFn) - 9,
+        band.toPxY(q.eFn) + 10,
         colors.electron,
         "right",
       );

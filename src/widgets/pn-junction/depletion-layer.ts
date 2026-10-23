@@ -66,6 +66,10 @@ const PALE_ALPHA = 0.16;
 /** 矩形を描く最小の幅・高さ [px](極端な非対称でも消えないように) */
 const MIN_RECT_PX = 1.5;
 const MAX_SAMPLES = 241;
+/** 電荷のパネルの注記: 左端からの字下げ・1 行目の中心の高さ・行の間隔 [px] */
+const NOTE_X = 8;
+const NOTE_Y = 12;
+const NOTE_LINE_H = 16;
 
 export default function depletionLayer(host: FigureHost): WidgetHandle {
   const maybeCtx = host.canvas.getContext("2d");
@@ -134,13 +138,36 @@ export default function depletionLayer(host: FigureHost): WidgetHandle {
     ctx.restore();
   }
 
-  /** パネルの題(プロット領域の上の帯) */
+  /**
+   * パネルの題(プロット領域の上の帯)。3 段を貫く空乏層の端の破線が字を
+   * 横切らないよう、背景色の下地を敷く
+   */
   function panelTitle(m: PlotMapper, text: string): void {
-    drawLabel(ctx, text, m.rect.x + 6, m.rect.y - 9, colors.text, "left");
+    drawBoxedLabel(
+      ctx,
+      text,
+      m.rect.x + 6,
+      m.rect.y - 9,
+      colors,
+      "left",
+      colors.text,
+    );
   }
 
-  function drawRho(narrow: boolean): void {
-    const big = Math.max(nA, nD);
+  /** 電荷のパネルの注記(左上に縦に並べる行)。3 行目は極端な非対称のときだけ */
+  function rhoNotes(narrow: boolean): string[] {
+    const sheet = nA * d.xp * 1e-4; // [cm⁻²]
+    const lines = [
+      "面積が等しい(電荷の総量が等しい)",
+      `N_A x_p = N_D x_n = ${fmtSci(sheet, 2)} cm⁻²`,
+    ];
+    if (!narrow && Math.max(nA, nD) / Math.min(nA, nD) >= 300) {
+      lines.push("(極端に細い・低い矩形は、見えるよう最小の太さで描いた)");
+    }
+    return lines;
+  }
+
+  function drawRho(notes: readonly string[]): void {
     panelAxis(mRho, [{ value: 0, label: "0" }], 0);
     panelTitle(mRho, "電荷密度 ρ/q [cm⁻³]");
     withPlotClip(ctx, mRho, () => {
@@ -176,24 +203,18 @@ export default function depletionLayer(host: FigureHost): WidgetHandle {
       );
       drawLabel(ctx, "+N_D", px0 + wD + 6, y0 - hD + 8, colors.solute, "left");
     });
-    // 面積が等しいことの注記(p 側の上の空いた所)
-    const sheet = nA * d.xp * 1e-4; // [cm⁻²]
-    const note1 = "面積が等しい(電荷の総量が等しい)";
-    const note2 = `N_A x_p = N_D x_n = ${fmtSci(sheet, 2)} cm⁻²`;
-    const nx = mRho.rect.x + 8;
-    const ny = mRho.rect.y + 12;
-    drawBoxedLabel(ctx, note1, nx, ny, colors, "left");
-    drawBoxedLabel(ctx, note2, nx, ny + 16, colors, "left");
-    if (!narrow && big / Math.min(nA, nD) >= 300) {
+    // 面積が等しいことの注記(p 側の上の空いた所。狭い幅で接合面の右まで届く
+    // ときは、draw が縦軸の上に余白を取って n 側の矩形を注記の下に収める)
+    notes.forEach((line, i) => {
       drawBoxedLabel(
         ctx,
-        "(極端に細い・低い矩形は、見えるよう最小の太さで描いた)",
-        nx,
-        ny + 32,
+        line,
+        mRho.rect.x + NOTE_X,
+        mRho.rect.y + NOTE_Y + i * NOTE_LINE_H,
         colors,
         "left",
       );
-    }
+    });
   }
 
   function drawField(narrow: boolean): void {
@@ -334,7 +355,19 @@ export default function depletionLayer(host: FigureHost): WidgetHandle {
     const y2 = y1 + panelH + gap + titleH;
     const y3 = y2 + panelH + gap + titleH;
     const big = Math.max(nA, nD);
-    setPlotRange(mRho, left, y1, pw, panelH, -R, R, -1.2 * big, 1.2 * big);
+    // 注記(左上)が接合面 x = 0 の右まで届く(狭い幅)ときは、縦軸の上側を広げて
+    // 高い方の矩形の上端を注記の行の下(パネル上端から clear px)に下げる
+    const notes = rhoNotes(narrow);
+    let noteW = 0;
+    for (const line of notes)
+      noteW = Math.max(noteW, textWidth(line, PLOT_FONT_SMALL));
+    let rhoTop = 1.2 * big;
+    if (NOTE_X + noteW + 3 > pw / 2 - 4) {
+      const clear = NOTE_Y + (notes.length - 1) * NOTE_LINE_H + 8 + 4;
+      const f = Math.min(0.55, clear / panelH);
+      rhoTop = (big * (1 + 1.2 * f)) / (1 - f);
+    }
+    setPlotRange(mRho, left, y1, pw, panelH, -R, R, -1.2 * big, rhoTop);
     const fTop = 0.22 * d.eMax;
     setPlotRange(mField, left, y2, pw, panelH, -R, R, -1.18 * d.eMax, fTop);
     setPlotRange(mPsi, left, y3, pw, panelH, -R, R, PSI_MIN, PSI_MAX);
@@ -347,7 +380,7 @@ export default function depletionLayer(host: FigureHost): WidgetHandle {
       drawEdgeLine(ctx, mRho, x, colors.text2, edgeTop, edgeBottom);
     }
 
-    drawRho(narrow);
+    drawRho(notes);
     // 左右の向き(電荷のパネルの下の隅 — 矩形のない中性領域)
     const pnY = mRho.rect.y + mRho.rect.h - 9;
     drawLabel(ctx, "p 型", left + 8, pnY, colors.hole, "left");

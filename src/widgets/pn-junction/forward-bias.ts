@@ -276,7 +276,8 @@ export default function forwardBias(host: FigureHost): WidgetHandle {
       narrow ? barrierLabelShort : barrierLabel,
       colors,
     );
-    // 擬フェルミ準位のラベル
+    // 擬フェルミ準位のラベル。E_Fn は n 側の E_c のすぐ下(0.2 eV)を通るので、
+    // 線の上ではなく下(禁制帯の空いた所)に置く
     drawLabel(
       ctx,
       "E_Fp",
@@ -291,7 +292,7 @@ export default function forwardBias(host: FigureHost): WidgetHandle {
       ctx,
       "E_Fn",
       band.toPxX(R) - 4,
-      band.toPxY(q.eFn) - 9,
+      band.toPxY(q.eFn) + 10,
       colors.electron,
       "right",
       "middle",

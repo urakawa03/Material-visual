@@ -104,6 +104,12 @@ const U_PAD = 0.03;
 const MERGE_FRACTION = 0.28;
 /** −5 V の空乏層の端を表示範囲のこの割合までに収める */
 const FIT_MARGIN = 1.12;
+/** 擬フェルミ準位の凡例: 破線の見本の長さ・見本と名前の隙間・項目の間隔 [px] */
+const LEGEND_SAMPLE = 18;
+const LEGEND_GAP = 5;
+const LEGEND_SEP = 14;
+/** 2 行の札(drawBadge)の高さ [px](行の高さ 15 × 2 + 余白 7 × 2 − 3) */
+const BADGE_2LINE_H = 41;
 
 /** バイアス V → I-V の横軸の座標 u(逆方向を縮める) */
 function toU(v: number): number {
@@ -204,25 +210,40 @@ export default function biasAndIv(host: FigureHost): WidgetHandle {
     eBottom.set(bottomFor(d), () => host.requestRender(), 200);
   }
 
-  /** 擬フェルミ準位の凡例(破線の見本 + 名前を 2 行) */
-  function quasiLegend(x: number, y: number): void {
-    const rows: ReadonlyArray<[string, string]> = [
-      [colors.electron, "E_Fn(電子)"],
-      [colors.hole, "E_Fp(正孔)"],
-    ];
-    rows.forEach(([color, text], i) => {
-      const yy = y + i * 15;
+  /** 凡例 1 項目の幅 [px](破線の見本 + 隙間 + 名前) */
+  function legendItemWidth(text: string): number {
+    return LEGEND_SAMPLE + LEGEND_GAP + textWidth(text);
+  }
+
+  /**
+   * 擬フェルミ準位の凡例(破線の見本 + 名前を横に 2 つ)。中心 cx・高さ y に置く。
+   * プロット領域の上の帯(「p 型」と「n 型」の間)に置くので、バイアスによって
+   * 位置が変わるバンドや破線と重ならない。幅 maxW に入らなければ名前を短くする。
+   */
+  function quasiLegend(cx: number, y: number, maxW: number): void {
+    let pText = "E_Fp(正孔)";
+    let nText = "E_Fn(電子)";
+    if (legendItemWidth(pText) + LEGEND_SEP + legendItemWidth(nText) > maxW) {
+      pText = "E_Fp";
+      nText = "E_Fn";
+    }
+    const total = legendItemWidth(pText) + LEGEND_SEP + legendItemWidth(nText);
+    let x = cx - total / 2;
+    for (const electron of [false, true]) {
+      const color = electron ? colors.electron : colors.hole;
+      const text = electron ? nText : pText;
       ctx.save();
       ctx.strokeStyle = color;
       ctx.lineWidth = 2;
       ctx.setLineDash([5, 3]);
       ctx.beginPath();
-      ctx.moveTo(x, yy);
-      ctx.lineTo(x + 18, yy);
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + LEGEND_SAMPLE, y);
       ctx.stroke();
       ctx.restore();
-      drawLabel(ctx, text, x + 23, yy, color, "left");
-    });
+      drawLabel(ctx, text, x + LEGEND_SAMPLE + LEGEND_GAP, y, color, "left");
+      x += legendItemWidth(text) + LEGEND_SEP;
+    }
   }
 
   /* ---- バンド図 ---- */
@@ -334,8 +355,13 @@ export default function biasAndIv(host: FigureHost): WidgetHandle {
         PLOT_FONT,
       );
     } else {
-      // 2 本は中性領域の奥で合流して重なるので、線の横ではなく左上の凡例で示す
-      quasiLegend(band.rect.x + 8, band.rect.y + 10);
+      // 2 本は中性領域の奥で合流して重なるので、線の横ではなく上の帯の凡例で示す
+      const pnRoom = 4 + textWidth("n 型") + 10;
+      quasiLegend(
+        band.rect.x + band.rect.w / 2,
+        band.rect.y - 8,
+        band.rect.w - 2 * pnRoom,
+      );
       // 差 qV の寸法: 空乏層の右の端のすぐ外(ラベルが入らなければ空乏層の中)
       const qText =
         bias > 0
@@ -394,17 +420,21 @@ export default function biasAndIv(host: FigureHost): WidgetHandle {
       "right",
     );
     if (d.clamped) {
+      // バンドはほぼ平らなので、p 側の価電子帯の帯の下の空いた所に置く(空乏層の
+      // 帯の行より上。入らなければ帯の塗りに少し重ねる — E_v の線は隠さない)
+      const below = band.toPxY(-BAND_THICKNESS) + 6;
+      const limit = barY - 8 - 4 - BADGE_2LINE_H;
       drawBadge(
         ctx,
         [
           "V_bi に近く、空乏層近似の適用外",
           `(坂は ${(d.drop * 1000).toFixed(0)} meV で止めて描いた)`,
         ],
-        band.rect.x + band.rect.w - 6,
-        band.rect.y + 6,
+        band.rect.x + 6,
+        Math.max(band.toPxY(0) + 4, Math.min(below, limit)),
         colors,
         band.rect.w - 12,
-        "right",
+        "left",
       );
     }
   }
