@@ -13,11 +13,22 @@
  * 確率の総和は丸め誤差の範囲で 1 のまま保たれる(T3)。吸収境界は使わず、
  * 波束が表示範囲の端から 3σ に近づいたら止める(isScatteringOver)。
  *
- * **表示範囲の左に 4 nm の余白を取る理由**: 中心 4 nm・幅 σ = 1 nm のガウス型の
- * 波束は、0 nm の位置でまだ振幅の 2% が残っている。そこで切ると、切り口が
- * 壁を飛び越える高いエネルギーの成分を作ってしまい、厚い壁では本物の透過より
- * 何百倍も大きな「にせの透過」が現れる(試作で確認)。そこで計算領域を
- * −4〜20 nm(1200 点、Δx = 0.02 nm)に取り、表示は 0〜20 nm(1000 点)だけにする。
+ * **計算領域を表示範囲(0〜20 nm)より左右に 24 nm ずつ広く取る理由**:
+ * (1) 初期波束を表示範囲の端で切ると、切り口が壁を飛び越える高いエネルギーの
+ *     成分を作り、厚い壁では本物の透過より何百倍も大きな「にせの透過」が現れる
+ *     (試作で確認)。
+ * (2) E ≈ V で壁が厚いと、壁の上を越える成分の一部が壁の中にしばらくとどまり、
+ *     散乱が終わった(表示上の波束が端に届いた)時点では透過した割合が最大 3 割
+ *     小さく出る。そこで透過率の確定には、見えないところで壁の中が空になるまで
+ *     計算を続ける(settledTransmission)。そのあいだに、計算領域の端で
+ *     跳ね返った波が壁に戻ってこないだけの広さが要る。
+ * 計算領域は −24〜44 nm(3400 点、Δx = 0.02 nm)、表示は 0〜20 nm(1000 点)。
+ *
+ * **初期波束の中心を 3 nm に置く理由**(仕様書 §5.1 の 4 nm から変更): 中心 4 nm
+ * では、壁の入口(9.5 nm)が中心から 5.5σ しか離れておらず、最初から壁の中に
+ * ある裾(確率 2 × 10⁻⁸)が、いちばん厚く低い壁(E/V = 0.3、d = 1.2 nm、
+ * ⟨T⟩ ≈ 6 × 10⁻⁹)の透過を 1.5 倍に見せてしまう。3 nm(6.5σ)ならこの裾は
+ * 4 × 10⁻¹¹ で、スライダーの全域で平均の T と数 % 以内で一致する。
  *
  * 単位: x [nm]、t [fs]、E [eV]。
  */
@@ -25,18 +36,18 @@
 import { HBAR2_OVER_2ME, HBAR_EV_FS } from "./constants";
 import { transmission } from "./tunneling";
 
-/** 計算領域と初期波束の既定値(§5.1) */
+/** 計算領域と初期波束の既定値(§5.1。計算領域と中心はファイル冒頭の注を参照) */
 export const PACKET_DEFAULTS = {
   /** 計算領域の左端・右端 [nm](表示は viewMin〜viewMax) */
-  xMin: -4,
-  xMax: 20,
+  xMin: -24,
+  xMax: 44,
   viewMin: 0,
   viewMax: 20,
   /** 格子間隔 [nm] と時間刻み [fs] */
   dx: 0.02,
   dt: 0.05,
   /** 初期波束の中心と幅(|ψ|² の標準偏差)[nm] */
-  x0: 4,
+  x0: 3,
   sigma: 1,
 } as const;
 
@@ -46,6 +57,12 @@ const EDGE_SIGMAS = 3;
 const TINY_PROBABILITY = 1e-14;
 /** 安全のための最大時間 [fs](これを超えたら必ず止める) */
 const MAX_TIME_FS = 120;
+/** 透過率を確定する条件: 壁の中の確率が、透過した確率のこの割合を下回る */
+const SETTLE_INSIDE_FRACTION = 0.002;
+/** 確定のための続きの計算で、条件を確かめる間隔(ステップ数 = 1 fs) */
+const SETTLE_CHUNK_STEPS = 20;
+/** 計算領域の端で跳ね返った波の到着時刻を見積もるときの、いちばん速い成分(k₀ + 4σ_k) */
+const FAST_SIGMAS_K = 4;
 
 export interface PacketSetup {
   /** 電子のエネルギー E [eV] */
@@ -64,6 +81,7 @@ export type PacketOptions = Partial<
 
 export class WavePacket {
   readonly xMin: number;
+  readonly xMax: number;
   readonly dx: number;
   readonly dt: number;
   readonly n: number;
@@ -87,6 +105,9 @@ export class WavePacket {
   private readonly cpIm: Float64Array;
   private readonly dpRe: Float64Array;
   private readonly dpIm: Float64Array;
+  /** 透過率の確定に使う ψ の写し(見えている状態を変えずに先の時刻を計算する) */
+  private readonly sRe: Float64Array;
+  private readonly sIm: Float64Array;
   /** α = CΔt/(2ħΔx²)(非対角は −iα) */
   private readonly alpha: number;
 
@@ -111,6 +132,7 @@ export class WavePacket {
   constructor(opts: PacketOptions = {}) {
     const o = { ...PACKET_DEFAULTS, ...opts };
     this.xMin = o.xMin;
+    this.xMax = o.xMax;
     this.dx = o.dx;
     this.dt = o.dt;
     this.x0 = o.x0;
@@ -131,6 +153,8 @@ export class WavePacket {
     this.cpIm = new Float64Array(n);
     this.dpRe = new Float64Array(n);
     this.dpIm = new Float64Array(n);
+    this.sRe = new Float64Array(n);
+    this.sIm = new Float64Array(n);
     this.alpha = (HBAR2_OVER_2ME * o.dt) / (2 * HBAR_EV_FS * o.dx * o.dx);
   }
 
@@ -211,8 +235,14 @@ export class WavePacket {
 
   /** 時間を count ステップ(Δt ずつ)進める */
   step(count = 1): void {
-    const { n, re, im, diag, invRe, invIm, cpRe, cpIm, dpRe, dpIm, alpha } =
-      this;
+    this.advance(this.re, this.im, count);
+    this.time += count * this.dt;
+    this.steps += count;
+  }
+
+  /** 配列 re・im に入った ψ を count ステップ進める(step と透過率の確定で共用) */
+  private advance(re: Float64Array, im: Float64Array, count: number): void {
+    const { n, diag, invRe, invIm, cpRe, cpIm, dpRe, dpIm, alpha } = this;
     for (let s = 0; s < count; s++) {
       // 右辺 r_j = (1 − i·diag_j)ψ_j + iα(ψ_{j+1} + ψ_{j−1}) を作りながら前進代入:
       // d'_j = (r_j − b d'_{j−1}) · inv_j、b = −iα
@@ -243,29 +273,82 @@ export class WavePacket {
         im[j] = dpIm[j] - (cpRe[j] * nIm + cpIm[j] * nRe);
       }
     }
-    this.time += count * this.dt;
-    this.steps += count;
+  }
+
+  /** 格子点 [j0, j1) の確率 Σ|ψ|²Δx(配列 re・im の ψ について) */
+  private probabilityIn(
+    re: Float64Array,
+    im: Float64Array,
+    j0: number,
+    j1: number,
+  ): number {
+    let s = 0;
+    for (let j = j0; j < j1; j++) s += re[j] * re[j] + im[j] * im[j];
+    return s * this.dx;
   }
 
   /** 確率の総和 Σ|ψ|²Δx(計算領域全体) */
   norm(): number {
-    let s = 0;
-    for (let j = 0; j < this.n; j++) s += this.density(j);
-    return s * this.dx;
+    return this.probabilityIn(this.re, this.im, 0, this.n);
   }
 
   /** 壁より左にいる確率(反射した部分 + まだ当たっていない部分) */
   probabilityLeft(): number {
-    let s = 0;
-    for (let j = 0; j < this.jStart; j++) s += this.density(j);
-    return s * this.dx;
+    return this.probabilityIn(this.re, this.im, 0, this.jStart);
+  }
+
+  /** 壁の中にいる確率 */
+  probabilityInside(): number {
+    return this.probabilityIn(this.re, this.im, this.jStart, this.jEnd);
   }
 
   /** 壁より右にいる確率(透過した部分) */
   probabilityRight(): number {
-    let s = 0;
-    for (let j = this.jEnd; j < this.n; j++) s += this.density(j);
-    return s * this.dx;
+    return this.probabilityIn(this.re, this.im, this.jEnd, this.n);
+  }
+
+  /**
+   * 計算領域の端(固定端)で跳ね返った波が壁に戻ってくる時刻の目安 [fs]。
+   * 波束のいちばん速い成分(k₀ + 4σ_k)が初期位置の前の裾(x₀ + 3σ)から
+   * 壁へ進み、左の端まで行って戻る時間と、壁を抜けて右の端まで行って戻る
+   * 時間の短いほう(壁の中では遅くなるので、実際にはこれより遅い)。
+   */
+  echoTime(): number {
+    const kFast = this.k0 + FAST_SIGMAS_K / (2 * this.sigma);
+    const vFast = (2 * HBAR2_OVER_2ME * kFast) / HBAR_EV_FS;
+    const toWall = Math.max(0, this.barrierStart - this.x0 - 3 * this.sigma);
+    const wallEnd = this.x(this.jEnd);
+    const viaLeft = toWall + 2 * (this.barrierStart - this.xMin);
+    const viaRight =
+      toWall + (wallEnd - this.barrierStart) + 2 * (this.xMax - wallEnd);
+    return Math.min(viaLeft, viaRight) / vFast;
+  }
+
+  /**
+   * 確定した透過率。散乱が終わった(表示上の波束が端に届いた)時点では、
+   * E ≈ V の成分の一部がまだ壁の中にとどまっていることがある(厚い壁で
+   * 透過した割合が最大 3 割小さく出る)。そこで ψ の写しを取り、壁の中の確率が
+   * 透過した確率の 0.2% を下回るまで写しの時間を進めて、壁より右の確率を返す。
+   * 計算領域の端で跳ね返った波が戻ってくる前(echoTime)に必ず打ち切る。
+   * 見えている状態(re・im・time)は変えない。散乱が終わったあとに 1 回だけ
+   * 呼ぶ(多くても数百ステップ)。
+   */
+  settledTransmission(): number {
+    const { sRe, sIm } = this;
+    sRe.set(this.re);
+    sIm.set(this.im);
+    const chunk = SETTLE_CHUNK_STEPS * this.dt;
+    const limit = Math.min(this.echoTime(), MAX_TIME_FS);
+    let t = this.time;
+    let right = this.probabilityIn(sRe, sIm, this.jEnd, this.n);
+    while (t + chunk <= limit) {
+      const inside = this.probabilityIn(sRe, sIm, this.jStart, this.jEnd);
+      if (inside <= SETTLE_INSIDE_FRACTION * right) break;
+      this.advance(sRe, sIm, SETTLE_CHUNK_STEPS);
+      t += chunk;
+      right = this.probabilityIn(sRe, sIm, this.jEnd, this.n);
+    }
+    return right;
   }
 
   /** 時刻 t での自由な波束の幅 σ(t) = σ√(1 + (Ct/ħσ²)²) [nm] */

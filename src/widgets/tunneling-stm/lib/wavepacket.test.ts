@@ -22,10 +22,14 @@ import { transmission } from "./tunneling";
 const V = 4;
 const START = 9.5;
 
+/**
+ * 図1 と同じ手順で散乱が終わるまで進め、そのときの壁より右の確率(atStop)と、
+ * 壁の中が空になるまで続きを計算して確定した透過率(trans — 図1 の読み取り)を返す
+ */
 function runToEnd(
   eOverV: number,
   d: number,
-): { packet: WavePacket; trans: number } {
+): { packet: WavePacket; trans: number; atStop: number } {
   const packet = new WavePacket();
   packet.configure({
     energy: eOverV * V,
@@ -38,7 +42,8 @@ function runToEnd(
     packet.step(2);
     guard++;
   }
-  return { packet, trans: packet.probabilityRight() };
+  const atStop = packet.probabilityRight();
+  return { packet, trans: packet.settledTransmission(), atStop };
 }
 
 describe("T3: 波束の数値計算(クランク=ニコルソン法)", () => {
@@ -78,7 +83,7 @@ describe("T3: 波束の数値計算(クランク=ニコルソン法)", () => {
       xm += d * packet.x(j);
     }
     // 中心は x₀ + v₀t(格子とクランク=ニコルソン法の分散で 1% 程度ずれてよい)
-    expect(xm / p).toBeCloseTo(4 + packet.v0 * 5, 1);
+    expect(xm / p).toBeCloseTo(packet.x0 + packet.v0 * 5, 1);
   });
 
   const cases = [0.5, 0.8, 1.2];
@@ -111,7 +116,66 @@ describe("T3: 波束の数値計算(クランク=ニコルソン法)", () => {
     // 切ると、ここに 1e-5 の桁のにせの透過が現れていた
     const { trans } = runToEnd(0.5, 1.2);
     const expected = averagedTransmission(2, V, 1.2);
-    expect(Math.abs(trans / expected - 1)).toBeLessThan(0.1);
+    expect(Math.abs(trans / expected - 1)).toBeLessThan(0.05);
+  });
+
+  it("いちばん厚く低い壁(E/V = 0.3、d = 1.2 nm、⟨T⟩ ≈ 6e-9)でも、初期波束の裾が壁に掛からない", () => {
+    // 中心 4 nm では最初から壁の中にある裾(2e-8)のせいで 1.45 倍に出ていた
+    const { trans } = runToEnd(0.3, 1.2);
+    const expected = averagedTransmission(1.2, V, 1.2);
+    expect(expected).toBeLessThan(1e-8);
+    expect(Math.abs(trans / expected - 1)).toBeLessThan(0.05);
+  });
+
+  for (const eOverV of [0.8, 1.0]) {
+    it(`E/V = ${eOverV}、d = 1.2 nm: 壁の中にとどまる成分が出ていくのを待つと 5% 以内`, () => {
+      const { trans, atStop } = runToEnd(eOverV, 1.2);
+      const expected = averagedTransmission(eOverV * V, V, 1.2);
+      // 散乱が終わった時点では 2 割以上小さい(壁の中にまだ残っている)
+      expect(atStop / expected).toBeLessThan(0.8);
+      expect(Math.abs(trans / expected - 1)).toBeLessThan(0.05);
+    });
+  }
+
+  it("スライダーの全域(E/V 0.3〜1.5、d 0.2〜1.2 nm)で、確定した透過率が平均の T と 6% 以内", () => {
+    // 残る数 % は、格子の分散で波束のエネルギーの裾(壁の高さ付近)の重みが
+    // わずかに変わるため(E/V ≈ 0.7、d = 1.2 nm が最大で約 5%)
+    for (const eOverV of [0.3, 0.5, 0.7, 0.9, 1.1, 1.3, 1.5]) {
+      for (const d of [0.2, 0.7, 1.2]) {
+        const { trans } = runToEnd(eOverV, d);
+        const expected = averagedTransmission(eOverV * V, V, d);
+        expect(Math.abs(trans / expected - 1)).toBeLessThan(0.06);
+      }
+    }
+  });
+
+  it("透過率の確定は見えている状態を変えず、計算領域の端の跳ね返りが戻る前に終わる", () => {
+    const packet = new WavePacket();
+    packet.configure({
+      energy: 3.2,
+      barrierHeight: V,
+      barrierStart: START,
+      barrierWidth: 1.2,
+    });
+    while (!packet.isScatteringOver()) packet.step(2);
+    const time = packet.time;
+    const right = packet.probabilityRight();
+    const snapshot = Float64Array.from(packet.re);
+    const settled = packet.settledTransmission();
+    expect(settled).toBeGreaterThan(right);
+    expect(packet.time).toBe(time);
+    expect(packet.probabilityRight()).toBe(right);
+    expect(packet.re).toEqual(snapshot);
+    // どの設定でも、端で跳ね返った波が壁に戻るのは散乱が終わるより十分あと
+    for (const E of [1.2, 4, 6]) {
+      packet.configure({
+        energy: E,
+        barrierHeight: V,
+        barrierStart: START,
+        barrierWidth: 1.2,
+      });
+      expect(packet.echoTime()).toBeGreaterThan(40);
+    }
   });
 
   it("E/V > 1 でも反射が残る(越えられるのに跳ね返ることがある)", () => {

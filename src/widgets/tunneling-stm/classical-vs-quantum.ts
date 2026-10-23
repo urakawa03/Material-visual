@@ -197,7 +197,9 @@ export default function classicalVsQuantum(host: FigureHost): WidgetHandle {
 
   function finish(): void {
     phase = "done";
-    finalTransmitted = packet.probabilityRight();
+    // 壁の中にしばらくとどまる成分(E ≈ V・厚い壁)が出ていききるまで、
+    // 見えないところで計算を続けた値(lib/wavepacket.ts の settledTransmission)
+    finalTransmitted = packet.settledTransmission();
     updateReadouts();
   }
 
