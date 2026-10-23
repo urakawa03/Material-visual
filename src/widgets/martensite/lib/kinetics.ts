@@ -243,6 +243,54 @@ export function diffusionLengthCooling(
   return Math.sqrt(2 * tauS * sum);
 }
 
+/**
+ * 冷却中の拡散距離を毎フレーム速く引くための表(τ = 1 秒あたり)。
+ * J(T) = ∫_T^{A₁} D(T′)/(T′ − T_env) dT′ を loC〜A₁ の n 等分点で持ち、
+ * 距離は √(2 τ (J(T_lo) − J(T_hi))) で求まる(diffusionLengthCooling と同じ量)。
+ */
+export interface DiffusionTable {
+  /** 区間 [loC, A₁] での J(T) [m²/s · s/K · K](T は ℃) */
+  integral(tempC: number): number;
+  /** 時定数 τ で [loC, hiC] を通る間の距離 [m] */
+  length(tauS: number, loC: number, hiC?: number): number;
+}
+
+export function createDiffusionTable(
+  loC: number,
+  n = 600,
+  envC = T_ENV_C,
+): DiffusionTable {
+  const hiC = A1_C;
+  const step = (hiC - loC) / n;
+  const envK = toK(envC);
+  const j = new Float64Array(n + 1); // j[k] = J(hiC − k·step)
+  const sub = Math.max(1, Math.ceil(step / SCHEIL_DT_K));
+  const h = step / sub;
+  for (let k = 1; k <= n; k++) {
+    let s = 0;
+    const tTop = toK(hiC - (k - 1) * step);
+    for (let m = 0; m < sub; m++) {
+      const mid = tTop - (m + 0.5) * h;
+      s += (diffusivityGamma(mid) / (mid - envK)) * h;
+    }
+    j[k] = j[k - 1] + s;
+  }
+  const integral = (tempC: number): number => {
+    if (tempC >= hiC) return 0;
+    const u = Math.min((hiC - tempC) / step, n);
+    const k = Math.floor(u);
+    if (k >= n) return j[n];
+    return j[k] + (j[k + 1] - j[k]) * (u - k);
+  };
+  return {
+    integral,
+    length(tauS: number, lo: number, hi: number = hiC): number {
+      if (!(hi > lo)) return 0;
+      return Math.sqrt(2 * tauS * Math.max(integral(lo) - integral(hi), 0));
+    },
+  };
+}
+
 export interface TempWindow {
   loC: number;
   hiC: number;

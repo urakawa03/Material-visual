@@ -24,6 +24,7 @@ import {
   avramiFraction,
   coolingOutcome,
   coolingRateAt,
+  createDiffusionTable,
   criticalTauS,
   diffusionLengthCooling,
   diffusionalFraction,
@@ -206,6 +207,20 @@ describe("T3: 冷却中に炭素が動ける距離 √(2∫D dt)(§5.2)", () => 
 
   it("A₁ より上は数えない(範囲が A₁ 以上なら 0)", () => {
     expect(diffusionLengthCooling(water, A1_C, 900)).toBe(0);
+  });
+
+  it("図2 の毎フレーム用の表は直接の積分と 0.5% 以内で一致する", () => {
+    const table = createDiffusionTable(150);
+    for (const lo of [150, 300, 450, 600, 700]) {
+      const direct = diffusionLengthCooling(water, lo);
+      expect(Math.abs(table.length(water, lo) / direct - 1)).toBeLessThan(
+        0.005,
+      );
+    }
+    const nose = diffusionLengthCooling(air, win.loC, win.hiC);
+    expect(
+      Math.abs(table.length(air, win.loC, win.hiC) / nose - 1),
+    ).toBeLessThan(0.005);
   });
 });
 
