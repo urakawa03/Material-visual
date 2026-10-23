@@ -141,6 +141,9 @@ export const registry: Record<
   // 記事「マルテンサイト変態」(仕様書 10)— 実装時にこの直下へ登録する
 
   // 記事「フェルミ準位」(仕様書 12)— 実装時にこの直下へ登録する
+  "fermi-level/filling-states": () => import("./fermi-level/filling-states"),
+  "fermi-level/fermi-dirac": () => import("./fermi-level/fermi-dirac"),
+  "fermi-level/dos-times-f": () => import("./fermi-level/dos-times-f"),
 
   // 記事「pn 接合」(仕様書 13)— 実装時にこの直下へ登録する
 
