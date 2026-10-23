@@ -351,8 +351,16 @@ export default function flashMemory(host: FigureHost): WidgetHandle {
     ctx.textBaseline = "top";
     ctx.textAlign = "left";
     haloText(ctx, "チャネル", x0, y1 - 14, pal.text2, pal.bg);
+    // 浮遊ゲートの名前は右下。書き込みで右の準位が下端の近くまで下がったとき
+    // は、その破線に重ならないよう線の上に書く
+    const yRight = ey(eRight);
     ctx.textAlign = "right";
-    haloText(ctx, "浮遊ゲート", x1, y1 - 14, pal.text2, pal.bg);
+    if (yRight > y1 - 20 && yRight < y1 + 2) {
+      ctx.textBaseline = "bottom";
+      haloText(ctx, "浮遊ゲート", x1, yRight - 4, pal.text2, pal.bg);
+    } else {
+      haloText(ctx, "浮遊ゲート", x1, y1 - 14, pal.text2, pal.bg);
+    }
     ctx.restore();
   }
 
