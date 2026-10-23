@@ -1,0 +1,321 @@
+---
+/**
+ * StaticTwoPaths.astro — 静的図 S-3(記事仕様書 09 §6.1・まとめ節の図)
+ *
+ * 状態図の上の 2 つの経路: 高温の一様な状態から急冷して、準安定の領域に
+ * 入れば「核 → 島」、不安定の領域に入れば「ゆらぎ → 迷路」。どちらも最後は
+ * 界面を減らす粗大化へ進む。
+ *
+ * 右の 6 枚の組織は手描きせず、図版と同じカーン・ヒリアード方程式の解を
+ * ビルド時に計算して等高線にしたもの(上段は核を 6 個置いた準安定の計算、
+ * 下段は不安定の計算。どちらも T/Tc = 2/3、64² 格子)。
+ */
+import { CahnHilliard } from "../../../widgets/spinodal-decomposition/lib/cahnhilliard";
+import { contourPath } from "../../../widgets/spinodal-decomposition/lib/contour";
+import {
+  binodal,
+  spinodal,
+} from "../../../widgets/spinodal-decomposition/lib/regular";
+
+interface Props {
+  caption: string;
+  alt: string;
+}
+
+const { caption, alt } = Astro.props;
+
+const W = 636;
+const H = 318;
+const N = 64;
+const CHI = 3;
+
+/* ---- 右: 組織の 3 段階 × 2 経路 ---- */
+const SNAP = 86;
+const COLS_X = [282, 392, 502] as const;
+const ROW_Y = [46, 192] as const;
+
+function snapshots(
+  setup: (sim: CahnHilliard) => void,
+  times: readonly number[],
+): Float64Array[] {
+  const sim = new CahnHilliard({ nx: N, ny: N, chi: CHI });
+  setup(sim);
+  const out: Float64Array[] = [];
+  for (const t of times) {
+    while (sim.time < t - 1e-9) sim.step(1);
+    out.push(sim.c.slice());
+  }
+  return out;
+}
+
+// 上段: 準安定(c0 = 0.2)に半径 4 の核を 6 個置く(B は母相から集める)
+const NUCLEI: ReadonlyArray<readonly [number, number]> = [
+  [14, 12],
+  [45, 9],
+  [30, 33],
+  [55, 40],
+  [11, 50],
+  [40, 56],
+];
+const nucleation = snapshots(
+  (sim) => {
+    sim.initUniform(0.2, 0.005, 7);
+    for (const [x, y] of NUCLEI) sim.addDisk(x, y, 4, 1 - binodal(CHI), true);
+    sim.step(4);
+  },
+  [4, 160, 1500],
+);
+// 下段: 不安定(c0 = 0.5)の微小なゆらぎから
+const spinodalRun = snapshots(
+  (sim) => sim.initUniform(0.5, 0.01, 8),
+  [26, 160, 1500],
+);
+
+const paths = [nucleation, spinodalRun].map((row, r) =>
+  row.map((c, k) => contourPath(c, N, 0.5, COLS_X[k], ROW_Y[r], SNAP)),
+);
+
+const ROW_TITLE = [
+  "① 準安定から: 障壁を越えて始まる分離(核生成・成長)",
+  "② 不安定から: 障壁なしに始まる分離(スピノーダル分解)",
+] as const;
+const STEP_LABEL = [
+  ["核ができる", "島が育つ", "粗大化"],
+  ["ゆらぎが育つ", "迷路になる", "粗大化"],
+] as const;
+
+/* ---- 左: 状態図 ---- */
+const PX = 40;
+const PY = 38;
+const PW = 196;
+const PH = 226;
+const T_LO = 0.45;
+const T_HI = 1.2;
+const mapX = (c: number): number => PX + c * PW;
+const mapY = (t: number): number => PY + PH - ((t - T_LO) / (T_HI - T_LO)) * PH;
+
+function dome(fn: (chi: number) => number): string {
+  const pts: string[] = [];
+  const n = 90;
+  for (let pass = 0; pass < 2; pass++) {
+    for (let k = 0; k <= n; k++) {
+      const s = pass === 0 ? k / n : 1 - k / n;
+      const t = 1 - (1 - T_LO) * (1 - s) * (1 - s);
+      const c = s >= 1 ? 0.5 : fn(2 / t);
+      const x = pass === 0 ? c : 1 - c;
+      pts.push(
+        `${pts.length === 0 ? "M" : "L"} ${mapX(x).toFixed(1)} ${mapY(t).toFixed(1)}`,
+      );
+    }
+  }
+  return pts.join(" ");
+}
+
+const binodalPath = dome(binodal);
+const spinodalPath = dome(spinodal);
+const T_STATE = 2 / 3;
+/** 状態点と、右の段の番号(引き出し線の代わりに番号で対応させる) */
+const STATES = [
+  { c: 0.15, label: "① 準安定" },
+  { c: 0.5, label: "② 不安定" },
+] as const;
+---
+
+<figure class="static-fig">
+  <svg
+    viewBox={`0 0 ${W} ${H}`}
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    <defs>
+      {
+        paths.map((row, r) =>
+          row.map((_, k) => (
+            <clipPath id={`two-paths-clip-${r}-${k}`}>
+              <rect x={COLS_X[k]} y={ROW_Y[r]} width={SNAP} height={SNAP} />
+            </clipPath>
+          )),
+        )
+      }
+    </defs>
+
+    <!-- 左: 状態図 -->
+    <line
+      x1={PX}
+      y1={PY}
+      x2={PX}
+      y2={PY + PH}
+      stroke="var(--color-hairline)"
+      stroke-width="1"></line>
+    <line
+      x1={PX}
+      y1={PY + PH}
+      x2={PX + PW}
+      y2={PY + PH}
+      stroke="var(--color-hairline)"
+      stroke-width="1"></line>
+    <text x={PX - 6} y={PY - 12} font-size="12" fill="var(--color-text-2)"
+      >温度 T/Tc</text
+    >
+    <text
+      x={PX + PW / 2}
+      y={PY + PH + 30}
+      text-anchor="middle"
+      font-size="12"
+      fill="var(--color-text-2)">組成 X(B の割合)</text
+    >
+    {
+      [0, 0.5, 1].map((v) => (
+        <text
+          x={mapX(v)}
+          y={PY + PH + 15}
+          text-anchor="middle"
+          font-size="11"
+          fill="var(--color-text-2)"
+        >
+          {v.toFixed(1)}
+        </text>
+      ))
+    }
+    {
+      [0.5, 1].map((v) => (
+        <text
+          x={PX - 6}
+          y={mapY(v) + 4}
+          text-anchor="end"
+          font-size="11"
+          fill="var(--color-text-2)"
+        >
+          {v.toFixed(1)}
+        </text>
+      ))
+    }
+    <path
+      d={binodalPath}
+      fill="none"
+      stroke="var(--color-text-2)"
+      stroke-width="2"></path>
+    <path
+      d={spinodalPath}
+      fill="none"
+      stroke="var(--color-text-2)"
+      stroke-width="2"
+      stroke-dasharray="6 4"></path>
+    <text
+      x={mapX(0.33)}
+      y={mapY(1.14)}
+      text-anchor="middle"
+      font-size="11.5"
+      fill="var(--color-text-2)">高温(一様)から急冷</text
+    >
+
+    <!-- 急冷の経路と状態点 -->
+    {
+      STATES.map((s) => (
+        <g>
+          <line
+            x1={mapX(s.c)}
+            y1={mapY(1.06)}
+            x2={mapX(s.c)}
+            y2={mapY(T_STATE) - 14}
+            stroke="var(--color-text)"
+            stroke-width="2"
+          />
+          <path
+            d={`M ${mapX(s.c)} ${mapY(T_STATE) - 7} l -5 -9 l 10 0 Z`}
+            fill="var(--color-text)"
+          />
+          <circle
+            cx={mapX(s.c)}
+            cy={mapY(T_STATE)}
+            r="6"
+            fill="var(--color-bg)"
+            stroke="var(--color-accent)"
+            stroke-width="3"
+          />
+        </g>
+      ))
+    }
+    {
+      STATES.map((st) => (
+        <text
+          x={mapX(st.c)}
+          y={mapY(T_STATE) + 24}
+          text-anchor="middle"
+          font-size="12"
+          font-weight="600"
+          fill="var(--color-text)"
+          stroke="var(--color-bg)"
+          stroke-width="4"
+          paint-order="stroke"
+        >
+          {st.label}
+        </text>
+      ))
+    }
+
+    <!-- 右: 2 つの経路の組織 -->
+    {
+      paths.map((row, r) => (
+        <g>
+          <text
+            x={COLS_X[0]}
+            y={ROW_Y[r] - 12}
+            font-size="12.5"
+            font-weight="600"
+            fill="var(--color-text)"
+          >
+            {ROW_TITLE[r]}
+          </text>
+          {row.map((d, k) => (
+            <g>
+              <g clip-path={`url(#two-paths-clip-${r}-${k})`}>
+                <rect
+                  x={COLS_X[k]}
+                  y={ROW_Y[r]}
+                  width={SNAP}
+                  height={SNAP}
+                  fill="var(--mat-matrix)"
+                  opacity="0.55"
+                />
+                <path
+                  d={d}
+                  fill="var(--mat-second)"
+                  fill-rule="evenodd"
+                  opacity={r === 1 && k === 0 ? 0.4 : 0.9}
+                />
+              </g>
+              <rect
+                x={COLS_X[k]}
+                y={ROW_Y[r]}
+                width={SNAP}
+                height={SNAP}
+                fill="none"
+                stroke="var(--color-hairline)"
+              />
+              <text
+                x={COLS_X[k] + SNAP / 2}
+                y={ROW_Y[r] + SNAP + 17}
+                text-anchor="middle"
+                font-size="12"
+                fill="var(--color-text-2)"
+              >
+                {STEP_LABEL[r][k]}
+              </text>
+              {k < 2 && (
+                <path
+                  d={`M ${COLS_X[k] + SNAP + 7} ${ROW_Y[r] + SNAP / 2} l 12 0 m -5 -5 l 5 5 l -5 5`}
+                  fill="none"
+                  stroke="var(--color-text-2)"
+                  stroke-width="2"
+                />
+              )}
+            </g>
+          ))}
+        </g>
+      ))
+    }
+  </svg>
+  <figcaption>{caption}</figcaption>
+  <p class="sr-only">{alt}</p>
+</figure>
