@@ -7,7 +7,7 @@
 docs/prompts/<ファイル名> を読んで、その通りに実装してください。
 ```
 
-**現状(2026-10-23)**: 14 本のうち 12 本が公開済み(当初の 8 本に、#3・#9・#12・#13 が加わった)。残る 2 本(#10・#14)は**個別仕様書まで作成済み**で実装中。各プロンプトの冒頭にその旨を追記してある(フェーズ 2 の実装から始める)。**共通基盤の整備(P0)も `main` に入っている**。公開した記事で仕様書から変えた点は、各仕様書の付録B にある。残作業の全体像・実装順・並行実装の規則は `docs/specs/90_remaining_work.md` にまとめてあり、**本 README と食い違う場合は 90 を優先する**。
+**現状(2026-10-23)**: **14 本すべてが公開済み**(当初の 8 本に、#3・#9・#10・#12・#13・#14 の 6 本が加わった)。残る 6 本のプロンプトは個別仕様書に沿って実装し終えたので、いまは記録として残してある。**共通基盤の整備(P0)も `main` に入っている**。公開した記事で仕様書から変えた点は、各仕様書の付録B にある。残作業の全体像・実装順・並行実装の規則は `docs/specs/90_remaining_work.md` にまとめてあり、**本 README と食い違う場合は 90 を優先する**。
 
 ---
 
@@ -26,11 +26,11 @@ docs/prompts/<ファイル名> を読んで、その通りに実装してくだ�
 | 7 | C | GPゾーン | `gp-zones` | カーケンドール効果(推奨) | **公開済** | `07_gp_zones_spec.md` | `07_gp_zones_prompt.md`(記録) |
 | 8 | C | オストワルド成長 | `ostwald-ripening` | GPゾーン(推奨) | **公開済** | `03_ostwald_ripening.md` | — |
 | 9 | C | スピノーダル分解 | `spinodal-decomposition` | カーケンドール効果 / GPゾーン(推奨) | **公開済** | `09_spinodal_decomposition_spec.md` | `09_spinodal_decomposition_prompt.md`(記録) |
-| 10 | C | マルテンサイト変態 | `martensite` | GPゾーン(推奨) | 仕様書あり・未実装 | `10_martensite_spec.md` | `10_martensite_prompt.md` |
+| 10 | C | マルテンサイト変態 | `martensite` | GPゾーン(推奨) | **公開済** | `10_martensite_spec.md` | `10_martensite_prompt.md`(記録) |
 | 11 | D. 電子とバンド | バンド理論 | `band-theory` | 逆格子空間 | **公開済** | `11_band_theory_spec.md` | `11_band_theory_prompt.md`(記録) |
 | 12 | D | フェルミ準位 | `fermi-level` | バンド理論 | **公開済** | `12_fermi_level_spec.md` | `12_fermi_level_prompt.md`(記録) |
 | 13 | D | pn接合 | `pn-junction` | フェルミ準位 / バンド理論(推奨) | **公開済** | `13_pn_junction_spec.md` | `13_pn_junction_prompt.md`(記録) |
-| 14 | D | トンネル効果とSTM | `tunneling-stm` | バンド理論(推奨) | 仕様書あり・未実装 | `14_tunneling_stm_spec.md` | `14_tunneling_stm_prompt.md` |
+| 14 | D | トンネル効果とSTM | `tunneling-stm` | バンド理論(推奨) | **公開済** | `14_tunneling_stm_spec.md` | `14_tunneling_stm_prompt.md`(記録) |
 
 仕様書の文書番号と記事番号(`order`)は一致しない(歴史的な経緯。01 = #5 など)。記事番号は `topics.ts` の `order` と本表を正とする。
 
@@ -146,10 +146,10 @@ pnpm build   # 本番ビルド
 
 ## 5. 実装順(残り 6 本)
 
-公開済みの 8 本(06・07・04・11 の各プロンプトを含む)は完了。残り 6 本は次の順で進める(詳細と理由は `docs/specs/90_remaining_work.md` §6)。
+当初の 8 本(06・07・04・11 の各プロンプトを含む)に続き、残り 6 本も次の順で実装し、2026-10-23 に全 14 本を公開した(詳細と理由は `docs/specs/90_remaining_work.md` §6)。
 
 1. **P0 — 共通基盤と下準備**(90 §3。補助関数の共通化 `src/core/units.ts`・`plot.ts`・`anim.ts`、共有ファイルへの先行追記、公開済み記事の古い相互参照の修正、`<ArticleRef>`)— **済み(`main` にマージ済み)**
-2. **第 1 波**(並行してよい): `12_fermi_level` / `08_structure_factor` / `09_spinodal_decomposition` / `10_martensite` / `14_tunneling_stm`
-3. **第 2 波**: `13_pn_junction`(#12 のマージ後 — #12 が新設する `_shared/semiconductor.ts`・`_shared/carriers1d.ts` を使う)
+2. **第 1 波**(並行してよい): `12_fermi_level` / `08_structure_factor` / `09_spinodal_decomposition` / `10_martensite` / `14_tunneling_stm` — **済み**
+3. **第 2 波**: `13_pn_junction`(#12 のマージ後 — #12 が新設する `_shared/semiconductor.ts`・`_shared/carriers1d.ts` を使う)— **済み**
 
 **D の中の前提関係(11 → 12 → 13)は変わらない**。#14 は #12・#13 と独立している。
