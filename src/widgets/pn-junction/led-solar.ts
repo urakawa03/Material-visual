@@ -97,14 +97,14 @@ const LED_BIAS = 0.6;
 /** 間接遷移(Si)で光子を描く割合の表示上の目安(10 回に 1 回未満) */
 const INDIRECT_EMIT = 1 / 12;
 /** 出来事の頻度 [1/秒](LED、太陽電池は 1 太陽あたり) */
-const LED_RATE = 2.4;
-const SOLAR_RATE = 3.2;
+const LED_RATE = 3.4;
+const SOLAR_RATE = 4.5;
 /** LED の出来事の段階 [秒]: 近づく → 落ちる → 光(または振動) */
 const LED_TRAVEL = 1.1;
 const LED_DROP = 0.32;
 const LED_EMIT = 0.85;
 /** 太陽電池の出来事の段階 [秒]: 光子が入る → 引き離される */
-const SOLAR_PHOTON = 0.45;
+const SOLAR_PHOTON = 0.6;
 const SOLAR_SEPARATE = 1.15;
 /** 初期化時・リセット時に内部で進める時間 [秒](最初のフレームから出来事が見える) */
 const WARMUP_SECONDS = 3;
@@ -175,7 +175,6 @@ export default function ledSolar(host: FigureHost): WidgetHandle {
     colors,
     yTicks: LED_E_TICKS,
     yLabel: "エネルギー [eV]" as string | undefined,
-    xLabel: "位置(接合面のまわり)",
   };
   const ledFrameNarrow = { ...ledFrame, yLabel: undefined };
   const solarFrame = { ...ledFrame, yTicks: SOLAR_E_TICKS };
@@ -193,8 +192,13 @@ export default function ledSolar(host: FigureHost): WidgetHandle {
   let mode: Mode = MODE_INIT;
   let material: LedMaterial = materialOf(MATERIAL_INIT);
   let light = LIGHT_INIT;
-  /** 太陽電池の動作点の電圧 [V] と、最大電力点に追従するか */
+  /**
+   * 太陽電池の動作点の電圧 [V]。vPref は読者が選んだ電圧で、表示する vOp は
+   * それを 0〜V_oc に収めた値(光を弱めて V_oc が下がっても、戻せば元の点に
+   * 戻る)。動かすまでは最大電力点に追従する
+   */
   let vOp = 0;
+  let vPref = 0;
   let followMpp = true;
 
   const j0 = saturationCurrent(
@@ -241,13 +245,14 @@ export default function ledSolar(host: FigureHost): WidgetHandle {
     jL = J_LIGHT_ONE_SUN * light;
     voc = openCircuitVoltage(j0, jL, ROOM_T);
     solarEvents.rate = SOLAR_RATE * light;
-    if (followMpp) vOp = maxPowerPoint(j0, jL, ROOM_T).v;
-    vOp = clamp(vOp, 0, voc);
+    if (followMpp) vPref = maxPowerPoint(j0, jL, ROOM_T).v;
+    vOp = clamp(vPref, 0, voc);
     dSolar = depletion(SILICON, DOPING_INIT, DOPING_INIT, vOp, ROOM_T);
   }
 
   function setOperatingPoint(v: number): void {
     vOp = clamp(v, 0, voc);
+    vPref = vOp;
     followMpp = false;
     dSolar = depletion(SILICON, DOPING_INIT, DOPING_INIT, vOp, ROOM_T);
   }
@@ -457,6 +462,24 @@ export default function ledSolar(host: FigureHost): WidgetHandle {
         colors.text,
       );
     } else {
+      // 擬フェルミ準位のラベル(差は動作点の電圧 qV)
+      const q = quasiFermiLevels(d);
+      drawLabel(
+        ctx,
+        "E_Fp",
+        band.rect.x + 4,
+        band.toPxY(q.eFp) - 9,
+        colors.hole,
+        "left",
+      );
+      drawLabel(
+        ctx,
+        "E_Fn",
+        band.rect.x + band.rect.w - 4,
+        band.toPxY(q.eFn) - 9,
+        colors.electron,
+        "right",
+      );
       drawBoxedLabel(
         ctx,
         light > 0 ? "光" : "光なし",
@@ -722,7 +745,7 @@ export default function ledSolar(host: FigureHost): WidgetHandle {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
     const narrow = w < NARROW_WIDTH_PX;
-    const left = narrow ? 34 : 48;
+    const left = narrow ? 34 : 58;
     if (mode === "led") {
       const scaleH = narrow ? 70 : 74;
       setPlotRange(

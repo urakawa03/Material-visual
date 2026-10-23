@@ -42,6 +42,7 @@ import {
 import {
   AnimatedRange,
   curveSamples,
+  drawBoxedLabel,
   drawDimension,
   drawEdgeLine,
   drawLabel,
@@ -176,7 +177,7 @@ export default function depletionLayer(host: FigureHost): WidgetHandle {
     if (!narrow && big / Math.min(nA, nD) >= 300) {
       drawLabel(
         ctx,
-        "(薄い側の矩形は細すぎるので最小の太さで描いた)",
+        "(極端に細い・低い矩形は、見えるよう最小の太さで描いた)",
         nx,
         ny + 30,
         colors.text2,
@@ -222,13 +223,14 @@ export default function depletionLayer(host: FigureHost): WidgetHandle {
     // 最大値のラベル(三角形の先の右)と、面積 = V_bi
     const tipX = mField.toPxX(0);
     const tipY = mField.toPxY(-d.eMax);
-    drawLabel(
+    drawBoxedLabel(
       ctx,
       `最大 ${d.eMax.toFixed(1)} kV/cm`,
       tipX + 8,
       tipY + 2,
-      colors.text,
+      colors,
       "left",
+      colors.text,
     );
     const areaX = Math.max(mField.toPxX(d.xn) + 10, tipX + 10);
     drawLabel(
@@ -309,8 +311,8 @@ export default function depletionLayer(host: FigureHost): WidgetHandle {
     const narrow = w < NARROW_WIDTH_PX;
     const left = narrow ? 42 : 50;
     const right = 10;
-    const top = 26;
-    const bottom = 40;
+    const top = 22;
+    const bottom = 52;
     const titleH = 20;
     const gap = 8;
     const panelH = (h - top - bottom - 2 * (gap + titleH)) / 3;
@@ -325,11 +327,11 @@ export default function depletionLayer(host: FigureHost): WidgetHandle {
     setPlotRange(mField, left, y2, pw, panelH, -R, R, -1.18 * d.eMax, fTop);
     setPlotRange(mPsi, left, y3, pw, panelH, -R, R, PSI_MIN, PSI_MAX);
 
-    // 左右の向き
-    drawLabel(ctx, "p 型", left + 4, 10, colors.hole, "left");
-    drawLabel(ctx, "n 型", left + pw - 4, 10, colors.electron, "right");
-
     drawRho(narrow);
+    // 左右の向き(電荷のパネルの下の隅 — 矩形のない中性領域)
+    const pnY = mRho.rect.y + mRho.rect.h - 9;
+    drawLabel(ctx, "p 型", left + 8, pnY, colors.hole, "left");
+    drawLabel(ctx, "n 型", left + pw - 6, pnY, colors.electron, "right");
     drawField(narrow);
     drawPotential(narrow);
 
@@ -380,11 +382,12 @@ export default function depletionLayer(host: FigureHost): WidgetHandle {
     drawLabel(
       ctx,
       "位置 x [μm]",
-      left + pw,
-      h - 5,
+      left + pw / 2,
+      h - 4,
       colors.text2,
-      "right",
+      "center",
       "bottom",
+      PLOT_FONT,
     );
 
     // 読み取り値

@@ -27,6 +27,7 @@ import {
   createPlotMapper,
   drawPlotFrame,
   PLOT_FONT,
+  PLOT_FONT_SMALL,
   setPlotRange,
   withPlotClip,
   type AxisTick,
@@ -98,7 +99,7 @@ export default function bandBending(host: FigureHost): WidgetHandle {
     ];
     ctx.save();
     ctx.strokeStyle = colors.hairline;
-    ctx.lineWidth = 2.2;
+    ctx.lineWidth = 3;
     for (const [x0, x1, ef] of blocks) {
       const p0 = m.toPxX(x0);
       const p1 = m.toPxX(x1);
@@ -174,7 +175,7 @@ export default function bandBending(host: FigureHost): WidgetHandle {
 
     // E_F と E_i の差(中性領域。p 側は E_i から下向き、n 側は上向き)
     const xp = m.toPxX(-R + 0.42 * (R - d.xp));
-    const xn = m.toPxX(R - 0.62 * (R - d.xn));
+    const xn = m.toPxX(d.xn + 0.3 * (R - d.xn));
     const ypEi = m.toPxY(eiBulk);
     const ypEf = m.toPxY(eF);
     const ynEi = m.toPxY(eiBulk - d.vbi);
@@ -199,13 +200,22 @@ export default function bandBending(host: FigureHost): WidgetHandle {
       "left",
       colors.text,
     );
+    // n 側のラベルは、右に収まらなければ矢印の左に置く(右端の qV_bi の寸法を避ける)
+    const nText = narrow
+      ? formatEvFixed(nDiff)
+      : `E_F − E_i = ${formatEvFixed(nDiff)}`;
+    ctx.save();
+    ctx.font = PLOT_FONT_SMALL;
+    const nW = ctx.measureText(nText).width;
+    ctx.restore();
+    const nRight = xn + 6 + nW + 8 < m.rect.x + m.rect.w - (narrow ? 20 : 26);
     drawBoxedLabel(
       ctx,
-      narrow ? formatEvFixed(nDiff) : `E_F − E_i = ${formatEvFixed(nDiff)}`,
-      xn + 6,
+      nText,
+      nRight ? xn + 6 : xn - 6,
       (ynEi + ypEf) / 2,
       colors,
-      "left",
+      nRight ? "left" : "right",
       colors.text,
     );
 
@@ -232,12 +242,12 @@ export default function bandBending(host: FigureHost): WidgetHandle {
         colors,
         "left",
       );
-      drawLabel(
+      drawBoxedLabel(
         ctx,
-        "接触前(薄い線)",
+        narrow ? "薄い線: 接触前" : "薄い線: 接触前の 2 つのブロック",
         m.rect.x + m.rect.w - 4,
-        m.toPxY(d.efn) - 10,
-        colors.text2,
+        m.rect.y + 12,
+        colors,
         "right",
       );
     }

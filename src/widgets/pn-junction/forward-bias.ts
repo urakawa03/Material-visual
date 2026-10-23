@@ -266,16 +266,26 @@ export default function forwardBias(host: FigureHost): WidgetHandle {
       );
     });
 
-    // 坂の高さの寸法(p 側の中性領域の左寄り)
+    // 坂の高さの寸法(p 側の中性領域の左寄り)。坂が低くても帯の縁の線を
+    // 隠さないよう、ラベルは寸法の下(禁制帯の中)に置く
     const xDim = band.toPxX(-R + 0.07 * R);
     drawDimension(
       ctx,
       xDim,
       band.toPxY(SILICON.eg),
       band.toPxY(ecN),
-      narrow ? barrierLabelShort : barrierLabel,
+      "",
       colors,
       "right",
+    );
+    drawBoxedLabel(
+      ctx,
+      narrow ? barrierLabelShort : barrierLabel,
+      xDim - 4,
+      band.toPxY(ecN) + 14,
+      colors,
+      "left",
+      colors.text,
     );
     // 擬フェルミ準位のラベル
     drawLabel(
@@ -298,10 +308,10 @@ export default function forwardBias(host: FigureHost): WidgetHandle {
       "middle",
       PLOT_FONT,
     );
-    // k_BT のものさし(実際のスケールであることを示す)
+    // k_BT のものさし(実際のスケールであることを示す)。電子の雲の上、右端
     const sx = band.rect.x + band.rect.w - 10;
-    const sy0 = band.toPxY(ecN - 0.25);
-    const sy1 = band.toPxY(ecN - 0.25 + kT);
+    const sy0 = band.toPxY(ecN + 0.2);
+    const sy1 = band.toPxY(ecN + 0.2 + kT);
     ctx.save();
     ctx.strokeStyle = colors.text2;
     ctx.lineWidth = 2;
@@ -441,7 +451,7 @@ export default function forwardBias(host: FigureHost): WidgetHandle {
     }
     const a = layout.first;
     const b = layout.second;
-    const bandLeft = narrow ? 34 : 48;
+    const bandLeft = narrow ? 34 : 58;
     setPlotRange(
       band,
       a.x + bandLeft,

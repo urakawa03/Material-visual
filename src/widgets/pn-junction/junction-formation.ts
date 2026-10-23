@@ -55,9 +55,9 @@ const SMOOTH_TAU = 0.4;
 const GAP_PX = 12;
 const GAP_CLOSE_SECONDS = 0.3;
 /** 電荷のグラフの縦軸(1 区間あたりの正味の電荷)と電場のグラフの縦軸 */
-const CHARGE_RANGE = 6;
-const FIELD_NEG = 8;
-const FIELD_POS = 3;
+const CHARGE_RANGE = 4.5;
+const FIELD_NEG = 7.5;
+const FIELD_POS = 2.5;
 /** 電場の矢印: 間隔の目安 [px]、最大の長さ [px]、描く下限の長さ [px] */
 const ARROW_SPACING_PX = 26;
 const ARROW_MAX_PX = 20;

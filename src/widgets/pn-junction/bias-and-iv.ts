@@ -35,6 +35,7 @@ import {
   createPlotMapper,
   drawPlotFrame,
   PLOT_FONT,
+  PLOT_FONT_SMALL,
   pow10Ticks,
   setPlotRange,
   withPlotClip,
@@ -122,6 +123,14 @@ export default function biasAndIv(host: FigureHost): WidgetHandle {
   const band = createPlotMapper();
   const iv = createPlotMapper();
   const bands = new BandSamples(241);
+  /** 図中の小さな文字の幅 [px] */
+  function textWidth(text: string, font: string = PLOT_FONT_SMALL): number {
+    ctx.save();
+    ctx.font = font;
+    const w = ctx.measureText(text).width;
+    ctx.restore();
+    return w;
+  }
   const logTicksWide = pow10Ticks(LOG_MIN, LOG_MAX, 2);
   const logTicksNarrow = pow10Ticks(LOG_MIN, LOG_MAX, 4);
 
@@ -220,7 +229,8 @@ export default function biasAndIv(host: FigureHost): WidgetHandle {
     );
     const q = quasiFermiLevels(d);
     const split = Math.abs(q.eFn - q.eFp) > 1e-9;
-    const ell = MERGE_FRACTION * (R - Math.max(d.xp, d.xn));
+    // 中性領域が狭い(強い逆バイアス)ときは、合流が図の外まで続くように下限を置く
+    const ell = Math.max(MERGE_FRACTION * (R - Math.max(d.xp, d.xn)), 0.1 * R);
     withPlotClip(ctx, band, () => {
       drawBands(ctx, band, bands, colors);
       for (const x of [-d.xp, d.xn]) drawEdgeLine(ctx, band, x, colors.text2);
@@ -268,15 +278,27 @@ export default function biasAndIv(host: FigureHost): WidgetHandle {
       ctx.fillRect(x0, y - 3, Math.max(1.5, band.toPxX(d.xn) - x0), 6);
       ctx.restore();
     });
-    // 空乏層の帯のラベル
-    drawLabel(
-      ctx,
-      `空乏層 W = ${d.w.toFixed(3)} μm`,
-      band.toPxX(d.xn) + 6,
-      band.rect.y + band.rect.h - 9,
-      colors.text2,
-      "left",
-    );
+    // 空乏層の帯のラベル(帯の右 → 入らなければ左 → それも無理なら帯の上)
+    const wText = `空乏層 W = ${d.w.toFixed(3)} μm`;
+    const wW = textWidth(wText);
+    const barY = band.rect.y + band.rect.h - 9;
+    const barL = band.toPxX(-d.xp);
+    const barR = band.toPxX(d.xn);
+    const plotR = band.rect.x + band.rect.w;
+    if (barR + 6 + wW < plotR - 2) {
+      drawLabel(ctx, wText, barR + 6, barY, colors.text2, "left");
+    } else if (barL - 6 - wW > band.rect.x + 2) {
+      drawLabel(ctx, wText, barL - 6, barY, colors.text2, "right");
+    } else {
+      drawBoxedLabel(
+        ctx,
+        wText,
+        (barL + barR) / 2,
+        barY - 13,
+        colors,
+        "center",
+      );
+    }
     // 擬フェルミ準位のラベルと差 qV の寸法
     if (!split) {
       drawLabel(
@@ -310,15 +332,22 @@ export default function biasAndIv(host: FigureHost): WidgetHandle {
         "middle",
         PLOT_FONT,
       );
-      const xDim = band.toPxX(d.xn) + 10;
+      // 差 qV の寸法: 空乏層の右の端のすぐ外(ラベルが入らなければ空乏層の中)
+      const qText =
+        bias > 0
+          ? `qV = ${formatEvFixed(q.eFn - q.eFp)}`
+          : `q|V| = ${formatEvFixed(q.eFp - q.eFn)}`;
+      const outside = band.toPxX(d.xn) + 10;
+      const xDim =
+        outside + 14 + textWidth(qText, PLOT_FONT) < band.rect.x + band.rect.w
+          ? outside
+          : band.toPxX(0);
       drawDimension(
         ctx,
         xDim,
         band.toPxY(q.eFn),
         band.toPxY(q.eFp),
-        bias > 0
-          ? `qV = ${formatEvFixed(q.eFn - q.eFp)}`
-          : `q|V| = ${formatEvFixed(q.eFp - q.eFn)}`,
+        qText,
         colors,
         "right",
       );
@@ -504,11 +533,11 @@ export default function biasAndIv(host: FigureHost): WidgetHandle {
     }
     drawLabel(
       ctx,
-      narrow ? "← 逆方向は縮めて描いた" : "← 逆方向は横軸を縮めて描いた",
-      iv.toPxX(0) - 4,
-      iv.rect.y + 8,
+      narrow ? "逆方向は縮めた" : "逆方向は横軸を縮めた",
+      iv.rect.x + 4,
+      iv.rect.y + 9,
       colors.text2,
-      "right",
+      "left",
     );
   }
 
@@ -530,7 +559,7 @@ export default function biasAndIv(host: FigureHost): WidgetHandle {
     const a = layout.first;
     const b = layout.second;
     const R = xRange.value;
-    const bandLeft = narrow ? 36 : 50;
+    const bandLeft = narrow ? 36 : 58;
     setPlotRange(
       band,
       a.x + bandLeft,
@@ -568,7 +597,13 @@ export default function biasAndIv(host: FigureHost): WidgetHandle {
     jItem.set(j === 0 ? "0 A/cm²" : `${fmtSci(j, 3)} A/cm²`);
     kindItem.set(bias > 0 ? "順方向" : bias < 0 ? "逆方向" : "ゼロ");
     const q = quasiFermiLevels(d);
-    splitItem.set(bias > 0 ? formatEvFixed(q.eFn - q.eFp) : "—(順方向のとき)");
+    splitItem.set(
+      bias > 0
+        ? d.clamped
+          ? `${formatEvFixed(q.eFn - q.eFp)}(近似の適用外で止めた値)`
+          : formatEvFixed(q.eFn - q.eFp)
+        : "—(順方向のとき)",
+    );
   }
 
   /* ---- 操作部品 ---- */
