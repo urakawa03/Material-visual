@@ -145,17 +145,21 @@ src/pages/articles/band-theory.astro
 
 **`_shared/banddiagram.ts`(D 共通)が提供するもの** — フェルミ準位・pn 接合が同じ絵を描けるだけの粒度にする:
 
-| API                                              | 役割                                                                                                                      |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| `bandColors()`                                   | `--mat-electron` / `--mat-band` / `--mat-level` / `--mat-matrix` / `--mat-recip` / UI 色を初期化時に 1 度だけ解決して返す |
-| `createPlotMapper(rect, xRange, yRange)`         | プロット領域の座標変換(x = $k$ または位置、y = $E$。y は上向き正)                                                         |
-| `drawPlotFrame(mapper, opts)`                    | 軸・目盛り・軸ラベル(`--color-hairline` + `--color-text-2`)                                                               |
-| `drawBandBox(mapper, x0, x1, eLow, eHigh, opts)` | 許容帯の帯(`--mat-band` 塗り + `--mat-level` のバンド端線)。`fillTo` を渡すとその高さまで電子で埋める                     |
-| `drawGapMarks(mapper, x0, x1, eLow, eHigh)`      | 禁制帯(**塗りなし + `--color-hairline` の破線**)とギャップ幅の寸法線                                                      |
-| `drawLevelLine(mapper, x0, x1, e, opts)`         | 準位線(フェルミ準位・バンド端)。実線 / 破線・ラベル付き                                                                   |
-| `drawCurve(mapper, xs, es, opts)`                | $E$-$k$ 曲線(実線 / 破線・色・線幅)                                                                                       |
-| `drawOccupancy(mapper, xs, es, eFermi, opts)`    | 曲線上の占有部分を `--mat-electron` で強調し、電子の丸を等間隔に置く                                                      |
-| `drawZoneBoundary(mapper, k, opts)`              | ゾーン境界の縦破線(`--mat-recip`)と $\pm\pi/a$ ラベル                                                                     |
+| API                                                                          | 役割                                                                                                                                                                             |
+| ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bandColors()`                                                               | `--mat-electron` / `--mat-band` / `--mat-level` / `--mat-matrix` / `--mat-recip` / UI 色を初期化時に 1 度だけ解決して返す                                                        |
+| `createPlotMapper()` + `setPlotRange(m, x, y, w, h, xMin, xMax, yMin, yMax)` | プロット領域の座標変換(x = $k$ または位置、y = $E$。y は上向き正)。マッパーは初期化時に 1 度作り、毎描画で `setPlotRange` で領域と値域を設定する(フレーム内の新規割当てを避ける) |
+| `withPlotClip(ctx, m, cb)`                                                   | プロット領域でクリップして描く                                                                                                                                                   |
+| `drawPlotFrame(ctx, m, opts)`                                                | 軸・目盛り・軸ラベル(`--color-hairline` + `--color-text-2`)。`opts` に `xTicks` / `yTicks` / `xLabel` / `yLabel` / `yAxisAtZero`                                                 |
+| `drawBandBox(ctx, m, x0, x1, eLow, eHigh, opts)`                             | 許容帯の帯(`--mat-band` 塗り + `--mat-level` のバンド端線)。`fillTo` を渡すとその高さまで電子で埋める(占有の塗り)                                                                |
+| `drawGapMarks(ctx, m, x0, x1, eLow, eHigh, opts)`                            | 禁制帯(**塗りなし + `--color-hairline` の破線**)とギャップ幅の寸法線                                                                                                             |
+| `drawLevelLine(ctx, m, x0, x1, e, opts)`                                     | 準位線(フェルミ準位・バンド端)。実線 / 破線・ラベル付き                                                                                                                          |
+| `drawCurve(ctx, m, xs, ys, count, opts)`                                     | $E$-$k$ 曲線(実線 / 破線・色・線幅)。`xs` / `ys` は値の配列で、`count` 個までを使う(TypedArray を使い回すため長さと個数を分ける)                                                 |
+| `drawElectronDots(ctx, m, xs, ys, count, opts)`                              | 電子の丸(`empty: true` で中抜きの空席)。曲線上の占有の強調は `drawCurve` と組み合わせて描く                                                                                      |
+| `drawZoneBoundary(ctx, m, k, opts)`                                          | ゾーン境界の縦破線(`--mat-recip`)と $\pm\pi/a$ ラベル                                                                                                                            |
+| `formatEv(e)` / `formatK(k)` / `PLOT_FONT` / `PLOT_FONT_SMALL`               | 読み取り値の書式と図中のフォント                                                                                                                                                 |
+
+上の表は実装に合わせて改訂したもの(`docs/specs/90_remaining_work.md` §4.3)。当初案にあった `drawOccupancy` は作らず、`drawBandBox` の `fillTo` と `drawElectronDots` で代替した。#12 フェルミ準位がこのファイルに足す拡張(正孔の丸・位置で曲がる帯・対数軸の目盛り)は仕様書 12 §0 を参照。
 
 **使用パレット**(本記事で使うのはこの 7 系のみ):
 
