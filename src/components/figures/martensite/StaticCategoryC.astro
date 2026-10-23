@@ -1,0 +1,146 @@
+---
+/**
+ * StaticCategoryC.astro — 静的図 S-3(記事仕様書 10 §6.1)
+ *
+ * カテゴリ C「拡散と組織の変化」の 5 記事を、「拡散で組織が変わる」4 つと
+ * 「拡散させずに組織を変える」1 つ(本記事)に並べた 1 枚。サムネイルは
+ * トップページのカードと同じ SVG(topicThumbs.ts の thumbSvg — 読むだけで
+ * 変更しない)、記事名は topics.ts から引く。
+ */
+import { getTopic } from "../../../content/topics";
+import { thumbSvg } from "../../topicThumbs";
+
+interface Props {
+  caption: string;
+  alt: string;
+}
+
+const { caption, alt } = Astro.props;
+
+interface Card {
+  slug: string;
+  /** その記事で「拡散が何をするか」の一言 */
+  role: string;
+}
+
+const DIFFUSIVE: readonly Card[] = [
+  { slug: "kirkendall-effect", role: "拡散が格子を動かす" },
+  { slug: "gp-zones", role: "拡散で溶質が集まる" },
+  { slug: "ostwald-ripening", role: "拡散で大が小を食う" },
+  { slug: "spinodal-decomposition", role: "拡散が濃度差を広げる" },
+];
+const DIFFUSIONLESS: Card = {
+  slug: "martensite",
+  role: "拡散させずに格子ごと変える",
+};
+
+function title(slug: string): string {
+  const t = getTopic(slug);
+  if (!t) throw new Error(`StaticCategoryC: 未登録の記事 ${slug}`);
+  return t.title;
+}
+---
+
+<figure class="static-fig catc">
+  <div class="catc-grid" aria-hidden="true">
+    <div class="catc-group">
+      <p class="catc-head">拡散で組織が変わる</p>
+      <div class="catc-cards">
+        {
+          DIFFUSIVE.map((c) => (
+            <div class="catc-card">
+              <Fragment set:html={thumbSvg(c.slug)} />
+              <p class="catc-title">{title(c.slug)}</p>
+              <p class="catc-role">{c.role}</p>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+    <div class="catc-group catc-group-last">
+      <p class="catc-head">拡散させずに組織を変える</p>
+      <div class="catc-cards">
+        <div class="catc-card catc-card-this">
+          <Fragment set:html={thumbSvg(DIFFUSIONLESS.slug)} />
+          <p class="catc-title">{title(DIFFUSIONLESS.slug)}</p>
+          <p class="catc-role">{DIFFUSIONLESS.role}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <figcaption>{caption}</figcaption>
+  <p class="sr-only">{alt}</p>
+</figure>
+
+<style>
+  .catc-grid {
+    display: grid;
+    grid-template-columns: 4fr 1.3fr;
+    gap: 18px;
+    align-items: stretch;
+  }
+
+  .catc-group {
+    border: 1px solid var(--color-hairline);
+    border-radius: 10px;
+    padding: 12px;
+  }
+
+  .catc-group-last {
+    border-color: var(--color-accent);
+  }
+
+  .catc-head {
+    margin: 0 0 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-2);
+  }
+
+  .catc-group-last .catc-head {
+    color: var(--color-accent);
+  }
+
+  .catc-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+
+  .catc-group-last .catc-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .catc-card :global(svg) {
+    margin-bottom: 6px;
+  }
+
+  .catc-title {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--color-text);
+  }
+
+  .catc-role {
+    margin: 2px 0 0;
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: var(--color-text-2);
+  }
+
+  @media (max-width: 700px) {
+    .catc-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .catc-cards {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .catc-group-last .catc-cards {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+</style>

@@ -166,6 +166,16 @@ export const registry: Record<
     import("./spinodal-decomposition/coarsening-transition"),
 
   // 記事「マルテンサイト変態」(仕様書 10)— 実装時にこの直下へ登録する
+  // 図3 のみ three.js を含む
+  "martensite/cooling-rate": () => import("./martensite/cooling-rate"),
+  "martensite/carbon-trapped": () => import("./martensite/carbon-trapped"),
+  "martensite/bain-distortion": () => import("./martensite/bain-distortion"),
+  "martensite/athermal-transformation": () =>
+    import("./martensite/athermal-transformation"),
+  "martensite/shape-change": () => import("./martensite/shape-change"),
+  "martensite/tetragonality-hardness": () =>
+    import("./martensite/tetragonality-hardness"),
+  "martensite/tempering": () => import("./martensite/tempering"),
 
   // 記事「フェルミ準位」(仕様書 12)— 実装時にこの直下へ登録する
   "fermi-level/filling-states": () => import("./fermi-level/filling-states"),

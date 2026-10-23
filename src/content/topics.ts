@@ -156,7 +156,7 @@ export const TOPICS: readonly Topic[] = [
       "時間を与えずに冷やすと、原子を運ばずに格子ごと変わる — 焼入れの正体。",
     render: "2d",
     prerequisites: [{ slug: "gp-zones", recommended: true }],
-    published: false,
+    published: true,
   },
   {
     order: 11,
