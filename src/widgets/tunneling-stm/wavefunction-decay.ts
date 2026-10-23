@@ -207,18 +207,25 @@ export default function wavefunctionDecay(host: FigureHost): WidgetHandle {
       pal.level,
       pal.bg,
     );
-    // 壁のラベル: E の線が壁の上端の近くを通るときは、壁の中の下のほうに書く
-    const nearTop = E > V - 1.2 && E < V + 1.4;
+    // 壁のラベル: ふつうは壁の上。E の線が壁の上端のすぐ近くを通るときは、
+    // 壁が文字より大きければ壁の中ほどに、小さければ E の線の上に書く
+    const wallLabel = `壁 V = ${V.toFixed(1)} eV`;
+    const labelW = ctx.measureText(wallLabel).width;
+    const cx = (wx0 + wx1) / 2;
+    const lineH = 16;
+    const nearTop = ey > wy - lineH - 2 && ey < wy + 4;
+    const below = Math.max(wy, ey);
     ctx.textAlign = "center";
-    ctx.textBaseline = nearTop ? "middle" : "bottom";
-    haloText(
-      ctx,
-      `壁 V = ${V.toFixed(1)} eV`,
-      (wx0 + wx1) / 2,
-      nearTop ? m.toPxY(Math.min(V, E) * 0.45) : wy - 3,
-      pal.text2,
-      pal.bg,
-    );
+    if (!nearTop) {
+      ctx.textBaseline = "bottom";
+      haloText(ctx, wallLabel, cx, wy - 3, pal.text2, pal.bg);
+    } else if (wx1 - wx0 >= labelW + 8 && base - below >= lineH + 12) {
+      ctx.textBaseline = "middle";
+      haloText(ctx, wallLabel, cx, (below + base) / 2, pal.text2, pal.bg);
+    } else {
+      ctx.textBaseline = "bottom";
+      haloText(ctx, wallLabel, cx, Math.min(wy, ey) - 3, pal.text2, pal.bg);
+    }
     // 縦軸の名前
     ctx.save();
     ctx.translate(14, m.rect.y + m.rect.h / 2);
