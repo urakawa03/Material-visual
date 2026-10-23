@@ -81,6 +81,9 @@ export default function tetragonalityHardness(host: FigureHost): WidgetHandle {
   const rMs = readout.item("Ms");
   const rRa = readout.item("室温の残留オーステナイト");
   const rSrc = readout.item("硬さの源");
+  // 言葉で書く長い値なので、狭い幅では項目の中で折り返してよいことにする
+  // (読み取り値の項目は既定で折り返さない)
+  rSrc.el.style.whiteSpace = "normal";
 
   function updateReadouts(): void {
     rRatio.set(tetragonality(carbon).toFixed(3));
