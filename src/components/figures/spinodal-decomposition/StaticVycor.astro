@@ -20,11 +20,11 @@ interface Props {
 
 const { caption, alt } = Astro.props;
 
-/** 計算格子(64²)・組成(ホウ酸ナトリウムに富む相の側がやや少ない)・時間 */
+/** 計算格子(64²)・組成(ホウ酸ナトリウムに富む相の側がやや少ない)・時間(迷路が粗くなる前) */
 const N = 64;
 const sim = new CahnHilliard({ nx: N, ny: N, chi: 3 });
 sim.initUniform(0.44, 0.02, 1938);
-sim.step(700);
+sim.step(150);
 
 const W = 636;
 const H = 262;

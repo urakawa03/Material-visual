@@ -52,6 +52,12 @@ const FALLBACK_K = [0.225, 0.5, 0.8] as const;
 /** 代表の 3 つの波(k_m に対する比) */
 const WAVE_RATIOS = [0.45, 1, 1.6] as const;
 const WAVE_NAMES = ["長い波", "ちょうどよい波", "短い波"] as const;
+/** スピノーダルの外(どの波も育たない)では「ちょうどよい」と呼ばない */
+const WAVE_NAMES_STABLE = ["長い波", "中くらいの波", "短い波"] as const;
+/** 凡例の行の高さ */
+const LEGEND_ROW = 17;
+/** 右のグラフの下に取る凡例の高さ(軸の文字 + 3 行) */
+const LEGEND_SPACE = 40 + 3 * LEGEND_ROW;
 const WAVE_DASH: ReadonlyArray<readonly number[]> = [[9, 5], [], [2.5, 3.5]];
 
 export default function wavelengthSelection(host: FigureHost): WidgetHandle {
@@ -120,7 +126,8 @@ export default function wavelengthSelection(host: FigureHost): WidgetHandle {
     const narrow = w < 560;
     const pad = narrow ? 8 : 12;
     const yHi = rMax > 0 ? 1.3 * rMax : 0.05;
-    const yLo = rMax > 0 ? -1.1 * rMax : rMinShown;
+    // 短い波(1.6 k_m)の R = −1.43 R_max が枠内に入る下限
+    const yLo = rMax > 0 ? -1.6 * rMax : rMinShown;
     if (narrow) {
       const topH = Math.round(h * 0.5);
       return {
@@ -139,7 +146,7 @@ export default function wavelengthSelection(host: FigureHost): WidgetHandle {
           x: 44,
           y: topH + 28,
           w: w - 44 - 10,
-          h: h - topH - 28 - 34 - 44,
+          h: h - topH - 28 - LEGEND_SPACE,
           xMin: 0,
           xMax: T_AXIS_MAX,
           yMin: LOG_A_MIN,
@@ -164,7 +171,7 @@ export default function wavelengthSelection(host: FigureHost): WidgetHandle {
         x: leftW + 44,
         y: pad + 22,
         w: w - leftW - 44 - 14,
-        h: h - pad - 22 - 38 - 58,
+        h: h - pad - 22 - LEGEND_SPACE,
         xMin: 0,
         xMax: T_AXIS_MAX,
         yMin: LOG_A_MIN,
@@ -187,12 +194,15 @@ export default function wavelengthSelection(host: FigureHost): WidgetHandle {
     const rMax = maxGrowthRate(c0, chi, kappa);
     const km = fastestK(c0, chi, kappa);
     const unstable = Number.isFinite(km);
-    // スピノーダルの外: k = 0.6 付近までの減衰が見える縦軸にする
-    const rMinShown = Math.min(-0.05, 1.2 * growthRate(0.6, c0, chi, kappa));
+    // スピノーダルの外: 3 つの印(いちばん短い波まで)の減衰が見える縦軸にする
+    const rMinShown = Math.min(
+      -0.05,
+      1.12 * growthRate(FALLBACK_K[2], c0, chi, kappa),
+    );
     const L = layout(rMax, rMinShown);
     const ks = waveKs(chi);
     drawRate(L, chi, km, ks, unstable);
-    drawGrowth(L, chi, ks);
+    drawGrowth(L, chi, ks, unstable);
 
     if (unstable) {
       roKm.set(fmtFixed(km, 3));
@@ -332,7 +342,12 @@ export default function wavelengthSelection(host: FigureHost): WidgetHandle {
     }
   }
 
-  function drawGrowth(L: Layout, chi: number, ks: number[]): void {
+  function drawGrowth(
+    L: Layout,
+    chi: number,
+    ks: number[],
+    unstable: boolean,
+  ): void {
     const { right: a, narrow } = L;
     drawAxisLines(ctx, a, pal);
     drawXTicks(ctx, a, pal, linTicks(0, T_AXIS_MAX, 4), (v) => fmtFixed(v, 0));
@@ -372,47 +387,46 @@ export default function wavelengthSelection(host: FigureHost): WidgetHandle {
     }
     ctx.restore();
 
-    // 凡例: 各波の形(小さな正弦波)と波長
-    const legendTop = a.y + a.h + (narrow ? 34 : 38);
-    const colW = a.w / 3;
+    // 凡例(3 行): 線種の見本・名前と波長・波の形(波長を画面上でも比例させる)
+    const legendTop = a.y + a.h + 40;
+    const names = unstable ? WAVE_NAMES : WAVE_NAMES_STABLE;
+    ctx.font = font(narrow ? 10.5 : 11);
+    let labelW = 0;
+    const labels = ks.map((k, i) => {
+      const text = `${names[i]} λ = ${fmtSig((2 * Math.PI) / k, 2)}`;
+      labelW = Math.max(labelW, ctx.measureText(text).width);
+      return text;
+    });
+    const glyphX = a.x - 30 + 24 + labelW + 10;
+    const glyphW = Math.max(30, a.x + a.w - glyphX);
+    const pxPerLattice = Math.min(2.4, glyphW / 30);
     for (let i = 0; i < 3; i++) {
-      const x0 = a.x + i * colW;
-      const k = ks[i];
-      const lambda = (2 * Math.PI) / k;
-      // 線種の見本
+      const y = legendTop + i * LEGEND_ROW;
+      const x0 = a.x - 30;
       ctx.save();
       ctx.strokeStyle = pal.second;
       ctx.lineWidth = i === 1 ? 2.75 : 2;
       ctx.setLineDash(WAVE_DASH[i] as number[]);
       ctx.beginPath();
-      ctx.moveTo(x0, legendTop + 6);
-      ctx.lineTo(x0 + 18, legendTop + 6);
+      ctx.moveTo(x0, y);
+      ctx.lineTo(x0 + 18, y);
       ctx.stroke();
       ctx.restore();
-      // 波の形(波長を画面上でも比例させる)
-      const glyphW = colW - 26;
-      const pxPerLattice = Math.min(2.4, glyphW / 30);
+      ctx.fillStyle = pal.text2;
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText(labels[i], x0 + 24, y);
+      const lambda = (2 * Math.PI) / ks[i];
       ctx.beginPath();
-      for (let s = 0; s <= 60; s++) {
-        const u = (glyphW * s) / 60;
+      for (let s = 0; s <= 80; s++) {
+        const u = (glyphW * s) / 80;
         const yv = Math.sin((2 * Math.PI * u) / (lambda * pxPerLattice));
-        const px = x0 + 22 + u;
-        const py = legendTop + 6 - yv * 5;
-        if (s === 0) ctx.moveTo(px, py);
-        else ctx.lineTo(px, py);
+        if (s === 0) ctx.moveTo(glyphX + u, y - yv * 4.5);
+        else ctx.lineTo(glyphX + u, y - yv * 4.5);
       }
       ctx.lineWidth = 1.5;
       ctx.strokeStyle = pal.text2;
       ctx.stroke();
-      ctx.font = font(narrow ? 10 : 11);
-      ctx.fillStyle = pal.text2;
-      ctx.textAlign = "left";
-      ctx.textBaseline = "top";
-      ctx.fillText(
-        `${WAVE_NAMES[i]} λ=${fmtSig(lambda, 2)}`,
-        x0,
-        legendTop + 15,
-      );
     }
   }
 

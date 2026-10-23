@@ -119,7 +119,7 @@ export default function freeEnergyCurve(host: FigureHost): WidgetHandle {
     const left = narrow ? 40 : 50;
     const right = narrow ? 10 : 18;
     const top = pad + 22;
-    const leverH = narrow ? 96 : 92;
+    const leverH = 112;
     const bottomAxis = 34;
     const plotH = h - top - bottomAxis - leverH - pad;
     const chi = chiFromT(tOverTc);
@@ -181,7 +181,7 @@ export default function freeEnergyCurve(host: FigureHost): WidgetHandle {
     drawXTicks(ctx, a, pal, compositionTicks(narrow), (v) => fmtFixed(v, 1));
     const yTicks = linTicks(a.yMin, a.yMax, narrow ? 4 : 5);
     drawYTicks(ctx, a, pal, yTicks, (v) =>
-      fmtFixed(v, Math.abs(v) < 1e-12 ? 0 : 2),
+      Math.abs(v) < 1e-9 ? "0" : fmtFixed(v, 2),
     );
     ctx.font = font(narrow ? 11 : 12);
     ctx.fillStyle = pal.text2;
@@ -256,15 +256,7 @@ export default function freeEnergyCurve(host: FigureHost): WidgetHandle {
       );
       if (!narrow) {
         ctx.textAlign = "center";
-        ctx.textBaseline = "bottom";
-        outlinedText(
-          ctx,
-          "共通接線",
-          axX(a, 0.5),
-          axY(a, tangent.intercept) - 5,
-          pal.accent,
-          pal.bg,
-        );
+        outlinedText(ctx, "共通接線", axX(a, 0.5), yLab, pal.accent, pal.bg);
       }
     }
 
@@ -287,21 +279,7 @@ export default function freeEnergyCurve(host: FigureHost): WidgetHandle {
       ctx.arc(px0, yTan, 3.5, 0, Math.PI * 2);
       ctx.fillStyle = pal.accent;
       ctx.fill();
-      ctx.font = font(narrow ? 11 : 12);
-      const labelLeft = x0 > 0.62;
-      ctx.textAlign = labelLeft ? "right" : "left";
-      ctx.textBaseline = "middle";
-      const lx = px0 + (labelLeft ? -10 : 10);
-      const ly = (yCurve + yTan) / 2;
-      outlinedText(ctx, "分かれると", lx, ly - 8, pal.text, pal.bg);
-      outlinedText(
-        ctx,
-        `下がる量 ${fmtFixed(gain, 3)}`,
-        lx,
-        ly + 8,
-        pal.text,
-        pal.bg,
-      );
+      drawGainLabel(a, chi, px0, yCurve, yTan, gain, narrow);
     }
 
     // 組成の点(ドラッグ点)
@@ -335,11 +313,80 @@ export default function freeEnergyCurve(host: FigureHost): WidgetHandle {
     drag.sync();
   }
 
+  /**
+   * 「分かれると下がる量」のラベル。寸法線の横に 2 行で置けるときはそうし、
+   * 隙間が狭いときは点の上(曲線が低い側)に 1 行で置く。
+   */
+  function drawGainLabel(
+    a: Axes,
+    chi: number,
+    px0: number,
+    yCurve: number,
+    yTan: number,
+    gain: number,
+    narrow: boolean,
+  ): void {
+    ctx.font = font(narrow ? 11 : 12);
+    const value = fmtFixed(gain, 3);
+    if (yTan - yCurve >= 46) {
+      const labelLeft = x0 > 0.62;
+      ctx.textAlign = labelLeft ? "right" : "left";
+      ctx.textBaseline = "middle";
+      const lx = px0 + (labelLeft ? -10 : 10);
+      const ly = (yCurve + yTan) / 2;
+      outlinedText(ctx, "分かれると", lx, ly - 8, pal.text, pal.bg);
+      outlinedText(ctx, `下がる量 ${value}`, lx, ly + 8, pal.text, pal.bg);
+      return;
+    }
+    const text = `分かれると下がる量 ${value}`;
+    const tw = ctx.measureText(text).width;
+    const textH = 15;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "bottom";
+    // まず接線のすぐ上、中央の側(曲線と接線の隙間が広がる側)に置いてみる
+    const toCenterRight = x0 < 0.5;
+    const lx = toCenterRight ? px0 + 14 : px0 - 14 - tw;
+    const yBase = yTan - 5;
+    // 曲線がラベルの範囲のどこでもラベルの上端より上にあれば収まる
+    const fits =
+      lx >= a.x + 2 &&
+      lx + tw <= a.x + a.w - 2 &&
+      curveLowestPx(a, chi, lx, tw) < yBase - textH - 2;
+    if (fits) {
+      outlinedText(ctx, text, lx, yBase, pal.text, pal.bg);
+      return;
+    }
+    // 入らなければ、ラベルの幅の範囲で曲線の最も高い点より上に置く
+    let fx = toCenterRight ? px0 + 14 : px0 - 14 - tw;
+    fx = Math.min(Math.max(fx, a.x + 2), a.x + a.w - 2 - tw);
+    let yTop = yCurve;
+    for (let s = 0; s <= 12; s++) {
+      const xv = axInvX(a, fx + (tw * s) / 12);
+      if (xv > 0 && xv < 1) yTop = Math.min(yTop, axY(a, gMix(xv, chi)));
+    }
+    outlinedText(ctx, text, fx, yTop - 10, pal.text, pal.bg);
+  }
+
+  /**
+   * px 区間 [x, x + w] で曲線が最も低い位置(画面の y が最も大きい値)。
+   * ラベルが曲線の下(接線との隙間)に収まるかの判定に使う。
+   */
+  function curveLowestPx(a: Axes, chi: number, x: number, w: number): number {
+    let y = -Infinity;
+    for (let s = 0; s <= 12; s++) {
+      const xv = axInvX(a, x + (w * s) / 12);
+      if (xv > 0 && xv < 1) y = Math.max(y, axY(a, gMix(xv, chi)));
+    }
+    return y;
+  }
+
   /** てこの絵: 支点 = X0、両端 = 2 つの接点、重りの面積 = 各相の割合 */
   function drawLever(L: Layout, cA: number, cB: number, split: boolean): void {
     const { plot: a, narrow } = L;
     const y0 = L.leverY;
-    const beamY = y0 + L.leverH * 0.42;
+    const rMax = narrow ? 17 : 18;
+    // 題の下に重り(直径 2·rMax)が載る高さに梁を置く
+    const beamY = y0 + 20 + 2 * rMax + 3;
     ctx.font = font(narrow ? 11 : 12);
     ctx.fillStyle = pal.text2;
     ctx.textAlign = "left";
@@ -380,7 +427,6 @@ export default function freeEnergyCurve(host: FigureHost): WidgetHandle {
     ctx.fillStyle = pal.accent;
     ctx.fill();
     // 重り(面積 ∝ 割合)
-    const rMax = narrow ? 17 : 19;
     const weights: Array<[number, number, string, string, string]> = [
       [xa, 1 - fB, pal.matrix, pal.matrixEdge, "α(A リッチ)"],
       [xb, fB, pal.second, pal.secondEdge, "β(B リッチ)"],

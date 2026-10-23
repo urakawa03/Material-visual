@@ -30,7 +30,7 @@ import {
   viewY,
 } from "../kirkendall-effect/lib/draw";
 import { ATOM_B, LatticeGas } from "./lib/latticegas";
-import { fmtSig, font, outlinedText, resolvePalette } from "./lib/draw";
+import { fmtSig, font, resolvePalette } from "./lib/draw";
 
 /** 格子と初期の波(§5.4) */
 const COLS = 64;
@@ -46,8 +46,10 @@ const T_INIT = 0.6;
 const SWAP_WINDOW = 18;
 /** 画面に出す入れ替わりの線のおおよその本数 */
 const SWAP_LINES_TARGET = 160;
-/** 「濃い列へ向かう正味の移動」を数える窓 [掃引] と、向きを言い切るしきい値 [個] */
-const FLUX_WINDOW = 60;
+/**
+ * 「濃い列へ向かう正味の移動」の向きを言い切るしきい値 [個]。リセット(または
+ * 温度の変更)からの累計で数える — 数掃引の窓では雑音に埋もれるため
+ */
 const FLUX_THRESHOLD = 10;
 /** 省モーション時に 1 回の「再生」で進める掃引数 */
 const REDUCED_SWEEPS = 300;
@@ -75,7 +77,6 @@ export default function uphillDiffusion(host: FigureHost): WidgetHandle {
   const profile0 = new Float64Array(COLS);
   const wave = { a: 0, b: 0 };
   const history = new Float64Array(HISTORY);
-  const fluxRing = new Float64Array(FLUX_WINDOW);
   /** 描画バッファ(毎フレームの割当てを避ける — §8.3) */
   const bufAX = new Float64Array(grid.count);
   const bufAY = new Float64Array(grid.count);
@@ -87,6 +88,9 @@ export default function uphillDiffusion(host: FigureHost): WidgetHandle {
   let amp0 = 1;
   let historyLen = 0;
   let acceptedEma = 50;
+  /** 濃い列の側へ動いた B の正味の数と、数え始めてからの掃引数 */
+  let fluxTotal = 0;
+  let fluxSweeps = 0;
 
   const readout = createReadout(host);
   const roAmp = readout.item("波の振幅");
@@ -105,6 +109,9 @@ export default function uphillDiffusion(host: FigureHost): WidgetHandle {
   tCtl.onChange((v) => {
     tOverTc = v;
     gas.setTemperature(v);
+    // 温度を変えたら、正味の移動はそこから数え直す
+    fluxTotal = 0;
+    fluxSweeps = 0;
   });
   const swapCtl = host.controls.toggle({
     id: "swaps",
@@ -130,7 +137,8 @@ export default function uphillDiffusion(host: FigureHost): WidgetHandle {
     amp0 = gas.waveComponent(profile0, WAVELENGTH, wave);
     history[0] = 1;
     historyLen = 1;
-    fluxRing.fill(0);
+    fluxTotal = 0;
+    fluxSweeps = 0;
     acceptedEma = 50;
   }
 
@@ -153,7 +161,8 @@ export default function uphillDiffusion(host: FigureHost): WidgetHandle {
       const d = Math.cos(k * (x + 1) - phase) - Math.cos(k * x - phase);
       s += gas.netFlux[x] * d;
     }
-    fluxRing[gas.sweeps % FLUX_WINDOW] = s;
+    fluxTotal += s;
+    fluxSweeps++;
     gas.columnProfile(profile);
     const a = gas.waveComponent(profile, WAVELENGTH, wave);
     if (historyLen < HISTORY) history[historyLen++] = a / amp0;
@@ -172,15 +181,18 @@ export default function uphillDiffusion(host: FigureHost): WidgetHandle {
     const narrow = w < 560;
     const pad = narrow ? 8 : 12;
     const header = 20;
-    const topH = Math.round((h - header) * 0.6);
+    // 格子(64 × 32 = 横 2 : 縦 1)が収まる高さ以上は取らない(余白を下段に回す)
+    const latticeNatural = ((w - 2 * pad) / COLS) * ROWS + 6;
+    const topH = Math.round(Math.min((h - header) * 0.6, latticeNatural + pad));
     const latticeBox = {
       x: pad,
       y: pad + header,
       w: w - 2 * pad,
       h: topH - pad,
     };
-    const bottomY = pad + header + topH + 18;
-    const bottomH = h - bottomY - 30;
+    const bottomY = pad + header + topH + 30;
+    // 下段: 軸の文字と凡例の行のぶん(34px)を下に残す
+    const bottomH = h - bottomY - 36;
     if (narrow) {
       return {
         narrow,
@@ -209,17 +221,14 @@ export default function uphillDiffusion(host: FigureHost): WidgetHandle {
 
     const ratio = history[historyLen - 1];
     roAmp.set(`初期の ${ratio.toFixed(2)} 倍`);
-    // リングは init で 0 にしてあるので、全体の和 = 直近 filled 掃引の和
-    let s = 0;
-    const filled = Math.min(gas.sweeps, FLUX_WINDOW);
-    for (let i = 0; i < FLUX_WINDOW; i++) s += fluxRing[i];
+    const s = fluxTotal;
     roFlux.set(
-      filled === 0
+      fluxSweeps === 0
         ? "—"
         : s >= FLUX_THRESHOLD
-          ? `濃い方へ(+${Math.round(s)} 個 / ${filled} 掃引)`
+          ? `濃い方へ(正味 +${Math.round(s)} 個)`
           : s <= -FLUX_THRESHOLD
-            ? `薄い方へ(${Math.round(s)} 個 / ${filled} 掃引)`
+            ? `薄い方へ(正味 −${Math.round(-s)} 個)`
             : "はっきりしない(ほぼ釣り合い)",
     );
     roAcc.set(
@@ -328,7 +337,11 @@ export default function uphillDiffusion(host: FigureHost): WidgetHandle {
     ctx.fillStyle = pal.text2;
     ctx.textAlign = "left";
     ctx.textBaseline = "bottom";
-    ctx.fillText("列ごとの B の割合(濃度プロファイル)", p.x - 30, p.y - 4);
+    ctx.fillText(
+      L.narrow ? "列ごとの B の割合" : "列ごとの B の割合(濃度プロファイル)",
+      p.x - 30,
+      p.y - 10,
+    );
     // 軸
     ctx.strokeStyle = pal.hairline;
     ctx.lineWidth = 1;
@@ -372,19 +385,28 @@ export default function uphillDiffusion(host: FigureHost): WidgetHandle {
     ctx.lineWidth = 2.25;
     ctx.stroke();
 
-    // 凡例
+    // 凡例(軸の文字の下に 1 行: 線の見本 + 名前)
     ctx.font = font(10);
-    ctx.textAlign = "right";
-    ctx.textBaseline = "top";
-    const lx = p.x + p.w - 2;
-    outlinedText(
-      ctx,
-      "灰 = 初期 / 細線 = 現在 / 太線 = 波の成分",
-      lx,
-      p.y + 2,
-      pal.text2,
-      pal.bg,
-    );
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    const items: Array<[string, number, string]> = [
+      [pal.hairline, 3, "初期"],
+      [pal.second, 1.5, "現在"],
+      [pal.secondEdge, 2.25, "波の成分"],
+    ];
+    let lx = p.x - 30;
+    const ly = p.y + p.h + 25;
+    for (const [color, width, label] of items) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.beginPath();
+      ctx.moveTo(lx, ly);
+      ctx.lineTo(lx + 16, ly);
+      ctx.stroke();
+      ctx.fillStyle = pal.text2;
+      ctx.fillText(label, lx + 20, ly);
+      lx += 20 + ctx.measureText(label).width + 12;
+    }
   }
 
   function drawAmplitude(L: Layout): void {
@@ -398,7 +420,7 @@ export default function uphillDiffusion(host: FigureHost): WidgetHandle {
     ctx.fillStyle = pal.text2;
     ctx.textAlign = "left";
     ctx.textBaseline = "bottom";
-    ctx.fillText("波の振幅(初期 = 1)", p.x - 26, p.y - 4);
+    ctx.fillText("波の振幅(初期 = 1)", p.x - 26, p.y - 10);
     ctx.strokeStyle = pal.hairline;
     ctx.lineWidth = 1;
     ctx.beginPath();

@@ -76,8 +76,8 @@ const paths = [nucleation, spinodalRun].map((row, r) =>
 );
 
 const ROW_TITLE = [
-  "準安定から: 障壁を越えて始まる分離(核生成・成長)",
-  "不安定から: 障壁なしに始まる分離(スピノーダル分解)",
+  "① 準安定から: 障壁を越えて始まる分離(核生成・成長)",
+  "② 不安定から: 障壁なしに始まる分離(スピノーダル分解)",
 ] as const;
 const STEP_LABEL = [
   ["核ができる", "島が育つ", "粗大化"],
@@ -114,9 +114,10 @@ function dome(fn: (chi: number) => number): string {
 const binodalPath = dome(binodal);
 const spinodalPath = dome(spinodal);
 const T_STATE = 2 / 3;
+/** 状態点と、右の段の番号(引き出し線の代わりに番号で対応させる) */
 const STATES = [
-  { c: 0.15, row: 0 },
-  { c: 0.5, row: 1 },
+  { c: 0.15, label: "① 準安定" },
+  { c: 0.5, label: "② 不安定" },
 ] as const;
 ---
 
@@ -201,11 +202,11 @@ const STATES = [
       stroke-width="2"
       stroke-dasharray="6 4"></path>
     <text
-      x={mapX(0.5)}
-      y={mapY(1.12)}
+      x={mapX(0.33)}
+      y={mapY(1.14)}
       text-anchor="middle"
       font-size="11.5"
-      fill="var(--color-text-2)">一様(高温)</text
+      fill="var(--color-text-2)">高温(一様)から急冷</text
     >
 
     <!-- 急冷の経路と状態点 -->
@@ -235,38 +236,21 @@ const STATES = [
         </g>
       ))
     }
-    <text
-      x={mapX(0.15) + 10}
-      y={mapY(T_STATE) + 30}
-      font-size="11.5"
-      font-weight="600"
-      fill="var(--color-text)">準安定</text
-    >
-    <text
-      x={mapX(0.5)}
-      y={mapY(T_STATE) + 30}
-      text-anchor="middle"
-      font-size="11.5"
-      font-weight="600"
-      fill="var(--color-text)">不安定</text
-    >
-    <text
-      x={mapX(0.82)}
-      y={mapY(1.06) + 4}
-      text-anchor="middle"
-      font-size="11"
-      fill="var(--color-text-2)">急冷</text
-    >
-
-    <!-- 状態点から経路への引き出し線 -->
     {
-      STATES.map((s) => (
-        <polyline
-          points={`${mapX(s.c) + 8},${mapY(T_STATE)} ${COLS_X[0] - 22},${ROW_Y[s.row] + SNAP / 2} ${COLS_X[0] - 8},${ROW_Y[s.row] + SNAP / 2}`}
-          fill="none"
-          stroke="var(--color-hairline)"
-          stroke-width="1.5"
-        />
+      STATES.map((st) => (
+        <text
+          x={mapX(st.c)}
+          y={mapY(T_STATE) + 24}
+          text-anchor="middle"
+          font-size="12"
+          font-weight="600"
+          fill="var(--color-text)"
+          stroke="var(--color-bg)"
+          stroke-width="4"
+          paint-order="stroke"
+        >
+          {st.label}
+        </text>
       ))
     }
 

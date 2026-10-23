@@ -229,39 +229,67 @@ export default function binodalSpinodal(host: FigureHost): WidgetHandle {
 
     drawDomes(ctx, a, pal, 2);
 
-    // 線の凡例
-    const lx = a.x + a.w - (narrow ? 118 : 132);
-    const ly = a.y + 4;
+    // 線の凡例(プロットの上の帯に 1 行で — 状態点と重ならないように)
     ctx.font = font(narrow ? 10.5 : 11.5);
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
+    const ly = a.y - 12;
+    const wB = ctx.measureText("バイノーダル").width;
+    const wS = ctx.measureText("スピノーダル").width;
+    let lx = a.x + a.w - (26 + wB + 14 + 26 + wS);
     ctx.strokeStyle = pal.text2;
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(lx, ly + 6);
-    ctx.lineTo(lx + 20, ly + 6);
+    ctx.moveTo(lx, ly);
+    ctx.lineTo(lx + 20, ly);
     ctx.stroke();
+    ctx.fillStyle = pal.text2;
+    ctx.fillText("バイノーダル", lx + 26, ly);
+    lx += 26 + wB + 14;
     ctx.save();
     ctx.setLineDash([6, 4]);
     ctx.beginPath();
-    ctx.moveTo(lx, ly + 22);
-    ctx.lineTo(lx + 20, ly + 22);
+    ctx.moveTo(lx, ly);
+    ctx.lineTo(lx + 20, ly);
     ctx.stroke();
     ctx.restore();
-    ctx.fillStyle = pal.text2;
-    ctx.fillText("バイノーダル", lx + 26, ly + 6);
-    ctx.fillText("スピノーダル", lx + 26, ly + 22);
+    ctx.fillText("スピノーダル", lx + 26, ly);
 
     // 領域のラベル(収まるところにだけ)
     ctx.font = font(narrow ? 11 : 12.5, 600);
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = pal.text2;
-    ctx.fillText("安定", axX(a, 0.5), axY(a, 1.055));
-    const tUn = 0.6;
-    ctx.fillText("不安定", axX(a, 0.5), axY(a, tUn) - 8);
+    // 「安定」はドームの左上の外側(頂上付近は状態点がよく通るので避ける)
+    ctx.fillText("安定", axX(a, 0.1), axY(a, 0.98));
+    // 「不安定」はドームの中央。状態点やそのラベルと重なるときだけ上下にずらす
+    const px = axX(a, xState);
+    const py = axY(a, tState);
+    const stateFont = font(narrow ? 10.5 : 11.5);
+    const stateText = `X = ${fmtFixed(xState, 2)}, T/Tc = ${fmtFixed(tState, 2)}`;
+    const labelRight = xState < 0.7;
+    ctx.font = stateFont;
+    const stateW = ctx.measureText(stateText).width;
+    const sx0 = labelRight ? px + 11 : px - 11 - stateW;
+    const keepOut = [
+      [px - 13, py - 13, px + 13, py + 13],
+      [sx0 - 2, py - 21, sx0 + stateW + 2, py - 4],
+    ];
+    const xUn = axX(a, 0.5);
+    let yUn = axY(a, 0.6);
+    for (const tCand of [0.6, 0.48, 0.78]) {
+      yUn = axY(a, tCand);
+      const y = yUn;
+      const hit = keepOut.some(
+        ([x0, y0, x1, y1]) =>
+          x1 > xUn - 46 && x0 < xUn + 46 && y1 > y - 18 && y0 < y + 18,
+      );
+      if (!hit) break;
+    }
+    ctx.font = font(narrow ? 11 : 12.5, 600);
+    ctx.fillText("不安定", xUn, yUn - 8);
     ctx.font = font(narrow ? 10.5 : 11.5);
-    ctx.fillText("(核は要らない)", axX(a, 0.5), axY(a, tUn) + 9);
+    ctx.fillText("(核は要らない)", xUn, yUn + 9);
     // 準安定: 低温側の帯(幅が最も広い)に縦書き風に 2 行で
     const tMeta = T_LO + 0.05;
     const chiMeta = chiFromT(tMeta);
@@ -279,19 +307,16 @@ export default function binodalSpinodal(host: FigureHost): WidgetHandle {
     }
 
     // 状態点
-    const px = axX(a, xState);
-    const py = axY(a, tState);
     drawStateRing(ctx, px, py, pal);
     if (drag.focusedIndex() === 0) drawFocusRing(ctx, px, py);
     // 状態点のラベル
-    ctx.font = font(narrow ? 10.5 : 11.5);
+    ctx.font = stateFont;
     ctx.textBaseline = "bottom";
-    const right = xState < 0.7;
-    ctx.textAlign = right ? "left" : "right";
+    ctx.textAlign = labelRight ? "left" : "right";
     outlinedText(
       ctx,
-      `X = ${fmtFixed(xState, 2)}, T/Tc = ${fmtFixed(tState, 2)}`,
-      px + (right ? 11 : -11),
+      stateText,
+      px + (labelRight ? 11 : -11),
       py - 6,
       region === "stable" ? pal.text2 : pal.text,
       pal.bg,

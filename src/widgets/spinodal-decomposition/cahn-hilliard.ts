@@ -64,6 +64,13 @@ const NOISE = 0.01;
 const SEED = 20261023;
 /** 1 フレームのステップ数(§5.0: 図6 は 4) */
 const STEPS_PER_FRAME = 4;
+/**
+ * 準安定・安定の領域でのステップ数。置いた核が溶ける(約時間 50〜100)
+ * 様子が 1 秒ほどかけて見えるように、不安定の領域より遅く回す
+ */
+const STEPS_PER_FRAME_SLOW = 2;
+/** 「模様がある」とみなす濃度の分散(標準偏差 0.02)。それ未満は初期のゆらぎだけ */
+const PATTERN_VARIANCE = 4e-4;
 /** 散乱強度・自由エネルギーを計算する間隔 [フレーム] */
 const ANALYSIS_EVERY = 10;
 /** 組成・温度・核の半径のスライダー(§5.6。組成の下限は本文の注を参照) */
@@ -211,6 +218,9 @@ export default function cahnHilliard(host: FigureHost): WidgetHandle {
     setControlEnabled(rCtl.el, meta);
     placeBtn.el.disabled = !meta;
     placeBtn.el.setAttribute("aria-disabled", meta ? "false" : "true");
+    // 無効のボタンも行と同じ薄さに(controls.css の .ctl.is-disabled と揃える)
+    placeBtn.el.style.opacity = meta ? "" : "0.45";
+    placeBtn.el.style.cursor = meta ? "" : "default";
   }
 
   /** 格子座標 (cx, cy) に B リッチの核を置く(準安定のときのみ) */
@@ -379,7 +389,7 @@ export default function cahnHilliard(host: FigureHost): WidgetHandle {
     );
     roTime.set(fmtSig(sim.time, 3));
     roL.set(
-      Number.isFinite(lengthL) && sim.variance() > 1e-6
+      Number.isFinite(lengthL) && patterned()
         ? `${fmtSig(lengthL, 3)} 格子`
         : "—(模様なし)",
     );
@@ -388,7 +398,18 @@ export default function cahnHilliard(host: FigureHost): WidgetHandle {
         ? `${fmtSig((2 * Math.PI) / km, 3)} 格子`
         : "—(育つ波なし)",
     );
-    roF.set(`${fmtSig(f0 - fNow, 3)} RT/格子点`);
+    roF.set(`${formatEnergy(f0 - fNow)} RT/格子点`);
+  }
+
+  /** 初期のゆらぎより十分大きな濃度の模様があるか */
+  function patterned(): boolean {
+    return sim.variance() > PATTERN_VARIANCE;
+  }
+
+  /** 自由エネルギーの変化(小数 4 桁。負号は「−」) */
+  function formatEnergy(v: number): string {
+    if (Math.abs(v) < 5e-5) return "0.0000";
+    return (v < 0 ? "−" : "") + Math.abs(v).toFixed(4);
   }
 
   function drawRings(L: Layout): void {
@@ -514,12 +535,12 @@ export default function cahnHilliard(host: FigureHost): WidgetHandle {
       if (k > SK_K_MAX) break;
       if (sk[b] > sMax) sMax = sk[b];
     }
-    if (sMax <= 0 || sim.variance() < 1e-10) {
+    if (sMax <= 0 || !patterned()) {
       ctx.font = font(10.5);
       ctx.fillStyle = pal.text2;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText("模様なし", a.x + a.w / 2, a.y + a.h / 2);
+      ctx.fillText("模様なし(小さなゆらぎだけ)", a.x + a.w / 2, a.y + a.h / 2);
       return;
     }
     ctx.save();
@@ -541,7 +562,9 @@ export default function cahnHilliard(host: FigureHost): WidgetHandle {
 
   /* ---- フレームループ ---- */
   host.onFrame((dt) => {
-    const steps = budget.steps(STEPS_PER_FRAME);
+    const steps = budget.steps(
+      region === "unstable" ? STEPS_PER_FRAME : STEPS_PER_FRAME_SLOW,
+    );
     const t0 = performance.now();
     for (let s = 0; s < steps; s++) {
       sim.setDt(sim.time < tLinear - 1e-9 ? earlyDt(sim.A) : DT);

@@ -50,10 +50,11 @@ export function stabilizationFor(chi: number): number {
  * 線形段階(模様が浮かび上がるまで)の時間刻み。安定化の項 A は時間刻み
  * の誤差として線形の増幅率を下げ、最も速く育つ波長を長い側へずらす
  * (Δt = 0.5・A = 8 では 17% ずれる)。線形段階だけ Δt を A に応じて細かく
- * して、図5 の予測(λ_m)と図6 の初期の模様を一致させる(§5.8 T7)。
+ * して(A = 8 で Δt = 0.05 — ずれは 3%)、図5 の予測(λ_m)と図6 の初期の
+ * 模様を一致させる(§5.8 T7)。
  */
 export function earlyDt(A: number): number {
-  return Math.min(DT, 0.8 / A);
+  return Math.min(DT, 0.4 / A);
 }
 
 /** 線形段階の長さを決める、最大増幅率での e 倍の回数 */
