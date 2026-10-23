@@ -606,7 +606,8 @@ export default function carbonTrapped(host: FigureHost): WidgetHandle {
     const barH = narrow ? 14 : 18;
     const gap = narrow ? 20 : 24;
     const bandTop = p.y + (narrow ? 2 * fs + 14 : fs + 10);
-    const y1 = bandTop + fs + 12;
+    // 帯の名前(上端)と 1 本目の棒の名前が重ならないよう、2 行ぶん空ける
+    const y1 = bandTop + 2 * fs + 8;
     const y2 = y1 + barH + gap;
     const axisY = Math.min(y2 + barH + 14, p.y + p.h - fs - 8);
     const xs = makeScale(DIST_MIN_UM, DIST_MAX_UM, left, right, true);
