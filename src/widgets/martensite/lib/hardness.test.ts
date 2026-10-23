@@ -11,7 +11,7 @@ import {
   pearliteSpacingRel,
   slowCooledHardness,
 } from "./hardness";
-import { monotoneCubic } from "./interp";
+import { monotoneCubic, piecewiseLinear } from "./interp";
 
 describe("T7: 100% マルテンサイトの硬さの補間(§5.6)", () => {
   it("単調非減少で、表の点を通る", () => {
@@ -69,7 +69,7 @@ describe("図1 の硬さの目安(§5.1)", () => {
   });
 });
 
-describe("単調 3 次補間(interp.ts)", () => {
+describe("補間(interp.ts)", () => {
   it("単調な表から行き過ぎ(オーバーシュート)のない曲線を作る", () => {
     const f = monotoneCubic([
       [0, 0],
@@ -94,5 +94,24 @@ describe("単調 3 次補間(interp.ts)", () => {
       [2, 2],
     ]);
     expect(f(1.5)).toBe(2);
+  });
+
+  it("折れ線は点を直線でつなぎ、範囲の外は端の値で一定", () => {
+    const f = piecewiseLinear([
+      [0, 160],
+      [0.1, 350],
+      [0.3, 525],
+    ]);
+    expect(f(-1)).toBe(160);
+    expect(f(0.05)).toBeCloseTo(255, 9);
+    expect(f(0.2)).toBeCloseTo(437.5, 9);
+    expect(f(0.3)).toBe(525);
+    expect(f(9)).toBe(525);
+    expect(() =>
+      piecewiseLinear([
+        [0, 1],
+        [0, 2],
+      ]),
+    ).toThrow();
   });
 });

@@ -1,7 +1,9 @@
 /**
  * hardness.ts — 硬さの目安(記事仕様書 10 §2.3・§5.1・§5.6)
  *
- * - 100% マルテンサイトの硬さと炭素量(実測の傾向に沿った表の単調補間)
+ * - 100% マルテンサイトの硬さと炭素量(目安の点を折れ線でつなぐ。3 次の
+ *   補間は、急な立ち上がりのあとの直線部で S 字に波打ち、表にない特徴を
+ *   作ってしまうので使わない)
  * - 徐冷した鋼の硬さ(図6 の参考線)
  * - パーライトの硬さと変態温度(図1。低い温度でできたものほど縞が細かく硬い)
  *
@@ -14,9 +16,9 @@ import {
   PEARLITE_HV_ANCHORS,
   SLOW_COOLED_HV_TABLE,
 } from "./constants";
-import { monotoneCubic } from "./interp";
+import { monotoneCubic, piecewiseLinear } from "./interp";
 
-const martensiteCurve = monotoneCubic(MARTENSITE_HV_TABLE);
+const martensiteCurve = piecewiseLinear(MARTENSITE_HV_TABLE);
 const slowCooledCurve = monotoneCubic(SLOW_COOLED_HV_TABLE);
 
 /** 100% マルテンサイトの硬さ [HV](炭素量 wt%。単調非減少) */

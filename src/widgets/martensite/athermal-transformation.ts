@@ -249,10 +249,10 @@ export default function athermalTransformation(host: FigureHost): WidgetHandle {
     ctx.globalAlpha = 1;
     // M_s・M_f(破線)。M_f が 0 ℃ より下なら、軸の左下に値だけ書く
     vline(X(ms), top, bottom, true);
-    subLabel(ctx, "M", "s", "", X(ms) + 4, bottom - 6, pal.text, fs + 1);
+    subLabel(ctx, "M", "s", "", X(ms) + 4, Y(0.5), pal.text, fs + 1);
     if (mf >= T_AXIS_MIN) {
       vline(X(mf), top, bottom, true);
-      subLabel(ctx, "M", "f", "", X(mf) + 4, bottom - 6, pal.text, fs + 1);
+      subLabel(ctx, "M", "f", "", X(mf) + 4, Y(0.5), pal.text, fs + 1);
     } else {
       subLabel(
         ctx,

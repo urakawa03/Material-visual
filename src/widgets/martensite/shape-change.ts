@@ -365,7 +365,7 @@ export default function shapeChange(host: FigureHost): WidgetHandle {
     const w = LAYER_D / stack.n;
     const nx = Math.ceil(REGION_W / FIELD_CELL);
     const ny = Math.ceil(REGION_H / FIELD_CELL);
-    const px = FIELD_CELL * v.scale + 0.5;
+    const cellPx = FIELD_CELL * v.scale;
     for (let j = 0; j < ny; j++) {
       const y = -(j + 0.5) * FIELD_CELL;
       for (let i = 0; i < nx; i++) {
@@ -388,11 +388,15 @@ export default function shapeChange(host: FigureHost): WidgetHandle {
         if (a < 0.02) continue;
         const [r, g, bl] = pr > 0 ? compressionRgb : tensionRgb;
         ctx.fillStyle = `rgba(${r}, ${g}, ${bl}, ${a.toFixed(3)})`;
+        // 隣のセルと重ならず隙間もできないよう、端を整数の px にそろえる
+        // (重なると半透明の塗りが二重になり、格子状の筋が見える)
+        const x0 = Math.round(v.ox + i * cellPx);
+        const y0 = Math.round(v.oy + j * cellPx);
         ctx.fillRect(
-          v.ox + i * FIELD_CELL * v.scale,
-          v.oy + j * FIELD_CELL * v.scale,
-          px,
-          px,
+          x0,
+          y0,
+          Math.round(v.ox + (i + 1) * cellPx) - x0,
+          Math.round(v.oy + (j + 1) * cellPx) - y0,
         );
       }
     }

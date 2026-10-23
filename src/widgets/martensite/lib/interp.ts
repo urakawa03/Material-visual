@@ -66,3 +66,26 @@ export function monotoneCubic(table: Table): (x: number) => number {
     return h00 * ys[i] + h10 * h * m[i] + h01 * ys[i + 1] + h11 * h * m[i + 1];
   };
 }
+
+/**
+ * 表の点を折れ線でつなぐ補間関数(x は狭義の昇順)。表の範囲の外は端の値で
+ * 一定にする。点のあいだに表にない山や谷を作らない(単調な表なら単調)。
+ */
+export function piecewiseLinear(table: Table): (x: number) => number {
+  const n = table.length;
+  if (n < 2) throw new Error("piecewiseLinear: 2 点以上が必要です");
+  for (let i = 1; i < n; i++) {
+    if (!(table[i][0] > table[i - 1][0])) {
+      throw new Error("piecewiseLinear: x は狭義の昇順であること");
+    }
+  }
+  return (x: number): number => {
+    if (x <= table[0][0]) return table[0][1];
+    if (x >= table[n - 1][0]) return table[n - 1][1];
+    let i = 0;
+    while (i < n - 2 && x > table[i + 1][0]) i++;
+    const [x0, y0] = table[i];
+    const [x1, y1] = table[i + 1];
+    return y0 + ((y1 - y0) * (x - x0)) / (x1 - x0);
+  };
+}
