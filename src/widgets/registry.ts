@@ -137,6 +137,20 @@ export const registry: Record<
   // 記事「構造因子と消滅則」(仕様書 08)— 実装時にこの直下へ登録する
 
   // 記事「スピノーダル分解」(仕様書 09)— 実装時にこの直下へ登録する
+  "spinodal-decomposition/two-mechanisms": () =>
+    import("./spinodal-decomposition/two-mechanisms"),
+  "spinodal-decomposition/free-energy-curve": () =>
+    import("./spinodal-decomposition/free-energy-curve"),
+  "spinodal-decomposition/binodal-spinodal": () =>
+    import("./spinodal-decomposition/binodal-spinodal"),
+  "spinodal-decomposition/uphill-diffusion": () =>
+    import("./spinodal-decomposition/uphill-diffusion"),
+  "spinodal-decomposition/wavelength-selection": () =>
+    import("./spinodal-decomposition/wavelength-selection"),
+  "spinodal-decomposition/cahn-hilliard": () =>
+    import("./spinodal-decomposition/cahn-hilliard"),
+  "spinodal-decomposition/coarsening-transition": () =>
+    import("./spinodal-decomposition/coarsening-transition"),
 
   // 記事「マルテンサイト変態」(仕様書 10)— 実装時にこの直下へ登録する
 

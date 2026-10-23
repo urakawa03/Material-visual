@@ -145,7 +145,7 @@ export const TOPICS: readonly Topic[] = [
       { slug: "kirkendall-effect", recommended: false },
       { slug: "gp-zones", recommended: true },
     ],
-    published: false,
+    published: true,
   },
   {
     order: 10,
