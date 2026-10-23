@@ -190,7 +190,7 @@ export const TOPICS: readonly Topic[] = [
       { slug: "fermi-level", recommended: false },
       { slug: "band-theory", recommended: true },
     ],
-    published: false,
+    published: true,
   },
   {
     order: 14,
