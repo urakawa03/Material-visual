@@ -193,14 +193,13 @@ export default function transmissionVsThickness(
         px2 + 9,
         map.rect.x + map.rect.w - ctx.measureText(label).width - 2,
       );
-      haloText(
-        ctx,
-        label,
-        lx,
-        Math.min(bottom - 10, (py1 + py2) / 2 + (py2 === py1 ? -12 : 0)),
-        pal.text,
-        pal.bg,
-      );
+      // 落差が大きければ矢印の横の中ほど。小さければ(薄い・低い壁で曲線が
+      // 上の端に張り付くとき)曲線に重ならないよう点の下、下の端なら点の上
+      let ly: number;
+      if (py2 - py1 >= 24) ly = (py1 + py2) / 2;
+      else if (py2 + 30 <= bottom) ly = py2 + 18;
+      else ly = py1 - 14;
+      haloText(ctx, label, lx, ly, pal.text, pal.bg);
     } else {
       ctx.textAlign = "right";
       ctx.textBaseline = "top";
@@ -219,9 +218,16 @@ export default function transmissionVsThickness(
     ctx.fillStyle = pal.electron;
     ctx.fill();
     if (map.toPxY(axisValue(ln1)) > bottom + 0.5) {
+      // 点が目盛りより下: 点の真上に印(右の端では文字が枠からはみ出さないよう寄せる)
+      const outLabel = "▼ 目盛りの外";
+      const half = ctx.measureText(outLabel).width / 2;
+      const ox = Math.min(
+        Math.max(px1, map.rect.x + half + 2),
+        map.rect.x + map.rect.w - half - 2,
+      );
       ctx.textAlign = "center";
       ctx.textBaseline = "bottom";
-      haloText(ctx, "▼ 目盛りの外", px1, bottom - 8, pal.text2, pal.bg);
+      haloText(ctx, outLabel, ox, bottom - 8, pal.text2, pal.bg);
     }
 
     // 凡例
