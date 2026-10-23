@@ -259,14 +259,19 @@ export default function distanceSensitivity(host: FigureHost): WidgetHandle {
       pal.beamInk,
       pal.bg,
     );
-    // 1 段奥の原子の説明(その段の右の原子のすぐ右に 2 行で)
+    // 1 段奥の原子の説明(その段の右の原子のすぐ右に 2 行で)。段の間隔が
+    // 狭い(狭幅)ときは 1 行に縮めて、すぐ下の段の「先端の原子」と重ねない
     ctx.font = font(11);
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
     const lx = xx(TIP_SPACING * 0.5) + rPx + 6;
     const ly = zy(gap + LAYER_DZ);
-    haloText(ctx, "← 1 段奥の原子", lx, ly - 7, pal.text2, pal.bg);
-    haloText(ctx, "(0.25 nm 遠い)", lx + 12, ly + 8, pal.text2, pal.bg);
+    if (LAYER_DZ * scale >= 30) {
+      haloText(ctx, "← 1 段奥の原子", lx, ly - 7, pal.text2, pal.bg);
+      haloText(ctx, "(0.25 nm 遠い)", lx + 12, ly + 8, pal.text2, pal.bg);
+    } else {
+      haloText(ctx, "← 1 段奥(0.25 nm 遠い)", lx, ly - 3, pal.text2, pal.bg);
+    }
     ctx.font = font(12);
     ctx.textBaseline = "top";
     haloText(ctx, "探針", r.x + 8, r.y + 8, pal.text2, pal.bg);
@@ -318,17 +323,19 @@ export default function distanceSensitivity(host: FigureHost): WidgetHandle {
       ctx.lineTo(px1, py0);
       ctx.lineTo(px1, py1);
       ctx.stroke();
+      // 段の左に書く。縦軸の目盛りにかかるほど左に寄るときは、点の右上
+      // (曲線は右下がりなので点の右上は空いている)
       ctx.font = font(12);
-      ctx.textAlign = "right";
       ctx.textBaseline = "middle";
-      haloText(
-        ctx,
-        `0.1 nm で ${fmtTimes(currentRatio(phi, 0.1))}`,
-        px1 - 6,
-        (py0 + py1) / 2,
-        pal.text,
-        pal.bg,
-      );
+      const stepLabel = `0.1 nm で ${fmtTimes(currentRatio(phi, 0.1))}`;
+      const stepW = ctx.measureText(stepLabel).width;
+      if (px1 - 6 - stepW >= map.rect.x + 4) {
+        ctx.textAlign = "right";
+        haloText(ctx, stepLabel, px1 - 6, (py0 + py1) / 2, pal.text, pal.bg);
+      } else {
+        ctx.textAlign = "left";
+        haloText(ctx, stepLabel, px0 + 10, py0 - 12, pal.text, pal.bg);
+      }
     }
     ctx.beginPath();
     ctx.arc(px0, py0, 5.5, 0, Math.PI * 2);
