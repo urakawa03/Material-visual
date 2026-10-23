@@ -1,0 +1,228 @@
+---
+/**
+ * StaticWaterLevel.astro — 静的図 S-3(記事仕様書 12 §6.1・まとめ節)
+ *
+ * 真性・n 型・p 型の 3 つのバンド図を並べ、E_F を「水位」の線として描いた
+ * 1 枚絵。意味パレットのみで描く: 許容帯 --mat-band + バンド端 --mat-level、
+ * 価電子帯の満席 --mat-electron の薄い塗り、伝導帯の電子 --mat-electron、
+ * 価電子帯の正孔 --mat-hole、ドナー / アクセプタ準位 --mat-solute、
+ * E_F は太い破線(--mat-electron)、E_i は細い破線(--mat-level)。
+ * 水位の線より下の禁制帯には何も塗らない(E_F の高さに電子がいるわけでは
+ * ない — 本文の主張と食い違わないように)。
+ */
+
+interface Props {
+  caption: string;
+  alt: string;
+}
+
+const { caption, alt } = Astro.props;
+
+/** 縦の配置(px) */
+const CB_TOP = 52;
+const EC = 100;
+const EV = 196;
+const VB_BOTTOM = 244;
+const EI = (EC + EV) / 2;
+const PANEL_W = 196;
+const PANEL_GAP = 36;
+const X0 = 18;
+
+interface Panel {
+  title: string;
+  sub: string;
+  ef: number;
+  electrons: number;
+  holes: number;
+  level?: { y: number; label: string };
+}
+
+const PANELS: Panel[] = [
+  { title: "真性", sub: "n = p", ef: EI, electrons: 2, holes: 2 },
+  {
+    title: "n 型(P を混ぜる)",
+    sub: "n ≫ p",
+    ef: EC + 18,
+    electrons: 7,
+    holes: 0,
+    level: { y: EC + 9, label: "E_D" },
+  },
+  {
+    title: "p 型(B を混ぜる)",
+    sub: "n ≪ p",
+    ef: EV - 18,
+    electrons: 0,
+    holes: 7,
+    level: { y: EV - 9, label: "E_A" },
+  },
+];
+
+function xs(count: number, x: number): number[] {
+  const out: number[] = [];
+  for (let i = 0; i < count; i++) {
+    out.push(x + ((i + 0.5) * PANEL_W) / count);
+  }
+  return out;
+}
+---
+
+<figure class="static-fig">
+  <div class="static-fig-frame">
+    <svg
+      viewBox="0 0 700 300"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      {
+        PANELS.map((p, k) => {
+          const x = X0 + k * (PANEL_W + PANEL_GAP);
+          const cx = x + PANEL_W / 2;
+          return (
+            <g>
+              <text
+                x={cx}
+                y="26"
+                text-anchor="middle"
+                font-size="13.5"
+                font-weight="600"
+                fill="var(--color-text)"
+              >
+                {p.title}
+              </text>
+              {/* 伝導帯・価電子帯(価電子帯は満席の薄い塗り) */}
+              <rect
+                x={x}
+                y={CB_TOP}
+                width={PANEL_W}
+                height={EC - CB_TOP}
+                fill="var(--mat-band)"
+              />
+              <rect
+                x={x}
+                y={EV}
+                width={PANEL_W}
+                height={VB_BOTTOM - EV}
+                fill="var(--mat-band)"
+              />
+              <rect
+                x={x}
+                y={EV}
+                width={PANEL_W}
+                height={VB_BOTTOM - EV}
+                fill="var(--mat-electron)"
+                opacity="0.3"
+              />
+              <line
+                x1={x}
+                y1={EC}
+                x2={x + PANEL_W}
+                y2={EC}
+                stroke="var(--mat-level)"
+                stroke-width="2"
+              />
+              <line
+                x1={x}
+                y1={EV}
+                x2={x + PANEL_W}
+                y2={EV}
+                stroke="var(--mat-level)"
+                stroke-width="2"
+              />
+              {/* E_i(ギャップの中央の目安) */}
+              {k > 0 && (
+                <line
+                  x1={x}
+                  y1={EI}
+                  x2={x + PANEL_W}
+                  y2={EI}
+                  stroke="var(--mat-level)"
+                  stroke-width="1.2"
+                  stroke-dasharray="4 4"
+                />
+              )}
+              {k > 0 && (
+                <text
+                  x={x + PANEL_W - 4}
+                  y={EI + 15}
+                  text-anchor="end"
+                  font-size="11.5"
+                  fill="var(--mat-level)"
+                >
+                  E_i
+                </text>
+              )}
+              {/* ドナー / アクセプタ準位 */}
+              {p.level && (
+                <line
+                  x1={x + 12}
+                  y1={p.level.y}
+                  x2={x + PANEL_W - 30}
+                  y2={p.level.y}
+                  stroke="var(--mat-solute)"
+                  stroke-width="1.6"
+                  stroke-dasharray="5 4"
+                />
+              )}
+              {p.level && (
+                <text
+                  x={x + PANEL_W - 4}
+                  y={p.level.y + 4}
+                  text-anchor="end"
+                  font-size="11.5"
+                  fill="var(--mat-solute)"
+                >
+                  {p.level.label}
+                </text>
+              )}
+              {/* 伝導帯の電子・価電子帯の正孔 */}
+              {xs(p.electrons, x).map((ex) => (
+                <circle cx={ex} cy={EC - 11} r="5" fill="var(--mat-electron)" />
+              ))}
+              {xs(p.holes, x).map((hx) => (
+                <circle cx={hx} cy={EV + 11} r="5" fill="var(--mat-hole)" />
+              ))}
+              {/* 水位としての E_F */}
+              <line
+                x1={x - 6}
+                y1={p.ef}
+                x2={x + PANEL_W + 6}
+                y2={p.ef}
+                stroke="var(--mat-electron)"
+                stroke-width="2.6"
+                stroke-dasharray="8 5"
+              />
+              {/* n 型はドナー準位が E_F のすぐ上にあるので、ラベルを線の下へ */}
+              <text
+                x={x + 2}
+                y={k === 1 ? p.ef + 16 : p.ef - 6}
+                font-size="12.5"
+                fill="var(--mat-electron)"
+              >
+                {k === 0 ? "E_F(水位)" : "E_F"}
+              </text>
+              <text
+                x={cx}
+                y="272"
+                text-anchor="middle"
+                font-size="13"
+                fill="var(--color-text-2)"
+              >
+                {p.sub}
+              </text>
+            </g>
+          );
+        })
+      }
+      <text
+        x={X0 + PANEL_W + PANEL_GAP + PANEL_W / 2}
+        y="294"
+        text-anchor="middle"
+        font-size="12"
+        fill="var(--color-text-2)"
+        >水位が上がると上の帯に電子が増え、下がると下の帯に正孔が増える</text
+      >
+    </svg>
+  </div>
+  <figcaption>{caption}</figcaption>
+  <p class="sr-only">{alt}</p>
+</figure>

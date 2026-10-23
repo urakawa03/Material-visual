@@ -9,6 +9,7 @@
  * タイトル・カテゴリ・前後ナビは topics.ts から解決される。
  */
 import Article from "../../layouts/Article.astro";
+import ArticleRef from "../../components/ArticleRef.astro";
 import Figure from "../../components/Figure.astro";
 import M from "../../components/M.astro";
 import { withBase } from "../../lib/paths";
@@ -546,7 +547,7 @@ import { withBase } from "../../lib/paths";
     隙間の有無が世界を分ける、というわけです。ただし、ひとつ手つかずの問いが
     残っています。隙間があるとき、電子は<strong>実際にどこまで</strong>
     埋まっているのでしょうか。図1 と図6 では絶対零度の詰め方をしましたが、 室温では熱で境目がぼやけます。そのぼやけ方と、「水位」がどこに決まるのかを
-    扱うのが、次の記事「フェルミ準位」です(準備中)。
+    扱うのが、次の記事「<ArticleRef slug="fermi-level" />」です。
   </p>
 
   <h2>もっと知るには</h2>
