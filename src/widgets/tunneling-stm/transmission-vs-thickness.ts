@@ -190,16 +190,23 @@ export default function transmissionVsThickness(
       ctx.textAlign = "left";
       ctx.textBaseline = "middle";
       const label = `2 倍の厚さで ${fmtOneOver(Math.exp(ln2 - ln1))}`;
-      const lx = Math.min(
-        px2 + 9,
-        map.rect.x + map.rect.w - ctx.measureText(label).width - 2,
-      );
+      const labelW = ctx.measureText(label).width;
+      const lx = Math.min(px2 + 9, map.rect.x + map.rect.w - labelW - 2);
       // 落差が大きければ矢印の横の中ほど。小さければ(薄い・低い壁で曲線が
-      // 上の端に張り付くとき)曲線に重ならないよう点の下、下の端なら点の上
+      // 上の端に張り付くとき)、文字の幅の範囲で 2 本の曲線より下に置く
+      // (どちらの曲線も右下がりなので、文字の右端での高さを見ればよい)
       let ly: number;
-      if (py2 - py1 >= 24) ly = (py1 + py2) / 2;
-      else if (py2 + 30 <= bottom) ly = py2 + 18;
-      else ly = py1 - 14;
+      if (py2 - py1 >= 24) {
+        ly = (py1 + py2) / 2;
+      } else {
+        const dEnd = Math.min(X_MAX, map.toValX(lx + labelW));
+        const curveY = Math.max(
+          map.toPxY(axisValue(lnT(dEnd))),
+          map.toPxY(axisValue(logTransmissionApprox(barrier, dEnd))),
+          py2,
+        );
+        ly = Math.min(bottom - 10, curveY + 14);
+      }
       haloText(ctx, label, lx, ly, pal.text, pal.bg);
     } else {
       ctx.textAlign = "right";
@@ -231,14 +238,29 @@ export default function transmissionVsThickness(
       haloText(ctx, outLabel, ox, bottom - 8, pal.text2, pal.bg);
     }
 
-    // 凡例
+    // 凡例: 曲線はどれも左上から右下がりなので、対数目盛では左下の隅が
+    // いつも空いている。線形目盛では曲線が下の端に張り付くので右上に置く
     ctx.font = font(12);
-    ctx.textAlign = "right";
-    ctx.textBaseline = "top";
-    const lx = map.rect.x + map.rect.w - 4;
-    const ly = isLog ? top + 26 : top + 4;
-    haloText(ctx, "実線: 厳密な T", lx, ly, pal.electron, pal.bg);
-    haloText(ctx, "破線: 近似 e^(−2κd)", lx, ly + 17, pal.electron, pal.bg);
+    if (isLog) {
+      ctx.textAlign = "left";
+      ctx.textBaseline = "bottom";
+      const lx = map.rect.x + 8;
+      haloText(ctx, "実線: 厳密な T", lx, bottom - 25, pal.electron, pal.bg);
+      haloText(
+        ctx,
+        "破線: 近似 e^(−2κd)",
+        lx,
+        bottom - 8,
+        pal.electron,
+        pal.bg,
+      );
+    } else {
+      ctx.textAlign = "right";
+      ctx.textBaseline = "top";
+      const lx = map.rect.x + map.rect.w - 4;
+      haloText(ctx, "実線: 厳密な T", lx, top + 4, pal.electron, pal.bg);
+      haloText(ctx, "破線: 近似 e^(−2κd)", lx, top + 21, pal.electron, pal.bg);
+    }
   }
 
   /* ---- 読み取り値 ---- */
