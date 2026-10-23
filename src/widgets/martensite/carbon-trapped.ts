@@ -45,6 +45,7 @@ import {
   newtonTimeS,
 } from "./lib/kinetics";
 import {
+  MIN_CANVAS_PX,
   type Pane,
   context2d,
   fmtPow10,
@@ -60,7 +61,7 @@ import {
 
 /** 格子の列数と上下半分の行数(rigid モードの正方格子) */
 const COLS = 15;
-const ROWS_PER_HALF = 5;
+const ROWS_PER_HALF = 6;
 /** 炭素原子の数(§5.2) */
 const CARBON_COUNT = 12;
 /** 乱数シード(reset で同じ初期配置へ — §8.2) */
@@ -328,7 +329,7 @@ export default function carbonTrapped(host: FigureHost): WidgetHandle {
     const narrow = w < 560;
     const pad = narrow ? 8 : 12;
     if (narrow) {
-      const latH = Math.round(h * 0.5);
+      const latH = Math.round(h * 0.55);
       const rowY = latH + pad;
       const rowH = h - rowY - pad;
       const gW = Math.round((w - 3 * pad) * 0.44);
@@ -342,7 +343,7 @@ export default function carbonTrapped(host: FigureHost): WidgetHandle {
     const latW = Math.round((w - 3 * pad) * 0.58);
     const colX = 2 * pad + latW;
     const colW = w - colX - pad;
-    const gH = Math.round((h - 3 * pad) * 0.52);
+    const gH = Math.round((h - 3 * pad) * 0.6);
     return {
       lattice: { x: pad, y: pad, w: latW, h: h - 2 * pad },
       gauge: { x: colX, y: pad, w: colW, h: gH },
@@ -359,21 +360,14 @@ export default function carbonTrapped(host: FigureHost): WidgetHandle {
     const fs = narrow ? 10 : 11;
     const top = p.y + fs + 10;
     const usableH = p.h - (top - p.y) - fs - 10;
-    const spacing = Math.min((p.w - 8) / (cols + 0.2), usableH / (rows + 0.2));
+    const spacing = Math.max(
+      Math.min((p.w - 8) / (cols + 0.2), usableH / (rows + 0.2)),
+      1,
+    );
     const cx = p.x + p.w / 2;
     const cy = top + usableH / 2;
     const X = (lx: number): number => cx + lx * spacing;
     const Y = (ly: number): number => cy - ly * spacing;
-
-    // 枠
-    ctx.strokeStyle = pal.hairline;
-    ctx.lineWidth = 1;
-    ctx.strokeRect(
-      Math.round(X(-cols / 2)) + 0.5,
-      Math.round(Y(rows / 2)) + 0.5,
-      Math.round(cols * spacing),
-      Math.round(rows * spacing),
-    );
 
     // 八面体位置(空き)の目印
     ctx.fillStyle = pal.hairline;
@@ -448,8 +442,12 @@ export default function carbonTrapped(host: FigureHost): WidgetHandle {
         k < 1
           ? `冷却中(画面は実際の約 1/${Math.round(1 / k)} の速さ)`
           : `冷却中(画面は実際の約 ${Math.round(k)} 倍の速さ)`;
+    } else if (medium === "water") {
+      status = `${STOP_C} ℃ 以下: 跳躍はほぼ止まった — 炭素は閉じ込められた`;
     } else {
-      status = `${STOP_C} ℃ 以下: 跳躍はほぼ止まった — 炭素はその場に残る`;
+      status = narrow
+        ? "空冷: 鼻のまわりで炭素は十分に動けた"
+        : "空冷: 鼻のまわりで炭素は十分に動けた(実際はそこでパーライトになる)";
     }
     ctx.font = font(fs);
     ctx.fillStyle = stage === "done" ? pal.text : pal.text2;
@@ -459,7 +457,9 @@ export default function carbonTrapped(host: FigureHost): WidgetHandle {
     ctx.fillStyle = pal.text2;
     ctx.textBaseline = "bottom";
     ctx.fillText(
-      "面心立方の鉄の (100) 面。灰 = 鉄、橙 = 炭素、小さな点 = 空いた隙間",
+      narrow
+        ? "面心立方の鉄の (100) 面。灰 = 鉄、橙 = 炭素"
+        : "面心立方の鉄の (100) 面。灰 = 鉄、橙 = 炭素、小さな点 = 空いた隙間",
       p.x,
       p.y + p.h,
     );
@@ -497,16 +497,26 @@ export default function carbonTrapped(host: FigureHost): WidgetHandle {
     ctx.lineWidth = 1;
     ctx.strokeRect(thermoX + 0.5, top + 0.5, thermoW, bottom - top);
     ctx.globalAlpha = 1;
-    // 鼻のまわりの温度域(薄い帯)
-    const yHi = mapScale(ts, noseWin.hiC);
-    const yLo = mapScale(ts, noseWin.loC);
-    ctx.fillStyle = pal.precip;
-    ctx.globalAlpha = 0.12;
-    ctx.fillRect(thermoX - 6, yHi, thermoW + 12, yLo - yHi);
-    ctx.globalAlpha = 1;
     const yT = mapScale(ts, tempC);
     ctx.fillStyle = pal.accent;
     ctx.fillRect(thermoX + 2, yT, thermoW - 3, bottom - yT);
+    // 鼻のまわりの温度域(温度計の右のかぎ括弧と「鼻」)
+    const yHi = Math.round(mapScale(ts, noseWin.hiC)) + 0.5;
+    const yLo = Math.round(mapScale(ts, noseWin.loC)) + 0.5;
+    const bx = thermoX + thermoW + 5.5;
+    ctx.strokeStyle = pal.precip;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(bx - 3, yHi);
+    ctx.lineTo(bx, yHi);
+    ctx.lineTo(bx, yLo);
+    ctx.lineTo(bx - 3, yLo);
+    ctx.stroke();
+    ctx.font = font(fs - 1);
+    ctx.fillStyle = pal.precip;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText("鼻", bx + 3, (yHi + yLo) / 2);
     // 目盛り
     ctx.font = font(fs - 1);
     ctx.fillStyle = pal.text2;
@@ -535,7 +545,7 @@ export default function carbonTrapped(host: FigureHost): WidgetHandle {
     );
 
     // 跳躍回数の対数目盛り(10⁻¹⁰〜10⁸)
-    const hx = thermoX + thermoW + (narrow ? 44 : 54);
+    const hx = thermoX + thermoW + (narrow ? 50 : 62);
     const hs = makeScale(HOP_LOG_MIN, HOP_LOG_MAX, bottom, top);
     ctx.font = font(fs);
     ctx.fillStyle = pal.text2;
@@ -593,15 +603,24 @@ export default function carbonTrapped(host: FigureHost): WidgetHandle {
     const fs = narrow ? 9.5 : 11;
     const left = p.x + 4;
     const right = p.x + p.w - 8;
-    const axisY = p.y + p.h - fs - 10;
+    const barH = narrow ? 14 : 18;
+    const gap = narrow ? 20 : 24;
+    const bandTop = p.y + (narrow ? 2 * fs + 14 : fs + 10);
+    const y1 = bandTop + fs + 12;
+    const y2 = y1 + barH + gap;
+    const axisY = Math.min(y2 + barH + 14, p.y + p.h - fs - 8);
     const xs = makeScale(DIST_MIN_UM, DIST_MAX_UM, left, right, true);
     ctx.font = font(fs);
     ctx.fillStyle = pal.text2;
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
-    ctx.fillText("炭素が動けた距離 √(2∫D dt) [μm]", p.x, p.y);
+    if (narrow) {
+      ctx.fillText("炭素が動けた距離", p.x, p.y);
+      ctx.fillText("√(2∫D dt) [μm]", p.x, p.y + fs + 4);
+    } else {
+      ctx.fillText("炭素が動けた距離 √(2∫D dt) [μm]", p.x, p.y);
+    }
 
-    const bandTop = p.y + fs + 10;
     // パーライトの縞の間隔の目安(帯)
     const bx0 = mapScale(xs, LAMELLA_MIN_UM);
     const bx1 = mapScale(xs, LAMELLA_MAX_UM);
@@ -639,10 +658,6 @@ export default function carbonTrapped(host: FigureHost): WidgetHandle {
 
     // 2 本の棒(薄 = A₁ 以下の合計、濃 = 鼻のまわり)
     const d = distances();
-    const barH = narrow ? 14 : 18;
-    const gap = narrow ? 18 : 22;
-    const y1 = bandTop + fs + 12;
-    const y2 = y1 + barH + gap;
     const barTo = (m: number): number =>
       m > 0 ? mapScale(xs, clamp(m * 1e6, DIST_MIN_UM, DIST_MAX_UM)) : left;
     ctx.fillStyle = pal.solute;
@@ -657,7 +672,9 @@ export default function carbonTrapped(host: FigureHost): WidgetHandle {
     ctx.fillText(`A₁ 以下の合計  ${fmtUm(d.total)} μm`, left, y1 - 2);
     ctx.fillStyle = pal.text;
     ctx.fillText(
-      `鼻のまわり(${Math.round(noseWin.loC)}〜${Math.round(noseWin.hiC)} ℃)で  ${fmtUm(d.nose)} μm`,
+      narrow
+        ? `鼻のまわりで  ${fmtUm(d.nose)} μm`
+        : `鼻のまわり(${Math.round(noseWin.loC)}〜${Math.round(noseWin.hiC)} ℃)で  ${fmtUm(d.nose)} μm`,
       left,
       y2 - 2,
     );
@@ -667,6 +684,8 @@ export default function carbonTrapped(host: FigureHost): WidgetHandle {
     const { w, h, dpr } = host.size;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
+    // レイアウト前の極小キャンバスでは描かない(負の半径などを避ける)
+    if (w < MIN_CANVAS_PX || h < MIN_CANVAS_PX) return;
     const l = layout();
     drawLattice(l.lattice, l.narrow);
     drawGauge(l.gauge, l.narrow);

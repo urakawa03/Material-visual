@@ -37,6 +37,7 @@ import {
   toughness,
 } from "./lib/tempering";
 import {
+  MIN_CANVAS_PX,
   type Pane,
   context2d,
   drawAxes,
@@ -65,6 +66,9 @@ const N_CARBIDE_SITES = 40;
 const SEED = 7707;
 /** 同じ P の組を探すときの温度の差 [℃] */
 const EQUIV_DT = 50;
+/** 曲線の名前を書く P の位置 */
+const HV_LABEL_P = 16800;
+const TOUGH_LABEL_P = 16000;
 
 const TAU2 = Math.PI * 2;
 
@@ -341,10 +345,15 @@ export default function tempering(host: FigureHost): WidgetHandle {
       yTicks: [0, 200, 400, 600, 800],
       xFormat: (v) => `${v / 1000}`,
       xTitle: "P = T (20 + log₁₀ t) [× 1000](T は K、t は時間)",
-      yTitle: "硬さ [HV]",
       fontPx: fs,
       gridY: true,
     });
+    // 縦軸の題(左 = 硬さ、右 = 靭性)は最上段に置く
+    ctx.font = font(fs);
+    ctx.fillStyle = pal.text2;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.fillText("硬さ [HV]", left - (narrow ? 30 : 36), p.y);
     // 右の縦軸(靭性)
     ctx.strokeStyle = pal.text2;
     ctx.globalAlpha = 0.55;
@@ -365,9 +374,10 @@ export default function tempering(host: FigureHost): WidgetHandle {
     ctx.textBaseline = "middle";
     for (const v of [0, 0.5, 1])
       ctx.fillText(String(v), right + 6, mapScale(ts, v));
+    ctx.font = font(fs);
     ctx.textAlign = "right";
-    ctx.textBaseline = "bottom";
-    ctx.fillText("靭性(相対)", p.x + p.w, top - 6);
+    ctx.textBaseline = "top";
+    ctx.fillText("靭性(相対)", p.x + p.w, p.y);
 
     // 上の目盛り: 1 時間の焼戻しなら何 ℃ か
     ctx.font = font(fs - 1);
@@ -387,8 +397,13 @@ export default function tempering(host: FigureHost): WidgetHandle {
     for (const tC of ONE_HOUR_TICKS) {
       ctx.fillText(`${tC}`, X(hollomonJaffe(tC, 1)), top - 4);
     }
+    // 上の目盛りの題(左端の空き = P が 9500 未満の上)
     ctx.textAlign = "left";
-    ctx.fillText("1 時間の焼戻しなら [℃]:", left, top - fs - 8);
+    ctx.fillText(
+      narrow ? "1 時間なら [℃]" : "1 時間なら [℃] →",
+      left + 2,
+      top - 4,
+    );
 
     // スライダーで届く範囲の外を淡く
     ctx.fillStyle = pal.hairline;
@@ -421,18 +436,24 @@ export default function tempering(host: FigureHost): WidgetHandle {
     };
     curve(temperedHardness, ys, pal.text, false);
     curve(toughness, ts, pal.text2, true);
+    // 曲線の名前(現在の P の印と重ならない、曲線の中ほどに置く)
     ctx.font = font(fs, 600);
     ctx.fillStyle = pal.text;
     ctx.textAlign = "left";
     ctx.textBaseline = "bottom";
     ctx.fillText(
       "硬さ",
-      X(P_MIN) + 4,
-      mapScale(ys, temperedHardness(P_MIN)) - 4,
+      X(HV_LABEL_P) + 6,
+      mapScale(ys, temperedHardness(HV_LABEL_P)) - 6,
     );
     ctx.fillStyle = pal.text2;
-    ctx.textAlign = "right";
-    ctx.fillText("靭性", X(P_MAX) - 4, mapScale(ts, toughness(P_MAX)) - 6);
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.fillText(
+      "靭性",
+      X(TOUGH_LABEL_P) + 6,
+      mapScale(ts, toughness(TOUGH_LABEL_P)) + 6,
+    );
 
     // 焼戻し脆性のくぼみのラベル(模式)
     const pDip = hollomonJaffe(320, 1);
@@ -484,6 +505,8 @@ export default function tempering(host: FigureHost): WidgetHandle {
     const { w, h, dpr } = host.size;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
+    // レイアウト前の極小キャンバスでは描かない(負の半径などを避ける)
+    if (w < MIN_CANVAS_PX || h < MIN_CANVAS_PX) return;
     const l = layout();
     drawMicro(l.micro, l.narrow);
     drawPlot(l.plot, l.narrow);

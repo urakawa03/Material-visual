@@ -23,6 +23,7 @@ import { tetragonality } from "./lib/bain";
 import { martensiteFraction, msCelsius } from "./lib/kinetics";
 import { martensiteHardness, slowCooledHardness } from "./lib/hardness";
 import {
+  MIN_CANVAS_PX,
   type Pane,
   atom,
   context2d,
@@ -147,20 +148,29 @@ export default function tetragonalityHardness(host: FigureHost): WidgetHandle {
   function drawCell(p: Pane, narrow: boolean): void {
     const fs = narrow ? 10 : 11;
     const ratioDisp = 1 + EXAGGERATION * (tetragonality(carbon) - 1);
-    // 胞の大きさ: 縦 c、横 a、奥行き (DEPTH_DX, DEPTH_DY)·a が枠に収まるように
-    const availW = p.w - 40;
-    const availH = p.h - 2 * fs - 46;
-    const aMax = Math.min(
-      availW / (1 + DEPTH_DX),
-      availH / (1.3 + Math.abs(DEPTH_DY)),
+    /** 炭素量が最大のときの(誇張した)縦横比。胞の置き場所はこれで決める */
+    const ratioMax = 1 + EXAGGERATION * (tetragonality(C_MAX) - 1);
+    // 胞の大きさ a は炭素量によらず一定にし、縦 c だけを変える。
+    // 奥行き (DEPTH_DX, DEPTH_DY)·a と寸法線の余白を含めて枠に収める
+    const marginL = 34;
+    const titleH = 2 * fs + 26;
+    const dimH = 26;
+    const availW = p.w - marginL - 8;
+    const availH = p.h - titleH - dimH;
+    const a = Math.max(
+      Math.min(
+        availW / (1 + DEPTH_DX),
+        availH / (ratioMax + Math.abs(DEPTH_DY)),
+      ),
+      10,
     );
-    const a = aMax;
     const c = a * ratioDisp;
     const dx = DEPTH_DX * a;
     const dy = DEPTH_DY * a;
-    const x0 = p.x + (p.w - (a + dx)) / 2;
+    const x0 = p.x + marginL + (availW - (1 + DEPTH_DX) * a) / 2;
+    const blockH = (ratioMax + Math.abs(DEPTH_DY)) * a;
     const yBase =
-      p.y + fs + 24 + (availH + Math.abs(dy) + 1.3 * a + c) / 2 - 0.3 * a;
+      p.y + titleH + (availH - blockH) / 2 + Math.abs(dy) + ratioMax * a;
     // 前面の左下を基準に、8 頂点(前 4・奥 4)
     const fbl = { x: x0, y: yBase };
     const fbr = { x: x0 + a, y: yBase };
@@ -245,8 +255,8 @@ export default function tetragonalityHardness(host: FigureHost): WidgetHandle {
     line(bbr, btr, false);
 
     // 原子: 奥の頂点 → 体心 → 炭素 → 手前の頂点(重なりの順)
-    const rFe = Math.max(a * 0.11, 5);
-    const rC = Math.max(rFe * 0.62, 3.5);
+    const rFe = Math.max(a * 0.085, 4);
+    const rC = Math.max(rFe * 0.62, 3);
     for (const q of [bbl, bbr, btl, btr]) {
       atom(ctx, q.x, q.y, rFe, pal.matrix, pal.matrixEdge);
     }
@@ -282,7 +292,30 @@ export default function tetragonalityHardness(host: FigureHost): WidgetHandle {
     ctx.fillText("c", fbl.x - 22, (fbl.y + ftl.y) / 2);
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
-    ctx.fillText("a", (fbl.x + fbr.x) / 2, fbl.y + 17);
+    ctx.fillText("a", (fbl.x + fbr.x) / 2, fbl.y + 16);
+    // 炭素が c 軸の向きに上下の鉄を押し広げることを示す小さな矢印
+    if (nCarbon > 0) {
+      const s0 = sites[0];
+      const len = Math.max(a * 0.16, 10);
+      const gapPx = rC + 4;
+      ctx.strokeStyle = pal.soluteEdge;
+      ctx.fillStyle = pal.soluteEdge;
+      ctx.lineWidth = 1.5;
+      for (const dir of [-1, 1]) {
+        const y0 = s0.y + dir * gapPx;
+        const y1 = s0.y + dir * (gapPx + len);
+        ctx.beginPath();
+        ctx.moveTo(s0.x + 14, y0);
+        ctx.lineTo(s0.x + 14, y1);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(s0.x + 14, y1 + dir * 5);
+        ctx.lineTo(s0.x + 10, y1);
+        ctx.lineTo(s0.x + 18, y1);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
 
     // 見出しと誇張の注意(常に表示 — §5.6 受け入れ基準)
     ctx.font = font(fs);
@@ -295,7 +328,7 @@ export default function tetragonalityHardness(host: FigureHost): WidgetHandle {
       pal,
       `形は ×${EXAGGERATION} に誇張(実際の c/a = ${tetragonality(carbon).toFixed(3)})`,
       p.x,
-      p.y + fs + 12,
+      p.y + fs + 14,
       pal.text,
       fs,
       "left",
@@ -438,6 +471,8 @@ export default function tetragonalityHardness(host: FigureHost): WidgetHandle {
     const { w, h, dpr } = host.size;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
+    // レイアウト前の極小キャンバスでは描かない(負の半径などを避ける)
+    if (w < MIN_CANVAS_PX || h < MIN_CANVAS_PX) return;
     const l = layout();
     drawCell(l.cell, l.narrow);
     drawPlot(l.plot, l.narrow);

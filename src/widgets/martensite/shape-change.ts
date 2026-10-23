@@ -37,6 +37,7 @@ import {
   surfaceReliefRatio,
 } from "./lib/shape";
 import {
+  MIN_CANVAS_PX,
   type Pane,
   context2d,
   fmtPercent,
@@ -47,14 +48,14 @@ import {
 
 /** 断面の大きさ(模式の単位) */
 const REGION_W = 12;
-const REGION_H = 7;
+const REGION_H = 9.2;
 /** 表面より上に空けておく高さ(起伏とラベルのため) */
 const HEADROOM = 1.1;
 /** 晶癖面(板の面)と表面のなす角 [度] */
 const HABIT_DEG = 60;
 /** 変態した層の厚さ d と、表面からの板の長さ(晶癖面に沿って) */
 const LAYER_D = 1.6;
-const PLATE_LEN = 6;
+const PLATE_LEN = 7.4;
 /** 表面で板が始まる位置 */
 const PLATE_U0 = 3.4;
 /** 母相の拘束でずれが戻る長さ */
@@ -63,7 +64,7 @@ const RELAX_LEN = 1.4;
 const FIELD_CORE = 0.35;
 /** ひずみの場の塗りの最大不透明度と、塗りのセルの大きさ */
 const FIELD_ALPHA_MAX = 0.42;
-const FIELD_CELL = 0.2;
+const FIELD_CELL = 0.12;
 /** 格子線(ハッチ)の間隔と、板の中の格子線の傾き [度] */
 const MATRIX_HATCH = 0.42;
 const PLATE_HATCH_SINGLE = 0.3;
@@ -660,6 +661,8 @@ export default function shapeChange(host: FigureHost): WidgetHandle {
     const { w, h, dpr } = host.size;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
+    // レイアウト前の極小キャンバスでは描かない(負の半径などを避ける)
+    if (w < MIN_CANVAS_PX || h < MIN_CANVAS_PX) return;
     const l = layout();
     drawSection(l.section, l.narrow);
     drawBars(l.bars, l.narrow);

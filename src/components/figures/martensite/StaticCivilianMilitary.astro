@@ -88,8 +88,8 @@ const leftFeShown = leftFe.filter(
 );
 
 /* -------------------------------------------------- 右: 無拡散変態 */
-const RX = 380;
-const SHEAR = 0.36;
+const RX = 368;
+const SHEAR = 0.3;
 const bottomY = TOP + (ROWS - 1) * SP;
 const sheared = (x: number, y: number): { x: number; y: number } => ({
   x: x + SHEAR * (bottomY - y),
@@ -121,10 +121,11 @@ const rightCarbonRef = [
   { x: RX + 1.5 * SP, y: TOP + 2.5 * SP },
 ];
 const rightCarbon = rightCarbonRef.map((p) => sheared(p.x, p.y));
-/** 矢印(各行の右端の原子の移動) */
-const arrows = [0, 1, 2].map((j) => ({
-  from: rightRef[idx(COLS - 1, j)],
-  to: rightNew[idx(COLS - 1, j)],
+/** 矢印(いちばん上の列の原子の移動を、列の上に平行に描く — 全員が同じだけ動く) */
+const ARROW_DY = -17;
+const arrows = [0, 2, 4].map((i) => ({
+  from: { x: rightRef[idx(i, 0)].x, y: TOP + ARROW_DY },
+  to: { x: rightNew[idx(i, 0)].x, y: TOP + ARROW_DY },
 }));
 ---
 
@@ -316,9 +317,9 @@ const arrows = [0, 1, 2].map((j) => ({
       {
         arrows.map((a) => (
           <line
-            x1={r1(a.from.x + 12)}
+            x1={r1(a.from.x)}
             y1={a.from.y}
-            x2={r1(a.to.x + 12)}
+            x2={r1(a.to.x)}
             y2={a.to.y}
             stroke="var(--color-accent)"
             stroke-width="2"

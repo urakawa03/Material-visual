@@ -44,6 +44,7 @@ import {
   pearliteSpacingRel,
 } from "./lib/hardness";
 import {
+  MIN_CANVAS_PX,
   type Pane,
   type Scale,
   context2d,
@@ -72,6 +73,8 @@ const CURVE_SAMPLES = 320;
 const RATE_PROBE_C = 550;
 /** 冷却曲線の名前を書く温度 [℃] */
 const LABEL_AT_C = 120;
+/** M_s のラベルの右端を置く時刻 [s](C 曲線の下の枝より左) */
+const MS_LABEL_AT_S = 1500;
 /** 硬さの棒グラフの上限 [HV] */
 const HV_AXIS_MAX = 900;
 /** パーライトの縞の基準間隔 [px](炉冷 = 632 ℃ のとき) */
@@ -99,6 +102,12 @@ const PLATES: ReadonlyArray<readonly [number, number, number, number]> = [
   [0.9, 0.86, -40, 0.22],
   [0.1, 0.4, 80, 0.2],
   [0.5, 0.06, 5, 0.22],
+  [0.38, 0.88, -10, 0.26],
+  [0.06, 0.9, 55, 0.18],
+  [0.62, 0.5, 25, 0.2],
+  [0.3, 0.38, 10, 0.18],
+  [0.96, 0.2, 85, 0.24],
+  [0.78, 0.33, -55, 0.16],
 ];
 
 export default function coolingRate(host: FigureHost): WidgetHandle {
@@ -305,7 +314,10 @@ export default function coolingRate(host: FigureHost): WidgetHandle {
       ctx.moveTo(x, top);
       ctx.lineTo(x, bottom);
       ctx.stroke();
-      ctx.fillText(label, x, top + 2);
+      // 右端に近い目盛りは線の左に寄せて、枠からはみ出さないようにする
+      const nearEdge = x > right - 28;
+      ctx.textAlign = nearEdge ? "right" : "center";
+      ctx.fillText(label, nearEdge ? x - 3 : x, top + 2);
     }
 
     // A₁(細い実線)
@@ -374,12 +386,14 @@ export default function coolingRate(host: FigureHost): WidgetHandle {
       fs,
       "right",
     );
+    // M_s のラベルは、C 曲線の下の枝とぶつからない位置(10³ 秒付近)に置く
+    const msLabelX = X(MS_LABEL_AT_S);
     subLabel(
       ctx,
       "M",
       "s",
       ` ${Math.round(ms)} ℃`,
-      right - 4,
+      msLabelX,
       Y(ms) - 5,
       pal.text2,
       fs,
@@ -390,7 +404,7 @@ export default function coolingRate(host: FigureHost): WidgetHandle {
       "(M",
       "f",
       ` ≈ ${fmtCelsius(Math.round(mf / 10) * 10)} は軸より下)`,
-      right - 4,
+      msLabelX,
       Y(ms) + fs + 5,
       pal.text2,
       fs - 1,
@@ -730,6 +744,8 @@ export default function coolingRate(host: FigureHost): WidgetHandle {
     const { w, h, dpr } = host.size;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
+    // レイアウト前の極小キャンバスでは描かない(負の半径などを避ける)
+    if (w < MIN_CANVAS_PX || h < MIN_CANVAS_PX) return;
     const l = layout();
     drawPlot(l.plot, l.narrow);
     drawMicro(l.micro, l.narrow);

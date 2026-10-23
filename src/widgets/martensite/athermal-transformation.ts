@@ -31,6 +31,7 @@ import {
   pearliteStartTime,
 } from "./lib/kinetics";
 import {
+  MIN_CANVAS_PX,
   type Pane,
   type Scale,
   context2d,
@@ -210,7 +211,8 @@ export default function athermalTransformation(host: FigureHost): WidgetHandle {
     const fs = narrow ? 10 : 11;
     const ms = msCelsius(carbon);
     const mf = mfCelsius(ms);
-    const holdStrip = narrow ? 34 : 42;
+    /** 横軸の題の下に置く「保持時間」の小さな目盛りの高さ */
+    const holdStrip = narrow ? 44 : 48;
     const left = p.x + (narrow ? 34 : 40);
     const right = p.x + p.w - 8;
     const top = p.y + fs + 22;
@@ -245,20 +247,20 @@ export default function athermalTransformation(host: FigureHost): WidgetHandle {
     ctx.lineTo(Math.round(X(T_ROOM_C)) + 0.5, bottom);
     ctx.stroke();
     ctx.globalAlpha = 1;
-    // M_s・M_f(破線)
+    // M_s・M_f(破線)。M_f が 0 ℃ より下なら、軸の左下に値だけ書く
     vline(X(ms), top, bottom, true);
-    subLabel(ctx, "M", "s", "", X(ms) + 4, top + fs + 2, pal.text2, fs);
+    subLabel(ctx, "M", "s", "", X(ms) + 4, bottom - 6, pal.text, fs + 1);
     if (mf >= T_AXIS_MIN) {
       vline(X(mf), top, bottom, true);
-      subLabel(ctx, "M", "f", "", X(mf) + 4, top + fs + 2, pal.text2, fs);
+      subLabel(ctx, "M", "f", "", X(mf) + 4, bottom - 6, pal.text, fs + 1);
     } else {
       subLabel(
         ctx,
         "← M",
         "f",
         ` = ${fmtCelsius(mf)}(軸の外)`,
-        left + 4,
-        top + fs + 2,
+        X(T_ROOM_C) + 6,
+        bottom - 24,
         pal.text2,
         fs - 1,
       );
@@ -293,16 +295,17 @@ export default function athermalTransformation(host: FigureHost): WidgetHandle {
       pal,
       `室温で残るオーステナイト ${fmtPercent(1 - fRoom)}`,
       xr + 14,
-      Y((1 + fRoom) / 2),
+      Y(1) + 2,
       pal.text,
       fs,
       "left",
+      "top",
     );
     ctx.font = font(fs - 1);
     ctx.fillStyle = pal.text2;
-    ctx.textAlign = "left";
+    ctx.textAlign = "right";
     ctx.textBaseline = "bottom";
-    ctx.fillText("室温", xr + 3, bottom - 3);
+    ctx.fillText("室温", xr - 2, bottom - 3);
 
     // 現在の点(到達温度)
     const fM = martensiteFraction(tempC, ms);
@@ -337,8 +340,8 @@ export default function athermalTransformation(host: FigureHost): WidgetHandle {
       px > (left + right) / 2 ? "right" : "left",
     );
 
-    // 保持時間の小さな目盛り(点は動かない)
-    const sy = p.y + p.h - holdStrip + 14;
+    // 保持時間の小さな目盛り(点は動かない)。横軸の題の下に置く
+    const sy = p.y + p.h - 16;
     const hs = makeScale(HOLD_MIN_S, HOLD_MAX_S, left, right, true);
     ctx.strokeStyle = pal.text2;
     ctx.globalAlpha = 0.55;
@@ -469,6 +472,8 @@ export default function athermalTransformation(host: FigureHost): WidgetHandle {
     const { w, h, dpr } = host.size;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
+    // レイアウト前の極小キャンバスでは描かない(負の半径などを避ける)
+    if (w < MIN_CANVAS_PX || h < MIN_CANVAS_PX) return;
     const l = layout();
     drawLeft(l.left, l.narrow);
     drawRight(l.right, l.narrow);

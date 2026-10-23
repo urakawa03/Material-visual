@@ -45,14 +45,14 @@ import { fmtSignedPercent } from "./lib/draw";
 /** 世界座標の単位: 1 nm = 10(three の単位) */
 const WORLD_PER_NM = 10;
 /** 原子球の半径(世界単位。見やすさ優先で実寸比ではない) */
-const FE_RADIUS = 0.42;
-const C_RADIUS = 0.3;
+const FE_RADIUS = 0.36;
+const C_RADIUS = 0.27;
 /** 体心正方の胞の稜線(円柱)の半径 */
 const EDGE_RADIUS = 0.065;
 /** カメラ距離・初期の視点(§5.3) */
-const CAMERA_DIST = 14;
+const CAMERA_DIST = 18;
 const AZIMUTH_DEG = 28;
-const ELEVATION_DEG = 18;
+const ELEVATION_DEG = 22;
 /** 初期状態(§5.3: s = 0・胞の強調 on・炭素 off) */
 const S_INIT = 0;
 const HIGHLIGHT_INIT = true;
