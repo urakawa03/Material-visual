@@ -197,4 +197,16 @@ export const registry: Record<
   "pn-junction/led-solar": () => import("./pn-junction/led-solar"),
 
   // 記事「トンネル効果と STM」(仕様書 14)— 実装時にこの直下へ登録する
+  "tunneling-stm/classical-vs-quantum": () =>
+    import("./tunneling-stm/classical-vs-quantum"),
+  "tunneling-stm/wavefunction-decay": () =>
+    import("./tunneling-stm/wavefunction-decay"),
+  "tunneling-stm/transmission-vs-thickness": () =>
+    import("./tunneling-stm/transmission-vs-thickness"),
+  "tunneling-stm/distance-sensitivity": () =>
+    import("./tunneling-stm/distance-sensitivity"),
+  "tunneling-stm/stm-scan": () => import("./tunneling-stm/stm-scan"),
+  "tunneling-stm/ldos-not-atoms": () =>
+    import("./tunneling-stm/ldos-not-atoms"),
+  "tunneling-stm/flash-memory": () => import("./tunneling-stm/flash-memory"),
 };

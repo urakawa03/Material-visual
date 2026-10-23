@@ -200,7 +200,7 @@ export const TOPICS: readonly Topic[] = [
     summary: "壁を通り抜ける電子が、原子 1 個を見る顕微鏡になる。",
     render: "2d",
     prerequisites: [{ slug: "band-theory", recommended: true }],
-    published: false,
+    published: true,
   },
 ] as const;
 
