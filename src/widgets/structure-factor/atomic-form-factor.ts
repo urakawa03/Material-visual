@@ -67,7 +67,9 @@ const Z_MAX = 80;
 const Y_MAX_CANDIDATES = [1.2, 2, 5, 10, 20, 30, 40, 60, 80, 90, 100];
 
 const GAP = 14;
-const MAIN_FRACTION = 0.66;
+/** 広幅で主領域(曲線)に割り当てる幅の割合(右の中性子が 32% — 仕様書 08 §5.5) */
+const MAIN_FRACTION = 0.68;
+/** 狭幅で上(曲線)に割り当てる高さの割合 */
 const TOP_FRACTION = 0.58;
 
 export default function atomicFormFactor(host: FigureHost): WidgetHandle {

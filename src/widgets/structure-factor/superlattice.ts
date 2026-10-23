@@ -83,7 +83,9 @@ const SEED: Readonly<Record<AlloyId, number>> = {
 };
 /** 山の画面上の最小半値幅(px)。中抜きと塗りの違いが見える幅にする */
 const MIN_FWHM_PX = 6;
-const LEFT_FRACTION = 0.38;
+/** 広幅で左(原子の並び)に割り当てる幅の割合(仕様書 08 §5.7: 40%) */
+const LEFT_FRACTION = 0.4;
+/** 狭幅で上(原子の並び)に割り当てる高さの割合 */
 const TOP_FRACTION = 0.44;
 const GAP = 14;
 /** 粉末図形のプロットの上端(パネル上端から。題・凡例・倍率の行の下) */
