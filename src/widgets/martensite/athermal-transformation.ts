@@ -302,13 +302,29 @@ export default function athermalTransformation(host: FigureHost): WidgetHandle {
     const fM = martensiteFraction(tempC, ms);
     const px = X(tempC);
     const py = Y(fM);
-    const valLeftSide = px > (left + right) / 2;
     const valText = fmtPercent(fM);
     ctx.font = font(fs + 1);
     const valW = ctx.measureText(valText).width;
-    const valX0 = valLeftSide ? px - 10 - valW - 3 : px + 10 - 3;
+    const valH = fs + 7;
+    let valAlign: "left" | "right" = px > (left + right) / 2 ? "right" : "left";
+    let valX = px + (valAlign === "right" ? -10 : 10);
+    let valY = py - 14;
+    if (valY - valH / 2 < top + 2) {
+      // 上端より上(縦軸の題の行)にはみ出すときは点の左下へ。曲線は右下がり
+      // なので、点の左下は曲線の下側で空いている。左に余地がなければ右下へ
+      if (px - 10 - valW - 3 > left + 4) {
+        valAlign = "right";
+        valX = px - 10;
+        valY = py + 16;
+      } else {
+        valAlign = "left";
+        valX = px + 10;
+        valY = py + 24;
+      }
+    }
+    const valX0 = valAlign === "right" ? valX - valW - 3 : valX - 3;
     const valX1 = valX0 + valW + 6;
-    const valY0 = py - 14 - (fs + 7) / 2;
+    const valY0 = valY - valH / 2;
 
     // 文字は括弧の右、上端の線の下に書く。炭素が少ないと曲線が上端の近くを
     // 長く通るので、曲線が文字の下端より下がるところまで右へずらす
@@ -357,16 +373,7 @@ export default function athermalTransformation(host: FigureHost): WidgetHandle {
     ctx.lineWidth = 2;
     ctx.strokeStyle = pal.bg;
     ctx.stroke();
-    plateText(
-      ctx,
-      pal,
-      valText,
-      px + (valLeftSide ? -10 : 10),
-      py - 14,
-      pal.accent,
-      fs + 1,
-      valLeftSide ? "right" : "left",
-    );
+    plateText(ctx, pal, valText, valX, valY, pal.accent, fs + 1, valAlign);
 
     // 保持時間の小さな目盛り(点は動かない)。横軸の題の下に置く
     const sy = p.y + p.h - 16;
