@@ -50,6 +50,7 @@ import {
   context2d,
   drawAxes,
   fmtCelsius,
+  fmtSig,
   font,
   makeScale,
   mapScale,
@@ -155,7 +156,7 @@ export default function coolingRate(host: FigureHost): WidgetHandle {
   function updateReadouts(): void {
     const m = coolingMedium(selected);
     const rate = coolingRateAt(RATE_PROBE_C, m.tauS);
-    rRate.set(`${rate >= 10 ? Math.round(rate) : rate.toFixed(1)} ℃/秒`);
+    rRate.set(`${fmtSig(rate, 2)} ℃/秒`);
     const run = runs.get(selected);
     if (!run || sweep === 0 || !eventShown(run)) {
       rProduct.set("—");
@@ -463,7 +464,7 @@ export default function coolingRate(host: FigureHost): WidgetHandle {
         pal,
         text,
         toLeft ? x - 10 : x + 10,
-        isM ? y + 14 : y - 14,
+        y - 14,
         pal.accent,
         fs + 1,
         toLeft ? "right" : "left",
@@ -502,7 +503,10 @@ export default function coolingRate(host: FigureHost): WidgetHandle {
     ctx.globalAlpha = 1;
   }
 
-  /** 冷却曲線の名前(LABEL_AT_C ℃ を通る点の右上に) */
+  /**
+   * 冷却曲線の名前(LABEL_AT_C ℃ を通る点の右上に)。いちばん速い塩水だけは
+   * 水の名前とぶつからないよう、曲線の左に書く。
+   */
   function labelCurve(
     label: string,
     tauS: number,
@@ -512,11 +516,12 @@ export default function coolingRate(host: FigureHost): WidgetHandle {
     fs: number,
   ): void {
     const t = newtonTimeS(LABEL_AT_C, tauS);
+    const fastest = tauS <= COOLING_MEDIA[COOLING_MEDIA.length - 1].tauS;
     ctx.font = font(fs, 600);
     ctx.fillStyle = color;
-    ctx.textAlign = "left";
+    ctx.textAlign = fastest ? "right" : "left";
     ctx.textBaseline = "bottom";
-    ctx.fillText(label, X(t) + 4, Y(LABEL_AT_C) - 3);
+    ctx.fillText(label, X(t) + (fastest ? -4 : 4), Y(LABEL_AT_C) - 3);
   }
 
   /* ---- 右上: 組織の模式 ---- */

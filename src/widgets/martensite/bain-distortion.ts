@@ -50,7 +50,7 @@ const C_RADIUS = 0.27;
 /** 体心正方の胞の稜線(円柱)の半径 */
 const EDGE_RADIUS = 0.065;
 /** カメラ距離・初期の視点(§5.3) */
-const CAMERA_DIST = 18;
+const CAMERA_DIST = 16;
 const AZIMUTH_DEG = 28;
 const ELEVATION_DEG = 22;
 /** 初期状態(§5.3: s = 0・胞の強調 on・炭素 off) */
