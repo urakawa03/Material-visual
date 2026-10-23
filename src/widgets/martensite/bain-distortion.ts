@@ -53,6 +53,11 @@ const EDGE_RADIUS = 0.065;
 const CAMERA_DIST = 16;
 const AZIMUTH_DEG = 28;
 const ELEVATION_DEG = 22;
+/**
+ * 横に広いブロックがちょうど収まる縦横比。これより縦長のキャンバス(狭い幅の
+ * 1:1 など)では、横がはみ出さないようにカメラのズームを引く
+ */
+const FIT_ASPECT = 1.3;
 /** 初期状態(§5.3: s = 0・胞の強調 on・炭素 off) */
 const S_INIT = 0;
 const HIGHLIGHT_INIT = true;
@@ -103,6 +108,15 @@ export default function bainDistortion(host: FigureHost): WidgetHandle {
   });
   const tags = createPanelTags(host.stage, ["面心立方(fcc)"]);
   tags.update(kit.rects);
+
+  /** 縦横比に応じてズームを引く(FIT_ASPECT より縦長のときだけ) */
+  function fitZoom(): void {
+    const { w, h } = host.size;
+    const aspect = w > 0 && h > 0 ? w / h : FIT_ASPECT;
+    kit.camera.zoom = Math.min(1, aspect / FIT_ASPECT);
+    kit.camera.updateProjectionMatrix();
+  }
+  fitZoom();
 
   const accent = uiColor("accent");
   const text = uiColor("text");
@@ -225,7 +239,9 @@ export default function bainDistortion(host: FigureHost): WidgetHandle {
   const rA = readout.item("a 方向のひずみ");
   const rRatio = readout.item("c/a");
   const rVol = readout.item("体積変化");
-  const rBond = readout.item("中央の原子の 12 本");
+  // 中央の原子から出る 12 本の長さ(狭い幅でも 1 行に収まるよう 2 つに分ける)
+  const rBondDiag = readout.item("中央の原子から斜めの 8 本");
+  const rBondFlat = readout.item("水平の 4 本");
 
   function updateReadouts(): void {
     const st = bainStrain(s, carbon);
@@ -234,9 +250,8 @@ export default function bainDistortion(host: FigureHost): WidgetHandle {
     rRatio.set(st.cOverA.toFixed(3));
     rVol.set(fmtSignedPercent(st.dVol));
     const bl = bondLengths(s, carbon);
-    rBond.set(
-      `斜め 8 本 ${bl.outOfPlane.toFixed(3)} nm・水平 4 本 ${bl.inPlane.toFixed(3)} nm`,
-    );
+    rBondDiag.set(`${bl.outOfPlane.toFixed(3)} nm`);
+    rBondFlat.set(`${bl.inPlane.toFixed(3)} nm`);
     let label: string;
     if (s <= 0) label = "面心立方(fcc)— 体心正方の胞は c/a = 1.414";
     else if (s >= 1)
@@ -299,6 +314,7 @@ export default function bainDistortion(host: FigureHost): WidgetHandle {
   return {
     resize(): void {
       kit.resize();
+      fitZoom();
       tags.update(kit.rects);
     },
     destroy(): void {
