@@ -22,7 +22,7 @@
 import type { FigureHost, WidgetHandle } from "../types";
 import { formatDuration } from "../../core/units";
 import { createReadout } from "../reciprocal-lattice/_shared2d";
-import { T_ROOM_C, toK } from "./lib/constants";
+import { KM_RATE_PER_K, T_ROOM_C, toK } from "./lib/constants";
 import {
   diffusionalFraction,
   martensiteFraction,
@@ -247,22 +247,29 @@ export default function athermalTransformation(host: FigureHost): WidgetHandle {
     ctx.lineTo(Math.round(X(T_ROOM_C)) + 0.5, bottom);
     ctx.stroke();
     ctx.globalAlpha = 1;
-    // M_s・M_f(破線)。M_f が 0 ℃ より下なら、軸の左下に値だけ書く
+    // M_s・M_f(破線)。文字は 50% と 75% の目盛り線の中ほどに置く。
+    // M_f が 0 ℃ より下なら、題の行の右端に値だけ書く(グラフの中に置くと、
+    // 炭素が多いとき M_s の線や曲線と重なる)
+    const lineLabelY = Y(0.625) + fs * 0.4;
     vline(X(ms), top, bottom, true);
-    subLabel(ctx, "M", "s", "", X(ms) + 4, Y(0.5), pal.text, fs + 1);
+    subLabel(ctx, "M", "s", "", X(ms) + 4, lineLabelY, pal.text, fs + 1);
     if (mf >= T_AXIS_MIN) {
       vline(X(mf), top, bottom, true);
-      subLabel(ctx, "M", "f", "", X(mf) + 4, Y(0.5), pal.text, fs + 1);
+      // 軸の中に M_f が入るのは炭素が少ないときだけで、室温の線のすぐ左に
+      // 来る。文字は室温の線の右に書いて、線と重ならないようにする
+      const xf = Math.max(X(mf), X(T_ROOM_C)) + 4;
+      subLabel(ctx, "M", "f", "", xf, lineLabelY, pal.text, fs + 1);
     } else {
       subLabel(
         ctx,
-        "← M",
+        "M",
         "f",
-        ` = ${fmtCelsius(mf)}(軸の外)`,
-        X(T_ROOM_C) + 6,
-        bottom - 24,
+        ` = ${fmtCelsius(mf)}(横軸の左の外)`,
+        right,
+        p.y + fs,
         pal.text2,
         fs - 1,
+        "right",
       );
     }
 
@@ -290,22 +297,26 @@ export default function athermalTransformation(host: FigureHost): WidgetHandle {
     ctx.lineTo(xr + 10, Y(1));
     ctx.lineTo(xr + 6, Y(1));
     ctx.stroke();
-    plateText(
-      ctx,
-      pal,
-      `室温で残るオーステナイト ${fmtPercent(1 - fRoom)}`,
-      xr + 14,
-      Y(1) + 2,
-      pal.text,
-      fs,
-      "left",
-      "top",
-    );
+    // 文字は括弧の右、上端の線の下に書く。炭素が少ないと曲線が上端の近くを
+    // 長く通るので、曲線が文字の下端より下がるところまで右へずらす
+    // (f は温度について単調減少)。M_s の破線は下地で隠れてよい。グラフの
+    // 右端からはみ出すなら書かない(読み取り値にある)
+    const raText = `室温で残るオーステナイト ${fmtPercent(1 - fRoom)}`;
+    ctx.font = font(fs);
+    const raW = ctx.measureText(raText).width;
+    const raTop = Y(1) + 2;
+    const fClear = (bottom - (raTop + fs + 6 + 3)) / (bottom - top);
+    const tClear = ms + Math.log(1 - fClear) / KM_RATE_PER_K;
+    const raX = Math.max(xr + 14, X(tClear) + 3);
+    if (raX + raW + 3 <= right) {
+      plateText(ctx, pal, raText, raX, raTop, pal.text, fs, "left", "top");
+    }
+    // 「室温」は線の右に書く(左は縦軸までの幅が狭く、M_f の線も来る)
     ctx.font = font(fs - 1);
     ctx.fillStyle = pal.text2;
-    ctx.textAlign = "right";
+    ctx.textAlign = "left";
     ctx.textBaseline = "bottom";
-    ctx.fillText("室温", xr - 2, bottom - 3);
+    ctx.fillText("室温", xr + 3, bottom - 3);
 
     // 現在の点(到達温度)
     const fM = martensiteFraction(tempC, ms);
@@ -441,14 +452,17 @@ export default function athermalTransformation(host: FigureHost): WidgetHandle {
       const msg = Number.isFinite(ts)
         ? `この温度では 10⁵ 秒保っても始まらない(始まるまで約 ${formatDuration(ts)})`
         : "この温度では拡散変態は始まらない";
-      plateText(ctx, pal, msg, left + 6, Y(0.55), pal.text2, fs, "left");
+      // 2 行を 50% と 75% の目盛り線のあいだ(線と重ならない位置)に置く
+      const lineH = fs + 9;
+      const y1 = Y(0.625) - lineH / 2;
+      plateText(ctx, pal, msg, left + 6, y1, pal.text2, fs, "left");
       if (Number.isFinite(ts)) {
         plateText(
           ctx,
           pal,
           "炭素がほとんど動けない温度だから",
           left + 6,
-          Y(0.55) + fs + 9,
+          y1 + lineH,
           pal.text2,
           fs,
           "left",

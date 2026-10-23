@@ -5,7 +5,7 @@
  * (--mat-solute)。炭素量に応じて胞の縦横比 c/a = 1 + 0.045 C(式 E4)が
  * 変わる。実際の c/a は 1.04 程度なので、形は 5 倍に誇張して描き、その旨を
  * 常に表示する。胞のまわりに正方晶ひずみの場(--mat-tension / --mat-compression)。
- * 右: 炭素量と 100% マルテンサイトの硬さ(目安の点と単調補間の曲線)、現在の点、
+ * 右: 炭素量と 100% マルテンサイトの硬さ(目安の点を結ぶ折れ線)、現在の点、
  * 参考に同じ炭素量の徐冷材(パーライト)の硬さ。炭素 0 には「焼入れても
  * 硬くならない」のラベル。
  *
@@ -35,6 +35,7 @@ import {
   mapScale,
   plateText,
   resolvePalette,
+  unmapScale,
 } from "./lib/draw";
 
 /** 炭素量の範囲 [wt%](§5.6: 0〜1.2、step 0.05) */
@@ -52,9 +53,12 @@ const SAMPLES = 160;
 /** 斜め投影の奥行きの向きと長さ(a に対する比) */
 const DEPTH_DX = 0.5;
 const DEPTH_DY = -0.36;
-/** ひずみの場の塗りのセルの大きさ [px] と最大不透明度 */
+/** 鉄の原子の半径(a に対する比) */
+const R_FE_PER_A = 0.085;
+/** ひずみの場の塗りのセルの大きさ [px]・最大不透明度・届く範囲(a に対する比) */
 const FIELD_CELL_PX = 6;
 const FIELD_ALPHA_MAX = 0.4;
+const FIELD_REACH = 0.8;
 
 const TAU2 = Math.PI * 2;
 
@@ -145,32 +149,107 @@ export default function tetragonalityHardness(host: FigureHost): WidgetHandle {
 
   /* ---- 左: 体心正方の胞 ---- */
 
+  /** ひずみの場を粗い格子で描いておく小さなキャンバス(補間つきで拡大して貼る) */
+  let fieldCanvas: HTMLCanvasElement | null = null;
+
+  /**
+   * 炭素のまわりの正方晶ひずみの場(模式)。cos 2φ(φ は c 軸からの角)で
+   * 符号を決め(c 軸方向は引張、横は圧縮)、強さは 1/(r² + r₀²)。届く範囲の
+   * 端で 0 になるよう窓をかける。胞の枠の中だけに描く。
+   */
+  function drawField(
+    p: Pane,
+    a: number,
+    sites: ReadonlyArray<{ x: number; y: number }>,
+    n: number,
+  ): void {
+    const amp = Math.min(carbon / C_MAX, 1);
+    const reach = a * FIELD_REACH;
+    const r0 = a * 0.12;
+    const gw = Math.ceil(p.w / FIELD_CELL_PX);
+    const gh = Math.ceil(p.h / FIELD_CELL_PX);
+    fieldCanvas ??= document.createElement("canvas");
+    if (fieldCanvas.width !== gw) fieldCanvas.width = gw;
+    if (fieldCanvas.height !== gh) fieldCanvas.height = gh;
+    const fctx = fieldCanvas.getContext("2d");
+    if (!fctx) return;
+    const img = fctx.createImageData(gw, gh);
+    const data = img.data;
+    for (let gy = 0; gy < gh; gy++) {
+      const y = p.y + (gy + 0.5) * FIELD_CELL_PX;
+      for (let gx = 0; gx < gw; gx++) {
+        const x = p.x + (gx + 0.5) * FIELD_CELL_PX;
+        let v = 0;
+        for (let k = 0; k < n; k++) {
+          const cx = x - sites[k].x;
+          const cy = y - sites[k].y;
+          const r2 = cx * cx + cy * cy;
+          if (r2 >= reach * reach) continue;
+          const cos2 = (cy * cy - cx * cx) / Math.max(r2, 1e-9);
+          const win = 1 - r2 / (reach * reach);
+          v += ((amp * cos2 * r0 * r0 * 2.2) / (r2 + r0 * r0)) * win * win;
+        }
+        const al = Math.min(Math.abs(v), 1) * FIELD_ALPHA_MAX;
+        if (al < 0.01) continue;
+        const [rr, gg, bb] = v > 0 ? tensionRgb : compressionRgb;
+        const o = 4 * (gy * gw + gx);
+        data[o] = rr;
+        data[o + 1] = gg;
+        data[o + 2] = bb;
+        data[o + 3] = Math.round(al * 255);
+      }
+    }
+    fctx.putImageData(img, 0, 0);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(p.x, p.y, p.w, p.h);
+    ctx.clip();
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(
+      fieldCanvas,
+      p.x,
+      p.y,
+      gw * FIELD_CELL_PX,
+      gh * FIELD_CELL_PX,
+    );
+    ctx.restore();
+  }
+
   function drawCell(p: Pane, narrow: boolean): void {
     const fs = narrow ? 10 : 11;
     const ratioDisp = 1 + EXAGGERATION * (tetragonality(carbon) - 1);
     /** 炭素量が最大のときの(誇張した)縦横比。胞の置き場所はこれで決める */
     const ratioMax = 1 + EXAGGERATION * (tetragonality(C_MAX) - 1);
     // 胞の大きさ a は炭素量によらず一定にし、縦 c だけを変える。
-    // 奥行き (DEPTH_DX, DEPTH_DY)·a と寸法線の余白を含めて枠に収める
-    const marginL = 34;
+    // 奥行き (DEPTH_DX, DEPTH_DY)·a・原子の半径・寸法線の余白を含めて枠に収める
+    const padL = 22; // 左: c の寸法線と文字
+    const padR = 4;
     const titleH = 2 * fs + 26;
-    const dimH = 26;
-    const availW = p.w - marginL - 8;
-    const availH = p.h - titleH - dimH;
+    // 下: a の寸法線と文字、炭素 0 のときの一言の行
+    const dimBelow = 2 * fs + 18;
     const a = Math.max(
       Math.min(
-        availW / (1 + DEPTH_DX),
-        availH / (ratioMax + Math.abs(DEPTH_DY)),
+        (p.w - padL - padR) / (1 + DEPTH_DX + 2 * R_FE_PER_A),
+        (p.h - titleH - dimBelow) /
+          (ratioMax + Math.abs(DEPTH_DY) + 2 * R_FE_PER_A),
       ),
       10,
     );
+    const rFe = Math.max(a * R_FE_PER_A, 4);
     const c = a * ratioDisp;
     const dx = DEPTH_DX * a;
     const dy = DEPTH_DY * a;
-    const x0 = p.x + marginL + (availW - (1 + DEPTH_DX) * a) / 2;
-    const blockH = (ratioMax + Math.abs(DEPTH_DY)) * a;
+    const usedW = padL + (1 + DEPTH_DX) * a + 2 * rFe + padR;
+    const x0 = p.x + (p.w - usedW) / 2 + padL + rFe;
+    const usedH = (ratioMax + Math.abs(DEPTH_DY)) * a + 2 * rFe + dimBelow;
     const yBase =
-      p.y + titleH + (availH - blockH) / 2 + Math.abs(dy) + ratioMax * a;
+      p.y +
+      titleH +
+      Math.max(p.h - titleH - usedH, 0) / 2 +
+      rFe +
+      Math.abs(dy) +
+      ratioMax * a;
     // 前面の左下を基準に、8 頂点(前 4・奥 4)
     const fbl = { x: x0, y: yBase };
     const fbr = { x: x0 + a, y: yBase };
@@ -190,39 +269,7 @@ export default function tetragonalityHardness(host: FigureHost): WidgetHandle {
     const nCarbon = carbon < 0.025 ? 0 : carbon < 0.6 ? 1 : 2;
 
     // ひずみの場(炭素のまわり: c 軸方向に引張、横に圧縮 — 模式)
-    if (showField && nCarbon > 0) {
-      const amp = Math.min(carbon / 1.2, 1);
-      const reach = a * 0.95;
-      for (let k = 0; k < nCarbon; k++) {
-        const s0 = sites[k];
-        const gx0 = Math.floor((s0.x - reach) / FIELD_CELL_PX);
-        const gx1 = Math.ceil((s0.x + reach) / FIELD_CELL_PX);
-        const gy0 = Math.floor((s0.y - reach) / FIELD_CELL_PX);
-        const gy1 = Math.ceil((s0.y + reach) / FIELD_CELL_PX);
-        for (let gy = gy0; gy <= gy1; gy++) {
-          for (let gx = gx0; gx <= gx1; gx++) {
-            const cx = (gx + 0.5) * FIELD_CELL_PX - s0.x;
-            const cy = (gy + 0.5) * FIELD_CELL_PX - s0.y;
-            const r2 = cx * cx + cy * cy;
-            if (r2 > reach * reach) continue;
-            const r0 = a * 0.12;
-            // cos 2φ(φ は c 軸からの角)で符号、1/(r² + r₀²) で強さ
-            const cos2 = (cy * cy - cx * cx) / Math.max(r2, 1e-9);
-            const v = (amp * cos2 * r0 * r0 * 2.2) / (r2 + r0 * r0);
-            const al = Math.min(Math.abs(v), 1) * FIELD_ALPHA_MAX;
-            if (al < 0.02) continue;
-            const [rr, gg, bb] = v > 0 ? tensionRgb : compressionRgb;
-            ctx.fillStyle = `rgba(${rr}, ${gg}, ${bb}, ${al.toFixed(3)})`;
-            ctx.fillRect(
-              gx * FIELD_CELL_PX,
-              gy * FIELD_CELL_PX,
-              FIELD_CELL_PX,
-              FIELD_CELL_PX,
-            );
-          }
-        }
-      }
-    }
+    if (showField && nCarbon > 0) drawField(p, a, sites, nCarbon);
 
     // 稜線(奥の 3 本は細い破線、他は hairline より濃い text-2)
     const line = (
@@ -255,7 +302,6 @@ export default function tetragonalityHardness(host: FigureHost): WidgetHandle {
     line(bbr, btr, false);
 
     // 原子: 奥の頂点 → 体心 → 炭素 → 手前の頂点(重なりの順)
-    const rFe = Math.max(a * 0.085, 4);
     const rC = Math.max(rFe * 0.62, 3);
     for (const q of [bbl, bbr, btl, btr]) {
       atom(ctx, q.x, q.y, rFe, pal.matrix, pal.matrixEdge);
@@ -268,31 +314,33 @@ export default function tetragonalityHardness(host: FigureHost): WidgetHandle {
       atom(ctx, q.x, q.y, rFe, pal.matrix, pal.matrixEdge);
     }
 
-    // 寸法(c と a)
+    // 寸法(c と a)。原子の外側に引く
+    const dimX = Math.round(fbl.x - rFe - 7) + 0.5;
+    const dimY = Math.round(fbl.y + rFe + 7) + 0.5;
     ctx.strokeStyle = pal.text2;
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(fbl.x - 16, fbl.y);
-    ctx.lineTo(fbl.x - 16, ftl.y);
-    ctx.moveTo(fbl.x - 20, fbl.y);
-    ctx.lineTo(fbl.x - 12, fbl.y);
-    ctx.moveTo(fbl.x - 20, ftl.y);
-    ctx.lineTo(fbl.x - 12, ftl.y);
-    ctx.moveTo(fbl.x, fbl.y + 14);
-    ctx.lineTo(fbr.x, fbr.y + 14);
-    ctx.moveTo(fbl.x, fbl.y + 10);
-    ctx.lineTo(fbl.x, fbl.y + 18);
-    ctx.moveTo(fbr.x, fbr.y + 10);
-    ctx.lineTo(fbr.x, fbr.y + 18);
+    ctx.moveTo(dimX, fbl.y);
+    ctx.lineTo(dimX, ftl.y);
+    ctx.moveTo(dimX - 4, fbl.y);
+    ctx.lineTo(dimX + 4, fbl.y);
+    ctx.moveTo(dimX - 4, ftl.y);
+    ctx.lineTo(dimX + 4, ftl.y);
+    ctx.moveTo(fbl.x, dimY);
+    ctx.lineTo(fbr.x, dimY);
+    ctx.moveTo(fbl.x, dimY - 4);
+    ctx.lineTo(fbl.x, dimY + 4);
+    ctx.moveTo(fbr.x, dimY - 4);
+    ctx.lineTo(fbr.x, dimY + 4);
     ctx.stroke();
     ctx.font = font(fs + 1, 600);
     ctx.fillStyle = pal.text;
     ctx.textAlign = "right";
     ctx.textBaseline = "middle";
-    ctx.fillText("c", fbl.x - 22, (fbl.y + ftl.y) / 2);
+    ctx.fillText("c", dimX - 5, (fbl.y + ftl.y) / 2);
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
-    ctx.fillText("a", (fbl.x + fbr.x) / 2, fbl.y + 16);
+    ctx.fillText("a", (fbl.x + fbr.x) / 2, dimY + 3);
     // 炭素が c 軸の向きに上下の鉄を押し広げることを示す小さな矢印
     if (nCarbon > 0) {
       const s0 = sites[0];
@@ -412,30 +460,8 @@ export default function tetragonalityHardness(host: FigureHost): WidgetHandle {
     ctx.textAlign = "right";
     ctx.textBaseline = "bottom";
     ctx.fillText("焼入れ(100% マルテンサイト)", X(1.18), Y(820) - 6);
-    plateText(
-      ctx,
-      pal,
-      "0.6% あたりから頭打ち",
-      X(0.86),
-      Y(820) + 16,
-      pal.text2,
-      fs - 1,
-      "center",
-    );
 
-    // 炭素 0 のラベル
-    plateText(
-      ctx,
-      pal,
-      "炭素のない鉄: 焼入れても硬くならない",
-      X(0) + 8,
-      Y(martensiteHardness(0)) - 14,
-      pal.text,
-      fs - 0.5,
-      "left",
-    );
-
-    // 現在の点
+    // 現在の点から横軸へ下ろす破線(ラベルの下地で隠れるよう先に描く)
     const hv = martensiteHardness(carbon);
     const px = X(carbon);
     const py = Y(hv);
@@ -448,6 +474,31 @@ export default function tetragonalityHardness(host: FigureHost): WidgetHandle {
     ctx.lineTo(px, py);
     ctx.stroke();
     ctx.restore();
+
+    // 炭素 0 のラベル。左端は急に立ち上がる 100% マルテンサイトの曲線の右、
+    // 右端は徐冷の線より上に収まる位置を探す(どちらの線も右上がり)
+    {
+      const text = "炭素のない鉄: 焼入れても硬くならない";
+      const fsz = fs - 0.5;
+      ctx.font = font(fsz);
+      const tw = ctx.measureText(text).width;
+      const half = (fsz + 6) / 2;
+      const prefer = Y(martensiteHardness(0)) - 14;
+      let pos = { x: X(0) + 8, y: prefer };
+      for (let off = 8; off <= 80; off += 2) {
+        const xl = X(0) + off;
+        const yMin = Y(martensiteHardness(unmapScale(xs, xl - 3))) + half + 3;
+        const yMax =
+          Y(slowCooledHardness(unmapScale(xs, xl + tw + 3))) - half - 3;
+        if (yMin <= yMax) {
+          pos = { x: xl, y: Math.min(Math.max(prefer, yMin), yMax) };
+          break;
+        }
+      }
+      plateText(ctx, pal, text, pos.x, pos.y, pal.text, fsz, "left");
+    }
+
+    // 現在の点
     ctx.beginPath();
     ctx.arc(px, py, 6, 0, TAU2);
     ctx.fillStyle = pal.accent;
@@ -455,12 +506,14 @@ export default function tetragonalityHardness(host: FigureHost): WidgetHandle {
     ctx.lineWidth = 2;
     ctx.strokeStyle = pal.bg;
     ctx.stroke();
+    // 値のラベル: ふつうは点の右下。炭素が少ないと右下に炭素 0 のラベルと
+    // 徐冷の線が来るので、点の真右に置く
     plateText(
       ctx,
       pal,
       `${Math.round(hv / 10) * 10} HV`,
       px + (carbon > 0.9 ? -10 : 10),
-      py + 16,
+      carbon < 0.075 ? py : py + 16,
       pal.accent,
       fs + 1,
       carbon > 0.9 ? "right" : "left",

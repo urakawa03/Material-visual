@@ -66,9 +66,14 @@ const N_CARBIDE_SITES = 40;
 const SEED = 7707;
 /** 同じ P の組を探すときの温度の差 [℃] */
 const EQUIV_DT = 50;
-/** 曲線の名前を書く P の位置 */
-const HV_LABEL_P = 16800;
-const TOUGH_LABEL_P = 16000;
+/**
+ * 曲線の名前を書く P の位置の候補(先頭から順に、現在の P の縦線と値の
+ * ラベルに重ならないものを使う)
+ */
+const HV_LABEL_PS = [16800, 19600, 10200];
+const TOUGH_LABEL_PS = [16000, 19000, 8600];
+/** 曲線の名前を、現在の P の縦線からこれ以上離す [px](値のラベルの幅を含む) */
+const LABEL_CLEAR_PX = 60;
 
 const TAU2 = Math.PI * 2;
 
@@ -208,6 +213,34 @@ export default function tempering(host: FigureHost): WidgetHandle {
 
   /* ---- 左: 組織の模式 ---- */
 
+  /** 箱の下の凡例: 閉じ込められた炭素と、析出した炭化物 */
+  function drawLegend(box: Pane, narrow: boolean, lfs: number): void {
+    const items: ReadonlyArray<readonly [string, string, string]> = [
+      // 図の炭素は縁取りなしで描いているので、凡例も同じにする
+      [pal.solute, pal.solute, "針の中に閉じ込められた炭素"],
+      [pal.precip, pal.precipEdge, "析出した炭化物(焼戻しで現れ、粗くなる)"],
+    ];
+    ctx.font = font(lfs);
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    let x = box.x + 6;
+    let y = box.y + box.h + (narrow ? lfs / 2 + 6 : lfs / 2 + 10);
+    for (const [fill, edge, label] of items) {
+      const text = narrow ? label.replace(/(.*)$/, "") : label;
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, TAU2);
+      ctx.fillStyle = fill;
+      ctx.fill();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = edge;
+      ctx.stroke();
+      ctx.fillStyle = pal.text2;
+      ctx.fillText(text, x + 9, y);
+      if (narrow) x += 9 + ctx.measureText(text).width + 18;
+      else y += lfs + 8;
+    }
+  }
+
   function drawMicro(p: Pane, narrow: boolean): void {
     const fs = narrow ? 10 : 11;
     const prog = temperProgress(pNow());
@@ -221,10 +254,13 @@ export default function tempering(host: FigureHost): WidgetHandle {
     else title = "炭化物が粗くなり、数が減る";
     ctx.fillText(title, p.x, p.y);
     const top = p.y + fs + 8;
-    const size = Math.min(p.w, p.h - (top - p.y));
+    // 凡例の高さ(広い幅は箱の下に 2 行、狭い幅は 1 行に 2 つ)
+    const legendH = narrow ? fs + 10 : 2 * (fs + 8) + 6;
+    const size = Math.min(p.w, p.h - (top - p.y) - legendH);
     const box: Pane = narrow
-      ? { x: p.x, y: top, w: p.w, h: p.h - (top - p.y) }
+      ? { x: p.x, y: top, w: p.w, h: p.h - (top - p.y) - legendH }
       : { x: p.x, y: top, w: p.w, h: size };
+    drawLegend(box, narrow, fs - 1);
     ctx.strokeStyle = pal.hairline;
     ctx.lineWidth = 1;
     ctx.strokeRect(box.x + 0.5, box.y + 0.5, box.w - 1, box.h - 1);
@@ -397,12 +433,11 @@ export default function tempering(host: FigureHost): WidgetHandle {
     for (const tC of ONE_HOUR_TICKS) {
       ctx.fillText(`${tC}`, X(hollomonJaffe(tC, 1)), top - 4);
     }
-    // 上の目盛りの題(左端の空き = P が 9500 未満の上)
-    ctx.textAlign = "left";
+    // 上の目盛りの題(目盛りの数字の 1 段上、グラフの中央)
     ctx.fillText(
-      narrow ? "1 時間なら [℃]" : "1 時間なら [℃] →",
-      left + 2,
-      top - 4,
+      "上の目盛り: 1 時間焼き戻すときの温度 [℃]",
+      (left + right) / 2,
+      top - 4 - fs - 4,
     );
 
     // スライダーで届く範囲の外を淡く
@@ -436,41 +471,49 @@ export default function tempering(host: FigureHost): WidgetHandle {
     };
     curve(temperedHardness, ys, pal.text, false);
     curve(toughness, ts, pal.text2, true);
-    // 曲線の名前(現在の P の印と重ならない、曲線の中ほどに置く)
+    // 曲線の名前。現在の P の縦線と値のラベルに重ならない候補の位置に置く
+    const pp = pNow();
+    const x = X(pp);
     ctx.font = font(fs, 600);
+    const pickP = (cands: readonly number[], label: string): number => {
+      const w = ctx.measureText(label).width;
+      return (
+        cands.find((c) => {
+          const xl = X(c) + 6;
+          return xl > x + LABEL_CLEAR_PX || xl + w < x - LABEL_CLEAR_PX;
+        }) ?? cands[0]
+      );
+    };
+    const hvP = pickP(HV_LABEL_PS, "硬さ");
+    const tgP = pickP(TOUGH_LABEL_PS, "靭性");
     ctx.fillStyle = pal.text;
     ctx.textAlign = "left";
     ctx.textBaseline = "bottom";
-    ctx.fillText(
-      "硬さ",
-      X(HV_LABEL_P) + 6,
-      mapScale(ys, temperedHardness(HV_LABEL_P)) - 6,
-    );
+    ctx.fillText("硬さ", X(hvP) + 6, mapScale(ys, temperedHardness(hvP)) - 6);
     ctx.fillStyle = pal.text2;
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
-    ctx.fillText(
-      "靭性",
-      X(TOUGH_LABEL_P) + 6,
-      mapScale(ts, toughness(TOUGH_LABEL_P)) + 6,
-    );
+    ctx.fillText("靭性", X(tgP) + 6, mapScale(ts, toughness(tgP)) + 6);
 
-    // 焼戻し脆性のくぼみのラベル(模式)
+    // 焼戻し脆性のくぼみのラベル(模式)。現在の P の縦線にかかるときは脇へ
     const pDip = hollomonJaffe(320, 1);
+    const dipText = "焼戻し脆性(模式)";
+    ctx.font = font(fs - 1);
+    const dipHalf = ctx.measureText(dipText).width / 2 + 3;
+    const xDip = X(pDip);
+    const dipNear = Math.abs(xDip - x) < dipHalf + 8;
     plateText(
       ctx,
       pal,
-      "焼戻し脆性(模式)",
-      X(pDip),
+      dipText,
+      dipNear ? (x >= xDip ? x - 8 : x + 8) : xDip,
       mapScale(ts, toughness(pDip)) + 18,
       pal.text2,
       fs - 1,
-      "center",
+      dipNear ? (x >= xDip ? "right" : "left") : "center",
     );
 
     // 現在の P
-    const pp = pNow();
-    const x = X(pp);
     ctx.strokeStyle = pal.accent;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
@@ -489,15 +532,19 @@ export default function tempering(host: FigureHost): WidgetHandle {
       ctx.strokeStyle = pal.bg;
       ctx.stroke();
     }
+    // 値のラベル。硬さの曲線は右下がりなので、点の右上か左下に置けば
+    // 曲線と重ならない(右半分では左下、左半分では右上)
+    const rightHalf = x > (left + right) / 2;
+    const yHv = mapScale(ys, temperedHardness(pp));
     plateText(
       ctx,
       pal,
       `${Math.round(temperedHardness(pp) / 10) * 10} HV`,
-      x + (x > (left + right) / 2 ? -10 : 10),
-      mapScale(ys, temperedHardness(pp)) - 14,
+      x + (rightHalf ? -10 : 10),
+      rightHalf ? yHv + 16 : yHv - 14,
       pal.accent,
       fs + 1,
-      x > (left + right) / 2 ? "right" : "left",
+      rightHalf ? "right" : "left",
     );
   }
 

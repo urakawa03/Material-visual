@@ -359,13 +359,24 @@ export default function shapeChange(host: FigureHost): WidgetHandle {
 
   /* ---- 描画 ---- */
 
+  /** ひずみの場を 1 セル = 1 画素で描いておく小さなキャンバス(拡大して貼る) */
+  let fieldCanvas: HTMLCanvasElement | null = null;
+
   function drawField(v: View): void {
     if (progress <= 0) return;
-    // 板の先端を刃状転位とみなした場の重ね合わせ(強さ = 各板のずれ)
+    // 板の先端を刃状転位とみなした場の重ね合わせ(強さ = 各板のずれ)。
+    // 板の + n̂ 側(表面が盛り上がる側)は先端から遠ざかる向きにずれるので
+    // 先端の + n̂ 側が引張、− n̂ 側が圧縮(余分な半面が − n̂ 側に入る)
     const w = LAYER_D / stack.n;
     const nx = Math.ceil(REGION_W / FIELD_CELL);
     const ny = Math.ceil(REGION_H / FIELD_CELL);
-    const cellPx = FIELD_CELL * v.scale;
+    fieldCanvas ??= document.createElement("canvas");
+    if (fieldCanvas.width !== nx) fieldCanvas.width = nx;
+    if (fieldCanvas.height !== ny) fieldCanvas.height = ny;
+    const fctx = fieldCanvas.getContext("2d");
+    if (!fctx) return;
+    const img = fctx.createImageData(nx, ny);
+    const data = img.data;
     for (let j = 0; j < ny; j++) {
       const y = -(j + 0.5) * FIELD_CELL;
       for (let i = 0; i < nx; i++) {
@@ -386,20 +397,22 @@ export default function shapeChange(host: FigureHost): WidgetHandle {
           Math.min(Math.abs(pr) / (PLATE_SHEAR * LAYER_D * 0.9), 1) *
           FIELD_ALPHA_MAX;
         if (a < 0.02) continue;
-        const [r, g, bl] = pr > 0 ? compressionRgb : tensionRgb;
-        ctx.fillStyle = `rgba(${r}, ${g}, ${bl}, ${a.toFixed(3)})`;
-        // 隣のセルと重ならず隙間もできないよう、端を整数の px にそろえる
-        // (重なると半透明の塗りが二重になり、格子状の筋が見える)
-        const x0 = Math.round(v.ox + i * cellPx);
-        const y0 = Math.round(v.oy + j * cellPx);
-        ctx.fillRect(
-          x0,
-          y0,
-          Math.round(v.ox + (i + 1) * cellPx) - x0,
-          Math.round(v.oy + (j + 1) * cellPx) - y0,
-        );
+        const [r, g, bl] = pr > 0 ? tensionRgb : compressionRgb;
+        const o = 4 * (j * nx + i);
+        data[o] = r;
+        data[o + 1] = g;
+        data[o + 2] = bl;
+        data[o + 3] = Math.round(a * 255);
       }
     }
+    fctx.putImageData(img, 0, 0);
+    // 補間つきで拡大して貼る(セルの角が見えず、なめらかな場になる)
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    const cellPx = FIELD_CELL * v.scale;
+    ctx.drawImage(fieldCanvas, v.ox, v.oy, nx * cellPx, ny * cellPx);
+    ctx.restore();
   }
 
   function drawSection(p: Pane, narrow: boolean): void {
@@ -626,7 +639,8 @@ export default function shapeChange(host: FigureHost): WidgetHandle {
     ];
     const barX = p.x + (narrow ? 52 : 4);
     const barMax = p.x + p.w - 40 - barX;
-    let y = p.y + 2 * fs + 18;
+    // 広い幅では行の名前を棒の上に書くので、見出しとのあいだを少し空ける
+    let y = p.y + 2 * fs + (narrow ? 18 : 28);
     for (const [arr, label] of rows) {
       const st = plateStack(arr);
       const current = arr === arrangement;
