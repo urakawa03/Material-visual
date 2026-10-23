@@ -147,6 +147,8 @@ export const registry: Record<
   "fermi-level/intrinsic-carriers": () =>
     import("./fermi-level/intrinsic-carriers"),
   "fermi-level/doping-shift": () => import("./fermi-level/doping-shift"),
+  "fermi-level/mass-action": () => import("./fermi-level/mass-action"),
+  "fermi-level/equilibration": () => import("./fermi-level/equilibration"),
 
   // 記事「pn 接合」(仕様書 13)— 実装時にこの直下へ登録する
 
