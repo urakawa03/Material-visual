@@ -178,6 +178,10 @@ export const registry: Record<
   "fermi-level/equilibration": () => import("./fermi-level/equilibration"),
 
   // 記事「pn 接合」(仕様書 13)— 実装時にこの直下へ登録する
+  "pn-junction/junction-formation": () =>
+    import("./pn-junction/junction-formation"),
+  "pn-junction/depletion-layer": () => import("./pn-junction/depletion-layer"),
+  "pn-junction/band-bending": () => import("./pn-junction/band-bending"),
 
   // 記事「トンネル効果と STM」(仕様書 14)— 実装時にこの直下へ登録する
 };
