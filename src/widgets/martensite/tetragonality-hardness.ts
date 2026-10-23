@@ -59,6 +59,8 @@ const R_FE_PER_A = 0.085;
 const FIELD_CELL_PX = 6;
 const FIELD_ALPHA_MAX = 0.4;
 const FIELD_REACH = 0.8;
+/** ひずみの場を枠の端に向けて薄くする幅 [px] */
+const FIELD_EDGE_FADE_PX = 28;
 
 const TAU2 = Math.PI * 2;
 
@@ -189,7 +191,10 @@ export default function tetragonalityHardness(host: FigureHost): WidgetHandle {
           const win = 1 - r2 / (reach * reach);
           v += ((amp * cos2 * r0 * r0 * 2.2) / (r2 + r0 * r0)) * win * win;
         }
-        const al = Math.min(Math.abs(v), 1) * FIELD_ALPHA_MAX;
+        // 枠の端で切れた跡が見えないよう、端の手前で薄くする
+        const edge = Math.min(x - p.x, p.x + p.w - x, y - p.y, p.y + p.h - y);
+        const fade = Math.min(Math.max(edge / FIELD_EDGE_FADE_PX, 0), 1);
+        const al = Math.min(Math.abs(v), 1) * FIELD_ALPHA_MAX * fade;
         if (al < 0.01) continue;
         const [rr, gg, bb] = v > 0 ? tensionRgb : compressionRgb;
         const o = 4 * (gy * gw + gx);
