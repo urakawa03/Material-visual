@@ -1,0 +1,388 @@
+---
+/**
+ * StaticDonor.astro — 静的図 S-2(記事仕様書 12 §6.1)
+ *
+ * 左: Si 原子(--mat-matrix)の 2 次元格子に P 原子(--mat-solute)が 1 個置換で
+ * 入り、結合に使われない 5 個目の電子(--mat-electron)が、半径約 4.4 格子間隔
+ * の破線の円軌道を回る模式図。右: 対になる B 原子と、そのまわりに弱く束縛
+ * された正孔(--mat-hole)。
+ *
+ * 軌道半径は水素原子に似た模型の見積もり(有効ボーア半径)
+ * a_B·ε_r·(m_e / m_e,eff) ≈ 0.053 × 11.7 / 0.26 ≈ 2.4 nm
+ * (Si の格子定数 0.543 nm の約 4.4 倍)。
+ * 正孔の軌道の大きさは模式(同じ半径で描いた)。
+ *
+ * 幅の広い画面用と狭い画面用(600px 以下)の 2 枚の SVG を持ち、CSS で
+ * 切り替える(狭い画面で文字が小さくなりすぎないように)。
+ */
+
+interface Props {
+  caption: string;
+  alt: string;
+}
+
+const { caption, alt } = Astro.props;
+
+const EDGE_MAT = "color-mix(in srgb, var(--mat-matrix) 80%, black)";
+const EDGE_SOL = "color-mix(in srgb, var(--mat-solute) 80%, black)";
+
+/** 軌道半径 = 格子間隔の 4.4 倍 */
+const ORBIT_IN_SPACINGS = 4.4;
+const COLS = 6; // 中心から左右へ ±6 列
+const ROWS = 5; // 中心から上下へ ±5 行
+
+interface Variant {
+  cls: string;
+  width: number;
+  height: number;
+  /** 格子間隔(px) */
+  sp: number;
+  atom: number;
+  dopant: number;
+  left: { x: number; y: number };
+  right: { x: number; y: number };
+  /** 軌道上のキャリアの角度(度、右回りが負) */
+  angle: number;
+  font: { title: number; sub: number; label: number; symbol: number };
+  titleY: number;
+  subY: number;
+  subLeft: string;
+  subRight: string;
+}
+
+const VARIANTS: Variant[] = [
+  {
+    cls: "fl-wide",
+    width: 720,
+    height: 352,
+    sp: 25,
+    atom: 6,
+    dopant: 10,
+    left: { x: 182, y: 158 },
+    right: { x: 538, y: 158 },
+    angle: -38,
+    font: { title: 13.5, sub: 12.5, label: 12.5, symbol: 12.5 },
+    titleY: 322,
+    subY: 342,
+    subLeft: "結合に使われない電子が 1 個余る",
+    subRight: "電子が 1 個足りない = 正孔が 1 個",
+  },
+  {
+    cls: "fl-narrow",
+    width: 380,
+    height: 214,
+    sp: 13,
+    atom: 3.3,
+    dopant: 7,
+    left: { x: 95, y: 82 },
+    right: { x: 285, y: 82 },
+    angle: -62,
+    font: { title: 12, sub: 11, label: 11, symbol: 9.5 },
+    titleY: 180,
+    subY: 198,
+    subLeft: "電子が 1 個余る",
+    subRight: "電子が 1 個足りない",
+  },
+];
+
+function lattice(cx: number, cy: number, sp: number) {
+  const atoms: Array<{ x: number; y: number }> = [];
+  const bonds: string[] = [];
+  for (let j = -ROWS; j <= ROWS; j++) {
+    for (let i = -COLS; i <= COLS; i++) {
+      if (i === 0 && j === 0) continue;
+      atoms.push({ x: cx + i * sp, y: cy + j * sp });
+    }
+    bonds.push(`M ${cx - COLS * sp} ${cy + j * sp} H ${cx + COLS * sp}`);
+  }
+  for (let i = -COLS; i <= COLS; i++) {
+    bonds.push(`M ${cx + i * sp} ${cy - ROWS * sp} V ${cy + ROWS * sp}`);
+  }
+  return { atoms, bonds };
+}
+
+const drawn = VARIANTS.map((v) => {
+  const orbit = ORBIT_IN_SPACINGS * v.sp;
+  const rad = (v.angle * Math.PI) / 180;
+  const onOrbit = (c: { x: number; y: number }) => ({
+    x: c.x + orbit * Math.cos(rad),
+    y: c.y + orbit * Math.sin(rad),
+  });
+  const pad = v.sp * 0.6;
+  return {
+    v,
+    orbit,
+    halves: [
+      {
+        c: v.left,
+        l: lattice(v.left.x, v.left.y, v.sp),
+        clip: {
+          x: v.left.x - COLS * v.sp - pad,
+          y: v.left.y - ROWS * v.sp - pad,
+          w: 2 * (COLS * v.sp + pad),
+          h: 2 * (ROWS * v.sp + pad),
+        },
+      },
+      {
+        c: v.right,
+        l: lattice(v.right.x, v.right.y, v.sp),
+        clip: {
+          x: v.right.x - COLS * v.sp - pad,
+          y: v.right.y - ROWS * v.sp - pad,
+          w: 2 * (COLS * v.sp + pad),
+          h: 2 * (ROWS * v.sp + pad),
+        },
+      },
+    ],
+    eDot: onOrbit(v.left),
+    hDot: onOrbit(v.right),
+  };
+});
+---
+
+<figure class="static-fig">
+  <div class="static-fig-frame">
+    {
+      drawn.map(({ v, orbit, halves, eDot, hDot }) => (
+        <svg
+          class={v.cls}
+          viewBox={`0 0 ${v.width} ${v.height}`}
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
+        >
+          <defs>
+            {halves.map((half, k) => (
+              <clipPath id={`fl-s2-${v.cls}-${k}`}>
+                <rect
+                  x={half.clip.x}
+                  y={half.clip.y}
+                  width={half.clip.w}
+                  height={half.clip.h}
+                />
+              </clipPath>
+            ))}
+          </defs>
+
+          {/* Si の格子(結合 = 細線、原子 = 母相の色) */}
+          {halves.map((half, k) => (
+            <g clip-path={`url(#fl-s2-${v.cls}-${k})`}>
+              {half.l.bonds.map((d) => (
+                <path
+                  d={d}
+                  fill="none"
+                  stroke="var(--color-hairline)"
+                  stroke-width={v.sp > 20 ? 2 : 1.4}
+                />
+              ))}
+              {half.l.atoms.map((p) => (
+                <circle
+                  cx={p.x}
+                  cy={p.y}
+                  r={v.atom}
+                  fill="var(--mat-matrix)"
+                  stroke={EDGE_MAT}
+                  stroke-width={v.sp > 20 ? 1.2 : 0.8}
+                />
+              ))}
+            </g>
+          ))}
+
+          {/* 左: P(5 価)と 5 個目の電子の軌道 */}
+          <circle
+            cx={v.left.x}
+            cy={v.left.y}
+            r={orbit}
+            fill="var(--mat-electron)"
+            fill-opacity="0.06"
+            stroke="var(--mat-electron)"
+            stroke-width="1.6"
+            stroke-dasharray="6 5"
+          />
+          <line
+            x1={v.left.x}
+            y1={v.left.y}
+            x2={v.left.x - orbit}
+            y2={v.left.y}
+            stroke="var(--color-text-2)"
+            stroke-width="1.2"
+          />
+          <path
+            d={`M ${v.left.x - orbit} ${v.left.y} l 7 -3.5 l 0 7 Z`}
+            fill="var(--color-text-2)"
+          />
+          <rect
+            x={v.left.x - orbit + 6}
+            y={v.left.y + v.dopant}
+            width={v.font.label * 5.6}
+            height={v.font.label + 6}
+            fill="var(--color-bg)"
+            opacity="0.9"
+          />
+          <text
+            x={v.left.x - orbit + 9}
+            y={v.left.y + v.dopant + v.font.label + 1}
+            font-size={v.font.label}
+            fill="var(--color-text)"
+          >
+            約 2.4 nm
+          </text>
+          <circle
+            cx={v.left.x}
+            cy={v.left.y}
+            r={v.dopant}
+            fill="var(--mat-solute)"
+            stroke={EDGE_SOL}
+            stroke-width="1.5"
+          />
+          <text
+            x={v.left.x}
+            y={v.left.y + v.font.symbol * 0.36}
+            text-anchor="middle"
+            font-size={v.font.symbol}
+            font-weight="600"
+            fill="var(--color-text)"
+          >
+            P
+          </text>
+          <circle
+            cx={eDot.x}
+            cy={eDot.y}
+            r={v.sp > 20 ? 6 : 4.5}
+            fill="var(--mat-electron)"
+            stroke="var(--color-bg)"
+            stroke-width="1.5"
+          />
+          <rect
+            x={eDot.x + 8}
+            y={eDot.y - v.font.label - 9}
+            width={v.font.label * 6.4}
+            height={v.font.label + 6}
+            fill="var(--color-bg)"
+            opacity="0.9"
+          />
+          <text
+            x={eDot.x + 11}
+            y={eDot.y - 7}
+            font-size={v.font.label}
+            fill="var(--mat-electron)"
+          >
+            5 個目の電子
+          </text>
+
+          {/* 右: B(3 価)と正孔の軌道 */}
+          <circle
+            cx={v.right.x}
+            cy={v.right.y}
+            r={orbit}
+            fill="var(--mat-hole)"
+            fill-opacity="0.05"
+            stroke="var(--mat-hole)"
+            stroke-width="1.6"
+            stroke-dasharray="6 5"
+          />
+          <circle
+            cx={v.right.x}
+            cy={v.right.y}
+            r={v.dopant}
+            fill="var(--mat-solute)"
+            stroke={EDGE_SOL}
+            stroke-width="1.5"
+          />
+          <text
+            x={v.right.x}
+            y={v.right.y + v.font.symbol * 0.36}
+            text-anchor="middle"
+            font-size={v.font.symbol}
+            font-weight="600"
+            fill="var(--color-text)"
+          >
+            B
+          </text>
+          <circle
+            cx={hDot.x}
+            cy={hDot.y}
+            r={v.sp > 20 ? 6 : 4.5}
+            fill="var(--mat-hole)"
+            stroke="var(--color-bg)"
+            stroke-width="1.5"
+          />
+          <rect
+            x={hDot.x + 8}
+            y={hDot.y - v.font.label - 9}
+            width={v.font.label * 2.8}
+            height={v.font.label + 6}
+            fill="var(--color-bg)"
+            opacity="0.9"
+          />
+          <text
+            x={hDot.x + 11}
+            y={hDot.y - 7}
+            font-size={v.font.label}
+            fill="var(--mat-hole)"
+          >
+            正孔
+          </text>
+
+          {/* 下の説明 */}
+          <text
+            x={v.left.x}
+            y={v.titleY}
+            text-anchor="middle"
+            font-size={v.font.title}
+            font-weight="600"
+            fill="var(--color-text)"
+          >
+            リン P(5 価)= ドナー
+          </text>
+          <text
+            x={v.left.x}
+            y={v.subY}
+            text-anchor="middle"
+            font-size={v.font.sub}
+            fill="var(--color-text-2)"
+          >
+            {v.subLeft}
+          </text>
+          <text
+            x={v.right.x}
+            y={v.titleY}
+            text-anchor="middle"
+            font-size={v.font.title}
+            font-weight="600"
+            fill="var(--color-text)"
+          >
+            ホウ素 B(3 価)= アクセプタ
+          </text>
+          <text
+            x={v.right.x}
+            y={v.subY}
+            text-anchor="middle"
+            font-size={v.font.sub}
+            fill="var(--color-text-2)"
+          >
+            {v.subRight}
+          </text>
+        </svg>
+      ))
+    }
+  </div>
+  <figcaption>{caption}</figcaption>
+  <p class="sr-only">{alt}</p>
+</figure>
+
+<style>
+  /* 幅の広い画面用と狭い画面用の SVG を切り替える(本文の図版と同じ 600px) */
+  .fl-narrow {
+    display: none;
+  }
+
+  @media (max-width: 600px) {
+    .fl-wide {
+      display: none;
+    }
+
+    .fl-narrow {
+      display: block;
+    }
+  }
+</style>

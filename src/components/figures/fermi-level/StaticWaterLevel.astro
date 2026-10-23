@@ -1,0 +1,328 @@
+---
+/**
+ * StaticWaterLevel.astro — 静的図 S-3(記事仕様書 12 §6.1・まとめ節)
+ *
+ * 真性・n 型・p 型の 3 つのバンド図を並べ、E_F を「水位」の線として描いた
+ * 1 枚絵。意味パレットのみで描く: 許容帯 --mat-band + バンド端 --mat-level、
+ * 価電子帯の満席 --mat-electron の薄い塗り、伝導帯の電子 --mat-electron、
+ * 価電子帯の正孔 --mat-hole、ドナー / アクセプタ準位 --mat-solute、
+ * E_F は太い破線(--mat-electron)、E_i は細い破線(--mat-level)。
+ * 水位の線より下の禁制帯には何も塗らない(E_F の高さに電子がいるわけでは
+ * ない — 本文の主張と食い違わないように)。
+ *
+ * 幅の広い画面用と狭い画面用(600px 以下)の 2 枚の SVG を持ち、CSS で
+ * 切り替える(狭い画面で文字が小さくなりすぎないように)。
+ */
+
+interface Props {
+  caption: string;
+  alt: string;
+}
+
+const { caption, alt } = Astro.props;
+
+interface Variant {
+  cls: string;
+  width: number;
+  height: number;
+  x0: number;
+  panelW: number;
+  gap: number;
+  /** 縦の配置: 伝導帯の上端・E_c・E_v・価電子帯の下端 */
+  cbTop: number;
+  ec: number;
+  ev: number;
+  vbBottom: number;
+  dot: number;
+  font: { title: number; label: number; small: number; sub: number };
+  titleY: number;
+  subY: number;
+  noteY: number;
+  /** n 型・p 型の見出し(狭い画面では 2 行目に混ぜる元素) */
+  titles: [string, string, string];
+  titles2?: [string, string, string];
+}
+
+const VARIANTS: Variant[] = [
+  {
+    cls: "fl-wide",
+    width: 700,
+    height: 300,
+    x0: 18,
+    panelW: 196,
+    gap: 36,
+    cbTop: 52,
+    ec: 100,
+    ev: 196,
+    vbBottom: 244,
+    dot: 5,
+    font: { title: 13.5, label: 12.5, small: 11.5, sub: 13 },
+    titleY: 26,
+    subY: 272,
+    noteY: 294,
+    titles: ["真性", "n 型(P を混ぜる)", "p 型(B を混ぜる)"],
+  },
+  {
+    cls: "fl-narrow",
+    width: 380,
+    height: 284,
+    x0: 8,
+    panelW: 112,
+    gap: 14,
+    cbTop: 48,
+    ec: 82,
+    ev: 170,
+    vbBottom: 204,
+    dot: 4,
+    font: { title: 12.5, label: 11, small: 10, sub: 12 },
+    titleY: 18,
+    subY: 228,
+    noteY: 254,
+    titles: ["真性", "n 型", "p 型"],
+    titles2: ["", "P を混ぜる", "B を混ぜる"],
+  },
+];
+
+interface Panel {
+  sub: string;
+  /** E_F の高さ: 0 = E_c、1 = E_v の割合 */
+  ef: number;
+  electrons: number;
+  holes: number;
+  level?: { at: number; label: string };
+}
+
+/** 3 つのパネル(縦位置は E_c〜E_v の間の割合で指定) */
+const PANELS: Panel[] = [
+  { sub: "n = p", ef: 0.5, electrons: 2, holes: 2 },
+  {
+    sub: "n ≫ p",
+    ef: 0.19,
+    electrons: 7,
+    holes: 0,
+    level: { at: 0.09, label: "E_D" },
+  },
+  {
+    sub: "n ≪ p",
+    ef: 0.81,
+    electrons: 0,
+    holes: 7,
+    level: { at: 0.91, label: "E_A" },
+  },
+];
+
+function xs(count: number, x: number, w: number): number[] {
+  const out: number[] = [];
+  for (let i = 0; i < count; i++) out.push(x + ((i + 0.5) * w) / count);
+  return out;
+}
+---
+
+<figure class="static-fig">
+  <div class="static-fig-frame">
+    {
+      VARIANTS.map((v) => {
+        const at = (f: number) => v.ec + (v.ev - v.ec) * f;
+        const ei = at(0.5);
+        return (
+          <svg
+            class={v.cls}
+            viewBox={`0 0 ${v.width} ${v.height}`}
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            {PANELS.map((p, k) => {
+              const x = v.x0 + k * (v.panelW + v.gap);
+              const cx = x + v.panelW / 2;
+              const ef = at(p.ef);
+              const level = p.level ? at(p.level.at) : 0;
+              return (
+                <g>
+                  <text
+                    x={cx}
+                    y={v.titleY}
+                    text-anchor="middle"
+                    font-size={v.font.title}
+                    font-weight="600"
+                    fill="var(--color-text)"
+                  >
+                    {v.titles[k]}
+                  </text>
+                  {v.titles2 && v.titles2[k] && (
+                    <text
+                      x={cx}
+                      y={v.titleY + v.font.small + 4}
+                      text-anchor="middle"
+                      font-size={v.font.small}
+                      fill="var(--color-text-2)"
+                    >
+                      {v.titles2[k]}
+                    </text>
+                  )}
+                  {/* 伝導帯・価電子帯(価電子帯は満席の薄い塗り) */}
+                  <rect
+                    x={x}
+                    y={v.cbTop}
+                    width={v.panelW}
+                    height={v.ec - v.cbTop}
+                    fill="var(--mat-band)"
+                  />
+                  <rect
+                    x={x}
+                    y={v.ev}
+                    width={v.panelW}
+                    height={v.vbBottom - v.ev}
+                    fill="var(--mat-band)"
+                  />
+                  <rect
+                    x={x}
+                    y={v.ev}
+                    width={v.panelW}
+                    height={v.vbBottom - v.ev}
+                    fill="var(--mat-electron)"
+                    opacity="0.3"
+                  />
+                  <line
+                    x1={x}
+                    y1={v.ec}
+                    x2={x + v.panelW}
+                    y2={v.ec}
+                    stroke="var(--mat-level)"
+                    stroke-width="2"
+                  />
+                  <line
+                    x1={x}
+                    y1={v.ev}
+                    x2={x + v.panelW}
+                    y2={v.ev}
+                    stroke="var(--mat-level)"
+                    stroke-width="2"
+                  />
+                  {/* E_i(ギャップの中央の目安) */}
+                  {k > 0 && (
+                    <line
+                      x1={x}
+                      y1={ei}
+                      x2={x + v.panelW}
+                      y2={ei}
+                      stroke="var(--mat-level)"
+                      stroke-width="1.2"
+                      stroke-dasharray="4 4"
+                    />
+                  )}
+                  {k > 0 && (
+                    <text
+                      x={x + v.panelW - 3}
+                      y={ei + v.font.small + 3}
+                      text-anchor="end"
+                      font-size={v.font.small}
+                      fill="var(--mat-level)"
+                    >
+                      E_i
+                    </text>
+                  )}
+                  {/* ドナー / アクセプタ準位 */}
+                  {p.level && (
+                    <line
+                      x1={x + 8}
+                      y1={level}
+                      x2={x + v.panelW - v.font.small * 2.6}
+                      y2={level}
+                      stroke="var(--mat-solute)"
+                      stroke-width="1.6"
+                      stroke-dasharray="5 4"
+                    />
+                  )}
+                  {p.level && (
+                    <text
+                      x={x + v.panelW - 3}
+                      y={level + v.font.small * 0.35}
+                      text-anchor="end"
+                      font-size={v.font.small}
+                      fill="var(--mat-solute)"
+                    >
+                      {p.level.label}
+                    </text>
+                  )}
+                  {/* 伝導帯の電子・価電子帯の正孔 */}
+                  {xs(p.electrons, x, v.panelW).map((ex) => (
+                    <circle
+                      cx={ex}
+                      cy={v.ec - v.dot * 2.2}
+                      r={v.dot}
+                      fill="var(--mat-electron)"
+                    />
+                  ))}
+                  {xs(p.holes, x, v.panelW).map((hx) => (
+                    <circle
+                      cx={hx}
+                      cy={v.ev + v.dot * 2.2}
+                      r={v.dot}
+                      fill="var(--mat-hole)"
+                    />
+                  ))}
+                  {/* 水位としての E_F */}
+                  <line
+                    x1={x - 4}
+                    y1={ef}
+                    x2={x + v.panelW + 4}
+                    y2={ef}
+                    stroke="var(--mat-electron)"
+                    stroke-width="2.6"
+                    stroke-dasharray="8 5"
+                  />
+                  {/* n 型はドナー準位が E_F のすぐ上にあるので、ラベルを線の下へ */}
+                  <text
+                    x={x + 2}
+                    y={k === 1 ? ef + v.font.label + 3 : ef - 6}
+                    font-size={v.font.label}
+                    fill="var(--mat-electron)"
+                  >
+                    {k === 0 ? "E_F(水位)" : "E_F"}
+                  </text>
+                  <text
+                    x={cx}
+                    y={v.subY}
+                    text-anchor="middle"
+                    font-size={v.font.sub}
+                    fill="var(--color-text-2)"
+                  >
+                    {p.sub}
+                  </text>
+                </g>
+              );
+            })}
+            <text
+              x={v.width / 2}
+              y={v.noteY}
+              text-anchor="middle"
+              font-size={v.font.small + 0.5}
+              fill="var(--color-text-2)"
+            >
+              水位が上がると上の帯に電子が増え、下がると下の帯に正孔が増える
+            </text>
+          </svg>
+        );
+      })
+    }
+  </div>
+  <figcaption>{caption}</figcaption>
+  <p class="sr-only">{alt}</p>
+</figure>
+
+<style>
+  /* 幅の広い画面用と狭い画面用の SVG を切り替える(本文の図版と同じ 600px) */
+  .fl-narrow {
+    display: none;
+  }
+
+  @media (max-width: 600px) {
+    .fl-wide {
+      display: none;
+    }
+
+    .fl-narrow {
+      display: block;
+    }
+  }
+</style>

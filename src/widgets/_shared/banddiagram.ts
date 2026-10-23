@@ -9,12 +9,19 @@
  * 規約(母体仕様 §6.2 と仕様書 11 §5.0):
  * - 許容帯 = `--mat-band` の塗り + `--mat-level` のバンド端線
  * - 禁制帯 = **塗りなし + `--color-hairline` の破線**(専用の色を持たない)
- * - 電子・占有 = `--mat-electron`
+ * - 電子・占有 = `--mat-electron`、正孔 = `--mat-hole`
  * - 色は初期化時に 1 度だけ解決する(毎フレーム getComputedStyle を呼ばない)
  * - 座標変換オブジェクトは使い回す(フレーム内の新規割当てを避ける — §8.3)
+ *
+ * 記事「フェルミ準位」(仕様書 12 §0-2)で、後方互換の追加として次の 3 点を
+ * 足した(既存の呼び出しの描画は変わらない)。pn 接合の記事もこれを使う。
+ * - `drawElectronDots` の `kind: "hole"`(正孔の丸)
+ * - `drawBandRibbon`(位置で曲がるバンド)
+ * - `pow10Ticks`(対数軸の目盛り。log₁₀ 値を線形の PlotMapper に載せる方式)
  */
 
 import { matColor, uiColor } from "../../core/colors";
+import { pow10Label } from "../../core/plot";
 
 /* ------------------------------------------------------------------ 色 */
 
@@ -147,6 +154,36 @@ export function withPlotClip(
 export interface AxisTick {
   value: number;
   label?: string;
+}
+
+/**
+ * 対数軸の目盛り(仕様書 12 §0-2)。対数軸は「log₁₀ 値を線形の PlotMapper に
+ * 載せる」方式で描く(PlotMapper 自体は線形のまま)。返す目盛りの value は
+ * **指数**(log₁₀ 値)で、label は「10¹⁶」「10⁻³」の上付き表記。
+ *
+ * 目盛りは every の倍数の指数に置く(pow10Ticks(8, 20, 4) → 10⁸, 10¹², 10¹⁶,
+ * 10²⁰)。every ≤ 0 や非有限は 1 として扱う。最小・最大が逆順なら空配列。
+ */
+export function pow10Ticks(
+  minExp: number,
+  maxExp: number,
+  every = 1,
+): AxisTick[] {
+  const ticks: AxisTick[] = [];
+  const step =
+    Number.isFinite(every) && every > 0 ? Math.max(1, Math.round(every)) : 1;
+  if (!Number.isFinite(minExp) || !Number.isFinite(maxExp)) return ticks;
+  if (maxExp < minExp) return ticks;
+  for (
+    let e = Math.ceil(minExp / step - 1e-9) * step;
+    e <= maxExp + 1e-9;
+    e += step
+  ) {
+    // -0 を避ける(ラベルが「10⁰」になるように)
+    const exponent = e === 0 ? 0 : e;
+    ticks.push({ value: exponent, label: pow10Label(exponent) });
+  }
+  return ticks;
 }
 
 export interface PlotFrameOptions {
@@ -354,6 +391,71 @@ export function drawBandBox(
   ctx.restore();
 }
 
+export interface BandRibbonOptions {
+  colors: BandColors;
+  /**
+   * 縁取りする辺(既定 "both")。"low" は eLow 側の曲線だけ(伝導帯の底
+   * E_c(x) を縁取るとき)、"high" は eHigh 側だけ(価電子帯の頂上 E_v(x))。
+   */
+  edges?: "both" | "low" | "high" | "none";
+  /** 縁の線幅(既定 1.6 — drawBandBox のバンド端線と同じ) */
+  width?: number;
+}
+
+/**
+ * 位置で曲がる許容帯(仕様書 12 §0-2)。2 本の曲線 eLow(x)・eHigh(x) の間を
+ * `--mat-band` で塗り、`--mat-level` で縁取る。xs / eLow / eHigh は値(px では
+ * ない)の配列で、count 個までを使う(drawCurve と同じく TypedArray を使い回す
+ * ため長さと個数を分ける)。フェルミ準位の図7(接触でバンドが曲がる)と
+ * pn 接合の記事のバンド図が使う。
+ */
+export function drawBandRibbon(
+  ctx: CanvasRenderingContext2D,
+  m: PlotMapper,
+  xs: ArrayLike<number>,
+  eLow: ArrayLike<number>,
+  eHigh: ArrayLike<number>,
+  count: number,
+  opts: BandRibbonOptions,
+): void {
+  if (count < 2) return;
+  const { colors } = opts;
+  const edges = opts.edges ?? "both";
+  ctx.save();
+  ctx.setLineDash([]);
+  // 塗り: eHigh を左→右、eLow を右→左にたどる閉路
+  ctx.fillStyle = colors.band;
+  ctx.beginPath();
+  ctx.moveTo(m.toPxX(xs[0]), m.toPxY(eHigh[0]));
+  for (let i = 1; i < count; i++) ctx.lineTo(m.toPxX(xs[i]), m.toPxY(eHigh[i]));
+  for (let i = count - 1; i >= 0; i--) {
+    ctx.lineTo(m.toPxX(xs[i]), m.toPxY(eLow[i]));
+  }
+  ctx.closePath();
+  ctx.fill();
+
+  if (edges !== "none") {
+    ctx.strokeStyle = colors.level;
+    ctx.lineWidth = opts.width ?? 1.6;
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    if (edges === "both" || edges === "high") {
+      ctx.moveTo(m.toPxX(xs[0]), m.toPxY(eHigh[0]));
+      for (let i = 1; i < count; i++) {
+        ctx.lineTo(m.toPxX(xs[i]), m.toPxY(eHigh[i]));
+      }
+    }
+    if (edges === "both" || edges === "low") {
+      ctx.moveTo(m.toPxX(xs[0]), m.toPxY(eLow[0]));
+      for (let i = 1; i < count; i++) {
+        ctx.lineTo(m.toPxX(xs[i]), m.toPxY(eLow[i]));
+      }
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 export interface GapMarksOptions {
   colors: BandColors;
   /** ギャップの中央に置くラベル(例 「1.12 eV」) */
@@ -524,10 +626,17 @@ export interface ElectronDotOptions {
   radius?: number;
   /** 中抜き(空席)にするか */
   empty?: boolean;
+  /**
+   * 粒子の種類(既定 "electron")。"hole" は正孔で、`--mat-hole` で描く。
+   * 正孔は**空席(empty: true)とは別物**である — 空席はバンド理論の
+   * 「電子が入っていない席」、正孔は価電子帯の空席が正の電荷をもつ粒子と
+   * してふるまうもの(仕様書 12 §0-2・付録 A-6)
+   */
+  kind?: "electron" | "hole";
 }
 
 /**
- * 電子(または空席)の丸を描く。xs / ys は値の配列(px ではない)。
+ * 電子(または空席・正孔)の丸を描く。xs / ys は値の配列(px ではない)。
  * 塗り + 同系色を 20% 暗くした縁取り、という母体規約(§6.5)に合わせ、
  * 空席は「塗りなし + 破線縁」ではなく細い実線の中抜きで描く
  * (空孔トークンとの混同を避けるため)。
@@ -541,6 +650,7 @@ export function drawElectronDots(
   opts: ElectronDotOptions,
 ): void {
   const r = opts.radius ?? 3.6;
+  const color = opts.kind === "hole" ? opts.colors.hole : opts.colors.electron;
   ctx.save();
   ctx.beginPath();
   for (let i = 0; i < count; i++) {
@@ -550,12 +660,12 @@ export function drawElectronDots(
     ctx.arc(px, py, r, 0, Math.PI * 2);
   }
   if (opts.empty) {
-    ctx.strokeStyle = opts.colors.electron;
+    ctx.strokeStyle = color;
     ctx.globalAlpha = 0.55;
     ctx.lineWidth = 1.4;
     ctx.stroke();
   } else {
-    ctx.fillStyle = opts.colors.electron;
+    ctx.fillStyle = color;
     ctx.fill();
   }
   ctx.restore();

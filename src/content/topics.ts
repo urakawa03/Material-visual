@@ -177,7 +177,7 @@ export const TOPICS: readonly Topic[] = [
     summary: "電子はどこまで埋まっているのか。温度とドーピングで動く水位。",
     render: "2d",
     prerequisites: [{ slug: "band-theory", recommended: false }],
-    published: false,
+    published: true,
   },
   {
     order: 13,

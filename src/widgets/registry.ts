@@ -168,6 +168,14 @@ export const registry: Record<
   // 記事「マルテンサイト変態」(仕様書 10)— 実装時にこの直下へ登録する
 
   // 記事「フェルミ準位」(仕様書 12)— 実装時にこの直下へ登録する
+  "fermi-level/filling-states": () => import("./fermi-level/filling-states"),
+  "fermi-level/fermi-dirac": () => import("./fermi-level/fermi-dirac"),
+  "fermi-level/dos-times-f": () => import("./fermi-level/dos-times-f"),
+  "fermi-level/intrinsic-carriers": () =>
+    import("./fermi-level/intrinsic-carriers"),
+  "fermi-level/doping-shift": () => import("./fermi-level/doping-shift"),
+  "fermi-level/mass-action": () => import("./fermi-level/mass-action"),
+  "fermi-level/equilibration": () => import("./fermi-level/equilibration"),
 
   // 記事「pn 接合」(仕様書 13)— 実装時にこの直下へ登録する
 
