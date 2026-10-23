@@ -66,12 +66,35 @@ const N_CARBIDE_SITES = 40;
 const SEED = 7707;
 /** 同じ P の組を探すときの温度の差 [℃] */
 const EQUIV_DT = 50;
+/** 曲線の名前を書く位置の候補(P と、曲線の上に書くか下に書くか) */
+interface LabelSpot {
+  p: number;
+  above: boolean;
+}
+/** 画面上の長方形(重なりの判定用) */
+interface Box {
+  x0: number;
+  x1: number;
+  y0: number;
+  y1: number;
+}
+const boxesOverlap = (a: Box, b: Box): boolean =>
+  a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0;
 /**
- * 曲線の名前を書く P の位置の候補(先頭から順に、現在の P の縦線と値の
- * ラベルに重ならないものを使う)
+ * 先頭から順に、現在の P の縦線・値のラベル・焼戻し脆性のラベルに
+ * 重ならないものを使う
  */
-const HV_LABEL_PS = [16800, 19600, 10200];
-const TOUGH_LABEL_PS = [16000, 20200, 8600];
+const HV_LABEL_SPOTS: readonly LabelSpot[] = [
+  { p: 16800, above: true },
+  { p: 19600, above: true },
+  { p: 10200, above: true },
+];
+const TOUGH_LABEL_SPOTS: readonly LabelSpot[] = [
+  { p: 16000, above: false },
+  { p: 20200, above: false },
+  // 左端では曲線が横軸に近いので、曲線の上に書く
+  { p: 7300, above: true },
+];
 /** 曲線の名前を、現在の P の縦線からこれ以上離す [px](値のラベルの幅を含む) */
 const LABEL_CLEAR_PX = 60;
 
@@ -129,7 +152,9 @@ export default function tempering(host: FigureHost): WidgetHandle {
   const rP = readout.item("P");
   const rHv = readout.item("硬さの目安");
   const rTough = readout.item("靭性の目安(相対)");
+  // 同じ P の別の組と、1 時間なら何 ℃ か(狭い幅でも 1 行に収まるよう 2 つに分ける)
   const rEq = readout.item("同じ P になる別の組");
+  const rOneHour = readout.item("1 時間なら");
 
   function fmtHours(h: number): string {
     if (h >= 100) return `${Math.round(h)} 時間`;
@@ -149,7 +174,8 @@ export default function tempering(host: FigureHost): WidgetHandle {
       tempC - EQUIV_DT >= TEMPER_T_MIN_C ? tempC - EQUIV_DT : tempC + EQUIV_DT;
     const h2 = timeForP(p, t2);
     const one = tempForP(p, 1);
-    rEq.set(`${t2} ℃ × ${fmtHours(h2)}(1 時間なら ${Math.round(one)} ℃)`);
+    rEq.set(`${t2} ℃ × ${fmtHours(h2)}`);
+    rOneHour.set(`${Math.round(one)} ℃`);
   }
 
   /* ---- 操作部品(§5.7) ---- */
@@ -215,18 +241,29 @@ export default function tempering(host: FigureHost): WidgetHandle {
 
   /** 箱の下の凡例: 閉じ込められた炭素と、析出した炭化物 */
   function drawLegend(box: Pane, narrow: boolean, lfs: number): void {
-    const items: ReadonlyArray<readonly [string, string, string]> = [
+    // [塗り, 縁, 広い幅の文言, 狭い幅の文言(1 行に 2 つ並べるので短く)]
+    const items: ReadonlyArray<readonly [string, string, string, string]> = [
       // 図の炭素は縁取りなしで描いているので、凡例も同じにする
-      [pal.solute, pal.solute, "針の中に閉じ込められた炭素"],
-      [pal.precip, pal.precipEdge, "析出した炭化物(焼戻しで現れ、粗くなる)"],
+      [
+        pal.solute,
+        pal.solute,
+        "針の中に閉じ込められた炭素",
+        "閉じ込められた炭素",
+      ],
+      [
+        pal.precip,
+        pal.precipEdge,
+        "析出した炭化物(焼戻しで現れ、粗くなる)",
+        "析出した炭化物",
+      ],
     ];
     ctx.font = font(lfs);
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
     let x = box.x + 6;
     let y = box.y + box.h + (narrow ? lfs / 2 + 6 : lfs / 2 + 10);
-    for (const [fill, edge, label] of items) {
-      const text = narrow ? label.replace(/(.*)$/, "") : label;
+    for (const [fill, edge, wide, short] of items) {
+      const text = narrow ? short : wide;
       ctx.beginPath();
       ctx.arc(x, y, 4, 0, TAU2);
       ctx.fillStyle = fill;
@@ -471,45 +508,68 @@ export default function tempering(host: FigureHost): WidgetHandle {
     };
     curve(temperedHardness, ys, pal.text, false);
     curve(toughness, ts, pal.text2, true);
-    // 曲線の名前。現在の P の縦線と値のラベルに重ならない候補の位置に置く
     const pp = pNow();
     const x = X(pp);
-    ctx.font = font(fs, 600);
-    const pickP = (cands: readonly number[], label: string): number => {
-      const w = ctx.measureText(label).width;
-      return (
-        cands.find((c) => {
-          const xl = X(c) + 6;
-          return xl > x + LABEL_CLEAR_PX || xl + w < x - LABEL_CLEAR_PX;
-        }) ?? cands[0]
-      );
-    };
-    const hvP = pickP(HV_LABEL_PS, "硬さ");
-    const tgP = pickP(TOUGH_LABEL_PS, "靭性");
-    ctx.fillStyle = pal.text;
-    ctx.textAlign = "left";
-    ctx.textBaseline = "bottom";
-    ctx.fillText("硬さ", X(hvP) + 6, mapScale(ys, temperedHardness(hvP)) - 6);
-    ctx.fillStyle = pal.text2;
-    ctx.textAlign = "left";
-    ctx.textBaseline = "top";
-    ctx.fillText("靭性", X(tgP) + 6, mapScale(ts, toughness(tgP)) + 6);
 
-    // 焼戻し脆性のくぼみのラベル(模式)。現在の P の縦線にかかるときは
+    // 焼戻し脆性のくぼみのラベル(模式)の位置。現在の P の縦線にかかるときは
     // 縦線の右へ(くぼみの右は曲線が急に上がるので、文字と重ならない。
     // 左は曲線がゆるく下りてくるので重なる)
     const pDip = hollomonJaffe(320, 1);
     const dipText = "焼戻し脆性(模式)";
     ctx.font = font(fs - 1);
-    const dipHalf = ctx.measureText(dipText).width / 2 + 3;
+    const dipW = ctx.measureText(dipText).width + 6;
     const xDip = X(pDip);
-    const dipNear = Math.abs(xDip - x) < dipHalf + 8;
+    const dipNear = Math.abs(xDip - x) < dipW / 2 + 8;
+    const dipCy = mapScale(ts, toughness(pDip)) + 18;
+    const dipBox: Box = {
+      x0: dipNear ? x + 8 - 3 : xDip - dipW / 2,
+      x1: (dipNear ? x + 8 - 3 : xDip - dipW / 2) + dipW,
+      y0: dipCy - (fs + 5) / 2,
+      y1: dipCy + (fs + 5) / 2,
+    };
+
+    // 曲線の名前。現在の P の縦線と値のラベル、焼戻し脆性のラベルに
+    // 重ならない候補の位置に置く
+    ctx.font = font(fs, 600);
+    const nameBox = (spot: LabelSpot, yCurve: number, w: number): Box => {
+      const xl = X(spot.p) + 6;
+      const yt = spot.above ? yCurve - 6 - fs : yCurve + 6;
+      return { x0: xl - 2, x1: xl + w + 2, y0: yt - 2, y1: yt + fs + 2 };
+    };
+    const pick = (
+      spots: readonly LabelSpot[],
+      label: string,
+      yOf: (p: number) => number,
+    ): { spot: LabelSpot; box: Box } => {
+      const w = ctx.measureText(label).width;
+      const fits = (spot: LabelSpot): boolean => {
+        const b = nameBox(spot, yOf(spot.p), w);
+        const clearLine =
+          b.x0 > x + LABEL_CLEAR_PX || b.x1 < x - LABEL_CLEAR_PX;
+        return clearLine && !boxesOverlap(b, dipBox);
+      };
+      const spot = spots.find(fits) ?? spots[0];
+      return { spot, box: nameBox(spot, yOf(spot.p), w) };
+    };
+    const hvName = pick(HV_LABEL_SPOTS, "硬さ", (q) =>
+      mapScale(ys, temperedHardness(q)),
+    );
+    const tgName = pick(TOUGH_LABEL_SPOTS, "靭性", (q) =>
+      mapScale(ts, toughness(q)),
+    );
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.fillStyle = pal.text;
+    ctx.fillText("硬さ", hvName.box.x0 + 2, hvName.box.y0 + 2);
+    ctx.fillStyle = pal.text2;
+    ctx.fillText("靭性", tgName.box.x0 + 2, tgName.box.y0 + 2);
+
     plateText(
       ctx,
       pal,
       dipText,
       dipNear ? x + 8 : xDip,
-      mapScale(ts, toughness(pDip)) + 18,
+      dipCy,
       pal.text2,
       fs - 1,
       dipNear ? "left" : "center",
