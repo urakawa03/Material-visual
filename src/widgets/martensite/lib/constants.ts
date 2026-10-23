@@ -256,16 +256,16 @@ export const HV_FULLY_TEMPERED = 250;
 export const TEMPER_HV_MID_P = 13500;
 export const TEMPER_HV_WIDTH_P = 1500;
 /** 靭性の模式曲線の中心と幅、焼入れままの値(相対 0〜1) */
-export const TOUGH_MID_P = 14500;
-export const TOUGH_WIDTH_P = 1600;
+export const TOUGH_MID_P = 13300;
+export const TOUGH_WIDTH_P = 1700;
 export const TOUGH_AS_QUENCHED = 0.08;
 /**
  * 焼戻し脆性(tempered martensite embrittlement)のくぼみ: 1 時間の焼戻しで
  * 260〜370 ℃ 付近(P ≈ 1.1〜1.3 万)に置く模式(§5.7)。
  */
 export const EMBRITTLE_P = 11900;
-export const EMBRITTLE_WIDTH_P = 650;
-export const EMBRITTLE_DEPTH = 0.1;
+export const EMBRITTLE_WIDTH_P = 600;
+export const EMBRITTLE_DEPTH = 0.16;
 
 /** 焼戻しスライダーの範囲(§5.7) */
 export const TEMPER_T_MIN_C = 100;
