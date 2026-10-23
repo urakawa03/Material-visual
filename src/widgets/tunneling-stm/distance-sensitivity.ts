@@ -222,7 +222,8 @@ export default function distanceSensitivity(host: FigureHost): WidgetHandle {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // ラベル
+    // ラベル(すき間が狭いときも、2 行目が試料の原子にかからない高さに)
+    const gapLabelY = Math.min((yTop + yBot) / 2, yBot - rPx - 23);
     ctx.font = font(12);
     ctx.textAlign = "right";
     ctx.textBaseline = "middle";
@@ -230,7 +231,7 @@ export default function distanceSensitivity(host: FigureHost): WidgetHandle {
       ctx,
       `すき間 ${gap.toFixed(2)} nm`,
       rulerX - 8,
-      (yTop + yBot) / 2,
+      gapLabelY,
       pal.text,
       pal.bg,
     );
@@ -239,18 +240,21 @@ export default function distanceSensitivity(host: FigureHost): WidgetHandle {
       ctx,
       "(原子の中心どうし)",
       rulerX - 8,
-      (yTop + yBot) / 2 + 15,
+      gapLabelY + 15,
       pal.text2,
       pal.bg,
     );
+    // 先端の原子の割合: ふつうは太い矢印の右。すき間が狭くて矢印の横に
+    // 入らないときは、先端の原子の右(試料の原子にかからない高さ)
     ctx.font = font(12);
     ctx.textAlign = "left";
     const frac = apexFraction(phi, PAIR);
+    const roomy = ySample - yApexBottom >= 30;
     haloText(
       ctx,
       `先端の原子: ${fmtSig(frac * 100, 3)}%`,
-      xx(0) + 12,
-      (yApexBottom + ySample) / 2,
+      roomy ? xx(0) + 12 : xx(0) + rPx + 8,
+      roomy ? (yApexBottom + ySample) / 2 : zy(gap),
       pal.beamInk,
       pal.bg,
     );
