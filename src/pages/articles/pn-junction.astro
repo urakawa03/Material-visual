@@ -205,7 +205,7 @@ import StaticThreeSlopes from "../../components/figures/pn-junction/StaticThreeS
   </p>
   <M
     block
-    tex={String.raw`qV_{bi} = (\mel{E_F} - E_i)_n + (E_i - \mel{E_F})_p = k_BT\ln\dfrac{\msol{N_A}\msol{N_D}}{n_i^2}`}
+    tex={String.raw`\begin{aligned} qV_{bi} &= (\mel{E_F} - E_i)_n + (E_i - \mel{E_F})_p \\ &= k_BT\ln\dfrac{\msol{N_A}\msol{N_D}}{n_i^2} \end{aligned}`}
   />
   <p>
     <ArticleRef slug="fermi-level" />の記事の図5 では、リンを 10¹⁶ cm⁻³
@@ -231,7 +231,7 @@ import StaticThreeSlopes from "../../components/figures/pn-junction/StaticThreeS
   </p>
   <M
     block
-    tex={String.raw`W = x_p + x_n = \sqrt{\dfrac{2\varepsilon(V_{bi} - V)}{q}\cdot\dfrac{\msol{N_A} + \msol{N_D}}{\msol{N_A}\msol{N_D}}}`}
+    tex={String.raw`\begin{aligned} W &= x_p + x_n \\ &= \sqrt{\dfrac{2\varepsilon(V_{bi} - V)}{q}\cdot\dfrac{\msol{N_A} + \msol{N_D}}{\msol{N_A}\msol{N_D}}} \end{aligned}`}
   />
   <p>
     既定の <M tex={String.raw`\msol{N_A} = \msol{N_D} = 10^{16}`} /> cm⁻³ では、<M
