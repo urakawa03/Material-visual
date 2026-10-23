@@ -21,6 +21,7 @@ import { font } from "../../core/plot";
 import {
   fmtPercent,
   haloText,
+  noBreak,
   ownLine,
   rect,
   resolvePalette,
@@ -453,7 +454,7 @@ export default function classicalVsQuantum(host: FigureHost): WidgetHandle {
     else if (phase === "running") simItem.set("散乱中…");
     else simItem.set(fmtPercent(finalTransmitted));
     theoryItem.set(
-      `${fmtPercent(tPlane)}(エネルギーの幅で平均すると ${fmtPercent(tAvg)})`,
+      `${noBreak(fmtPercent(tPlane))}(エネルギーの幅で平均すると ${noBreak(fmtPercent(tAvg))})`,
     );
     const outcome = classicalOutcome(eOverV * BARRIER_V, BARRIER_V);
     classicItem.set(

@@ -41,6 +41,7 @@ import {
   fmtFromLog10,
   haloText,
   log10Ticks,
+  noBreak,
   ownLine,
   rect,
   resolvePalette,
@@ -471,7 +472,7 @@ export default function flashMemory(host: FigureHost): WidgetHandle {
   function updateReadouts(): void {
     const lnT = logTransmissionApprox(SIO2_BARRIER_EV, d, SIO2_MASS_RATIO);
     tItem.set(fmtFromLog10(lnT / Math.LN10));
-    keepItem.set(formatDuration(Math.exp(logRetentionTime(d))));
+    keepItem.set(noBreak(formatDuration(Math.exp(logRetentionTime(d)))));
     if (writing) {
       const lnTw = -tiltedBarrierExponent(
         SIO2_BARRIER_EV,
@@ -480,7 +481,7 @@ export default function flashMemory(host: FigureHost): WidgetHandle {
         SIO2_MASS_RATIO,
       );
       writeItem.set(
-        `${formatDuration(Math.exp(logWriteTime(d, field)))}(T = ${fmtFromLog10(lnTw / Math.LN10)})`,
+        `${noBreak(formatDuration(Math.exp(logWriteTime(d, field))))}(${noBreak(`T = ${fmtFromLog10(lnTw / Math.LN10)}`)})`,
       );
     } else {
       writeItem.set("—(書き込みを on にする)");

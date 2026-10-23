@@ -204,6 +204,14 @@ export function wrapInside(el: HTMLElement): void {
   el.style.whiteSpace = "normal";
 }
 
+/**
+ * 「5.4 × 10⁻⁸ %」のような数値の中の空白を改行しない空白にする(折り返せる
+ * 読み取りの中で、数値が「5.4 ×」と「10⁻⁸」に割れないように)
+ */
+export function noBreak(text: string): string {
+  return text.replace(/ /g, " ");
+}
+
 /* ---------------------------------------------------------- 数値の書式 */
 
 /**
