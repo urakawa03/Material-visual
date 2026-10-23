@@ -6,6 +6,7 @@
  * 図版の直前後に操作を促す一文を置く(母体仕様 §9.2)。
  */
 import Article from "../../layouts/Article.astro";
+import ArticleRef from "../../components/ArticleRef.astro";
 import Figure from "../../components/Figure.astro";
 import M from "../../components/M.astro";
 import OstwaldS1 from "../../components/figures/OstwaldS1.astro";
@@ -270,6 +271,9 @@ const cottrell = withBase("/articles/cottrell-atmosphere/");
     粒子間の拡散場が重なるため、係数は大きく(粗大化は速く)、分布は
     広くなります。また本記事の「1/3」は母相の拡散が律速の場合で、界面
     での原子の乗り移りが律速になると <M tex={String.raw`t^{1/2}`} /> 則に 変わります。
+    界面を減らす粗大化という点では、核を経ずに分かれてできた迷路状の組織(<ArticleRef
+      slug="spinodal-decomposition"
+    />)も同じで、その模様の代表長さもやはり <M tex={String.raw`t^{1/3}`} /> で育ちます。
   </p>
 
   <h2>間隔が開けば、するり — 過時効</h2>
