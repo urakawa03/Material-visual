@@ -182,6 +182,9 @@ export const registry: Record<
     import("./pn-junction/junction-formation"),
   "pn-junction/depletion-layer": () => import("./pn-junction/depletion-layer"),
   "pn-junction/band-bending": () => import("./pn-junction/band-bending"),
+  "pn-junction/forward-bias": () => import("./pn-junction/forward-bias"),
+  "pn-junction/bias-and-iv": () => import("./pn-junction/bias-and-iv"),
+  "pn-junction/led-solar": () => import("./pn-junction/led-solar"),
 
   // 記事「トンネル効果と STM」(仕様書 14)— 実装時にこの直下へ登録する
 };
