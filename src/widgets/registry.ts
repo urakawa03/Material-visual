@@ -144,6 +144,9 @@ export const registry: Record<
   "fermi-level/filling-states": () => import("./fermi-level/filling-states"),
   "fermi-level/fermi-dirac": () => import("./fermi-level/fermi-dirac"),
   "fermi-level/dos-times-f": () => import("./fermi-level/dos-times-f"),
+  "fermi-level/intrinsic-carriers": () =>
+    import("./fermi-level/intrinsic-carriers"),
+  "fermi-level/doping-shift": () => import("./fermi-level/doping-shift"),
 
   // 記事「pn 接合」(仕様書 13)— 実装時にこの直下へ登録する
 
